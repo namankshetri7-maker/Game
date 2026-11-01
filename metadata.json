@@ -1,6 +1,6 @@
 {
   "name": "Wonder World Kids Learning",
-  "description": "100% offline educational game suite for kids aged 3–10 across Android & iOS with dynamic difficulty, COPPA parent gate, and 45 mini-games.",
+  "description": "Educational game suite for kids aged 3–10 across Android, iOS, iPad, Mac, and Windows with dynamic difficulty, COPPA parent gate, and 45 mini-games.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,14 +1,17 @@
 /**
- * COPPA Compliant Parent Gate
- * Prevents small children from entering settings or modifying profiles.
- * Generates randomized adult challenges (e.g. written word math numbers: "Write 'SEVEN' in digits",
- * or spelled multiplication questions: "EIGHT x FOUR = ?").
+ * COPPA Compliant Parent Gate & Grown-Up Verification Modal
+ * Protects children from accessing parent settings, screen time limits, and profiles.
+ * Features dual verification:
+ * 1. Quick Adult Challenge (Spelled-out words and arithmetic that young kids cannot accidentally pass)
+ * 2. 4-Digit Parent PIN (Default 1234 or parent's custom PIN)
+ * Full touch keypad + physical keyboard support with tactile audio feedback.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldAlert, X, Check, Lock } from 'lucide-react';
+import { Shield, Lock, X, Check, RefreshCw, KeyRound, Calculator, AlertCircle, ArrowLeft, Home } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
+import { storageService } from '../services/storageService';
 
 interface ParentGateModalProps {
   isOpen: boolean;
@@ -16,20 +19,24 @@ interface ParentGateModalProps {
   onCancel: () => void;
 }
 
-interface GateChallenge {
+interface AdultChallenge {
+  id: string;
   question: string;
+  subtext: string;
   expectedAnswer: string;
-  instruction: string;
 }
 
-const CHALLENGES: GateChallenge[] = [
-  { question: "Write the number 'EIGHT' in digits", expectedAnswer: '8', instruction: 'Enter single digit' },
-  { question: "Write the number 'SEVEN' in digits", expectedAnswer: '7', instruction: 'Enter single digit' },
-  { question: "What is 4 multiplied by 3?", expectedAnswer: '12', instruction: 'Enter the answer in numbers' },
-  { question: "What is 6 plus 7?", expectedAnswer: '13', instruction: 'Enter the sum in digits' },
-  { question: "Write the number 'NINE' in digits", expectedAnswer: '9', instruction: 'Enter single digit' },
-  { question: "What is 15 minus 6?", expectedAnswer: '9', instruction: 'Enter the answer in numbers' },
-  { question: "What is 8 multiplied by 5?", expectedAnswer: '40', instruction: 'Enter the product in digits' }
+const ADULT_CHALLENGES: AdultChallenge[] = [
+  { id: 'c1', question: 'What is 7 multiplied by 8?', subtext: 'Enter the answer in numbers', expectedAnswer: '56' },
+  { id: 'c2', question: 'Type the digits for: NINE - THREE - FIVE', subtext: 'Enter the numbers in order', expectedAnswer: '935' },
+  { id: 'c3', question: 'What is 14 plus 18?', subtext: 'Enter the sum in digits', expectedAnswer: '32' },
+  { id: 'c4', question: 'Type the digits for: SEVEN - TWO - FOUR - ONE', subtext: 'Enter the numbers in order', expectedAnswer: '7241' },
+  { id: 'c5', question: 'What is 9 multiplied by 6?', subtext: 'Enter the product in numbers', expectedAnswer: '54' },
+  { id: 'c6', question: 'Type the digits for: SIX - EIGHT - ZERO - TWO', subtext: 'Enter the numbers in order', expectedAnswer: '6802' },
+  { id: 'c7', question: 'What is 25 minus 9?', subtext: 'Enter the difference in digits', expectedAnswer: '16' },
+  { id: 'c8', question: 'What is 8 multiplied by 4?', subtext: 'Enter the product in numbers', expectedAnswer: '32' },
+  { id: 'c9', question: 'Type the digits for: FOUR - ONE - NINE - SEVEN', subtext: 'Enter the numbers in order', expectedAnswer: '4197' },
+  { id: 'c10', question: 'What is 12 multiplied by 3?', subtext: 'Enter the product in numbers', expectedAnswer: '36' },
 ];
 
 export const ParentGateModal: React.FC<ParentGateModalProps> = ({
@@ -37,38 +44,60 @@ export const ParentGateModal: React.FC<ParentGateModalProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const [currentChallenge, setCurrentChallenge] = useState<GateChallenge>(CHALLENGES[0]);
+  const [mode, setMode] = useState<'challenge' | 'pin'>('challenge');
+  const [currentChallenge, setCurrentChallenge] = useState<AdultChallenge>(ADULT_CHALLENGES[0]);
   const [inputVal, setInputVal] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isShaking, setIsShaking] = useState(false);
+  const [parentPin, setParentPin] = useState('1234');
 
-  // Randomize challenge on open
+  // Load parent PIN and randomize challenge on open
   useEffect(() => {
     if (isOpen) {
-      const randomIdx = Math.floor(Math.random() * CHALLENGES.length);
-      setCurrentChallenge(CHALLENGES[randomIdx]);
+      const settings = storageService.getParentSettings();
+      setParentPin(settings.parentPin || '1234');
+      pickRandomChallenge();
       setInputVal('');
       setErrorMessage('');
+      setIsShaking(false);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const pickRandomChallenge = () => {
+    const nextIdx = Math.floor(Math.random() * ADULT_CHALLENGES.length);
+    setCurrentChallenge(ADULT_CHALLENGES[nextIdx]);
+    setInputVal('');
+    setErrorMessage('');
+  };
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (inputVal.trim() === currentChallenge.expectedAnswer) {
+  const handleVerify = useCallback(() => {
+    const trimmed = inputVal.trim();
+    if (!trimmed) return;
+
+    const isCorrect = mode === 'challenge'
+      ? trimmed === currentChallenge.expectedAnswer
+      : trimmed === parentPin;
+
+    if (isCorrect) {
       soundEngine.playSnap();
+      setErrorMessage('');
       onSuccess();
     } else {
       soundEngine.playOops();
-      setErrorMessage('Verification failed. Please try again.');
-      // pick another challenge
-      const randomIdx = Math.floor(Math.random() * CHALLENGES.length);
-      setCurrentChallenge(CHALLENGES[randomIdx]);
-      setInputVal('');
-    }
-  };
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
 
-  const handleKeypadPress = (val: string) => {
+      if (mode === 'challenge') {
+        setErrorMessage('Incorrect answer. Please try this new question.');
+        pickRandomChallenge();
+      } else {
+        setErrorMessage(`Incorrect PIN. (Default is 1234)`);
+        setInputVal('');
+      }
+    }
+  }, [inputVal, mode, currentChallenge, parentPin, onSuccess]);
+
+  const handleKeypadPress = useCallback((val: string) => {
     soundEngine.playPop();
     setErrorMessage('');
     if (val === 'clear') {
@@ -76,108 +105,274 @@ export const ParentGateModal: React.FC<ParentGateModalProps> = ({
     } else if (val === 'back') {
       setInputVal(prev => prev.slice(0, -1));
     } else {
-      if (inputVal.length < 4) {
-        setInputVal(prev => prev + val);
-      }
+      setInputVal(prev => {
+        const maxLen = mode === 'pin' ? 4 : 5;
+        if (prev.length >= maxLen) return prev;
+        const nextVal = prev + val;
+        // Auto-verify if 4-digit PIN is reached in PIN mode
+        if (mode === 'pin' && nextVal.length === 4) {
+          setTimeout(() => {
+            if (nextVal === parentPin) {
+              soundEngine.playSnap();
+              onSuccess();
+            } else {
+              soundEngine.playOops();
+              setIsShaking(true);
+              setTimeout(() => setIsShaking(false), 500);
+              setErrorMessage('Incorrect PIN. (Default is 1234)');
+              setInputVal('');
+            }
+          }, 150);
+        }
+        return nextVal;
+      });
     }
-  };
+  }, [mode, parentPin, onSuccess]);
+
+  // Physical keyboard support for desktop & laptop parents
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleKeypadPress(e.key);
+      } else if (e.key === 'Backspace') {
+        handleKeypadPress('back');
+      } else if (e.key === 'Escape') {
+        soundEngine.playPop();
+        onCancel();
+      } else if (e.key === 'Enter') {
+        handleVerify();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleKeypadPress, handleVerify, onCancel]);
+
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md select-none">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md select-none font-body overflow-y-auto">
         <motion.div
-          initial={{ scale: 0.85, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.85, opacity: 0 }}
-          className="relative w-full max-w-sm bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border-4 border-indigo-300 text-center"
+          initial={{ scale: 0.92, opacity: 0, y: 12 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.92, opacity: 0, y: 12 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          className={`relative w-full max-w-sm sm:max-w-md my-auto max-h-[96vh] sm:max-h-[90vh] flex flex-col bg-white rounded-3xl shadow-2xl border-4 border-indigo-200 overflow-hidden text-center ${
+            isShaking ? 'animate-shake' : ''
+          }`}
         >
-          {/* Close button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onCancel();
-            }}
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          {/* Shield Badge */}
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-100 text-indigo-700 rounded-2xl mb-3 shadow-inner">
-            <Lock className="w-7 h-7" />
-          </div>
-
-          <h3 className="text-xl font-fun font-bold text-slate-900 mb-1">
-            Grown-Ups Only
-          </h3>
-          <p className="text-xs font-body text-slate-500 mb-4">
-            COPPA Safety Check: Please solve this question to access Parent Settings & Reports.
-          </p>
-
-          {/* The randomized challenge card */}
-          <div className="bg-slate-50 border-2 border-indigo-100 rounded-2xl p-4 mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 block mb-1">
-              {currentChallenge.instruction}
-            </span>
-            <div className="text-lg font-bold text-slate-800">
-              {currentChallenge.question}
-            </div>
-          </div>
-
-          {/* Input display */}
-          <div className="flex items-center justify-center h-12 bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl text-2xl font-bold tracking-widest text-indigo-900 mb-2">
-            {inputVal || <span className="text-slate-300 font-normal text-base">Tap numbers below</span>}
-          </div>
-
-          {errorMessage && (
-            <p className="text-xs font-semibold text-rose-500 mb-2 animate-bounce">
-              {errorMessage}
-            </p>
-          )}
-
-          {/* Numeric keypad for touch devices */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(item => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => {
-                  if (item === 'C') handleKeypadPress('clear');
-                  else if (item === '⌫') handleKeypadPress('back');
-                  else handleKeypadPress(item);
-                }}
-                className="py-2.5 rounded-xl bg-slate-100 hover:bg-indigo-100 active:bg-indigo-200 text-slate-800 font-bold text-lg transition shadow-sm"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
+          {/* Top Sticky Header */}
+          <div className="bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 text-white px-4 py-3 sm:px-6 sm:py-4 relative shrink-0">
+            {/* Top-Left Back Button */}
             <button
-              type="button"
               onClick={() => {
                 soundEngine.playPop();
                 onCancel();
               }}
-              className="flex-1 py-3 rounded-xl border border-slate-300 text-slate-600 font-bold text-sm hover:bg-slate-100"
+              className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 px-2.5 py-1 text-indigo-100 hover:text-white rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition flex items-center gap-1 text-xs font-fun font-bold"
+              title="Return to WonderWorld Games"
+              aria-label="Back"
             >
-              Cancel
+              <ArrowLeft className="w-3.5 h-3.5 stroke-[3]" />
+              <span>Back</span>
             </button>
+
             <button
-              type="button"
-              onClick={() => handleSubmit()}
-              disabled={!inputVal}
-              className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1 shadow-md transition ${
-                inputVal
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  : 'bg-indigo-200 text-indigo-400 cursor-not-allowed'
-              }`}
+              onClick={() => {
+                soundEngine.playPop();
+                onCancel();
+              }}
+              className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 p-1.5 text-indigo-200 hover:text-white rounded-xl hover:bg-white/10 active:scale-95 transition"
+              title="Close Parent Verification"
+              aria-label="Close"
             >
-              <Check className="w-4 h-4" />
-              <span>Verify</span>
+              <X className="w-5 h-5" />
             </button>
+
+            {/* Glowing Parent Shield Icon */}
+            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 text-amber-300 shadow-inner mb-1.5">
+              <Shield className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-300/30 text-amber-300" />
+            </div>
+
+            <h3 className="text-lg sm:text-xl font-black font-fun tracking-wide text-white leading-tight">
+              Parent & Guardian Gate
+            </h3>
+            <p className="text-[11px] sm:text-xs text-indigo-100/90 mt-0.5 max-w-xs mx-auto font-medium">
+              Verify you are a grown-up to access settings & profiles.
+            </p>
+
+            {/* Verification Mode Toggle */}
+            <div className="flex bg-indigo-950/60 p-1 rounded-2xl mt-2.5 border border-indigo-400/30 max-w-xs mx-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  setMode('challenge');
+                  setInputVal('');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold font-fun flex items-center justify-center gap-1.5 transition ${
+                  mode === 'challenge'
+                    ? 'bg-white text-indigo-950 shadow-sm'
+                    : 'text-indigo-200 hover:text-white'
+                }`}
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span>Adult Challenge</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  setMode('pin');
+                  setInputVal('');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold font-fun flex items-center justify-center gap-1.5 transition ${
+                  mode === 'pin'
+                    ? 'bg-white text-indigo-950 shadow-sm'
+                    : 'text-indigo-200 hover:text-white'
+                }`}
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Parent PIN</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Scrollable Body */}
+          <div className="p-3 sm:p-5 bg-slate-50 flex-1 overflow-y-auto">
+            {mode === 'challenge' ? (
+              /* Adult Challenge Mode */
+              <div className="bg-white border-2 border-indigo-100 rounded-2xl p-2.5 sm:p-3.5 shadow-sm mb-2.5">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-indigo-600">
+                    {currentChallenge.subtext}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEngine.playPop();
+                      pickRandomChallenge();
+                    }}
+                    className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition"
+                    title="Get a different question"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Change</span>
+                  </button>
+                </div>
+                <div className="text-sm sm:text-base font-bold text-slate-900 py-0.5 font-fun">
+                  {currentChallenge.question}
+                </div>
+              </div>
+            ) : (
+              /* PIN Code Mode */
+              <div className="bg-white border-2 border-indigo-100 rounded-2xl p-2.5 sm:p-3 shadow-sm mb-2.5">
+                <div className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-indigo-600 mb-1.5">
+                  Enter 4-Digit Parent PIN
+                </div>
+                {/* Visual PIN dots */}
+                <div className="flex justify-center items-center gap-3 py-1">
+                  {[0, 1, 2, 3].map(idx => (
+                    <div
+                      key={idx}
+                      className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 transition-all duration-200 ${
+                        inputVal.length > idx
+                          ? 'bg-indigo-600 border-indigo-600 scale-110 shadow-sm'
+                          : 'border-slate-300 bg-slate-100'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
+                  Default: <strong className="text-indigo-600">1234</strong> (Change in Parent Settings)
+                </p>
+              </div>
+            )}
+
+            {/* Answer Display Box (for Challenge mode) */}
+            {mode === 'challenge' && (
+              <div className="flex items-center justify-center h-10 sm:h-12 bg-white border-2 border-indigo-200 rounded-2xl text-xl sm:text-2xl font-black tracking-widest text-indigo-950 mb-2.5 shadow-inner">
+                {inputVal ? (
+                  inputVal
+                ) : (
+                  <span className="text-slate-300 font-normal text-xs sm:text-sm font-sans tracking-normal">
+                    Tap numbers or type on keyboard
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl py-1 px-2.5 mb-2.5 animate-fade-in">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Responsive Tactile Touch Keypad */}
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(item => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    if (item === 'C') handleKeypadPress('clear');
+                    else if (item === '⌫') handleKeypadPress('back');
+                    else handleKeypadPress(item);
+                  }}
+                  className={`h-10 sm:h-12 rounded-xl sm:rounded-2xl font-black font-fun text-base sm:text-lg transition shadow-sm active:scale-95 border flex items-center justify-center ${
+                    item === 'C'
+                      ? 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border-rose-200'
+                      : item === '⌫'
+                      ? 'bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-800 border-amber-200'
+                      : 'bg-white hover:bg-indigo-50 active:bg-indigo-100 text-slate-800 border-slate-200'
+                  }`}
+                  aria-label={item === 'C' ? 'Clear' : item === '⌫' ? 'Backspace' : item}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  onCancel();
+                }}
+                className="flex-1 py-2.5 sm:py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 font-bold text-xs hover:bg-slate-100 active:scale-95 transition flex items-center justify-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 stroke-[3]" />
+                <span>Back to Games</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleVerify()}
+                disabled={!inputVal}
+                className={`flex-1 py-2.5 sm:py-3 rounded-2xl font-bold font-fun text-xs flex items-center justify-center gap-1.5 shadow-md transition active:scale-95 ${
+                  inputVal
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 text-white shadow-indigo-500/25 cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                <span>Verify & Enter</span>
+              </button>
+            </div>
+
+            {/* Reassuring COPPA footer */}
+            <div className="mt-2.5 text-[9px] sm:text-[10px] text-slate-400 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3 text-emerald-600" />
+              <span>COPPA Compliant • 100% Private & Ad-Free</span>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -155,6 +155,78 @@ class SoundEngine {
   }
 
   /**
+   * Triumphant Level-Up fanfare: rapid celebratory ascending arpeggio with rich harmonics
+   */
+  public playLevelUpFanfare(): void {
+    if (this.isMuted) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+
+    // Fast ascending celebratory notes: C4, E4, G4, C5, E5, G5, B5, C6
+    const fanfareNotes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 987.77, 1046.50];
+
+    fanfareNotes.forEach((freq, idx) => {
+      const startTime = ctx.currentTime + idx * 0.07;
+      const isLast = idx === fanfareNotes.length - 1;
+      const duration = isLast ? 0.8 : 0.22;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = isLast ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      const gainVal = isLast ? 0.3 : 0.18;
+      gain.gain.setValueAtTime(gainVal, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.05);
+
+      // Add a sparkling shimmer on the final peak note
+      if (isLast) {
+        const shimmerOsc = ctx.createOscillator();
+        const shimmerGain = ctx.createGain();
+        shimmerOsc.type = 'sine';
+        shimmerOsc.frequency.setValueAtTime(freq * 2, startTime);
+        shimmerGain.gain.setValueAtTime(0.12, startTime);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.9);
+        shimmerOsc.connect(shimmerGain);
+        shimmerGain.connect(ctx.destination);
+        shimmerOsc.start(startTime);
+        shimmerOsc.stop(startTime + duration);
+      }
+    });
+  }
+
+  /**
+   * Snappy marimba tick for score counter rollup
+   */
+  public playCountTick(): void {
+    if (this.isMuted) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600 + Math.random() * 200, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  }
+
+  /**
    * Non-punitive gentle "oops" audio cue (soft ascending wobble, friendly reminder)
    */
   public playOops(): void {

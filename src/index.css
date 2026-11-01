@@ -1,5 +1,79 @@
 @import "tailwindcss";
 
+:root {
+  /* Default World Theme: Math Blue */
+  --world-bg-start: #bae6fd;
+  --world-bg-via: #e0e7ff;
+  --world-bg-end: #c7d2fe;
+  --world-accent: #2563eb;
+  --world-btn-bg: #3b82f6;
+  --world-btn-hover: #1d4ed8;
+  --world-btn-border: #93c5fd;
+  --world-btn-text: #ffffff;
+  --world-glow: rgba(59, 130, 246, 0.4);
+}
+
+/* Theme Classes per World */
+[data-theme="world_math"] {
+  --world-bg-start: #bae6fd;
+  --world-bg-via: #e0e7ff;
+  --world-bg-end: #c7d2fe;
+  --world-accent: #2563eb;
+  --world-btn-bg: #3b82f6;
+  --world-btn-hover: #1d4ed8;
+  --world-btn-border: #93c5fd;
+  --world-btn-text: #ffffff;
+  --world-glow: rgba(59, 130, 246, 0.4);
+}
+
+[data-theme="world_phonics"] {
+  --world-bg-start: #a7f3d0;
+  --world-bg-via: #ecfdf5;
+  --world-bg-end: #6ee7b7;
+  --world-accent: #059669;
+  --world-btn-bg: #10b981;
+  --world-btn-hover: #047857;
+  --world-btn-border: #a7f3d0;
+  --world-btn-text: #ffffff;
+  --world-glow: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="world_geography"] {
+  --world-bg-start: #fde68a;
+  --world-bg-via: #ffedd5;
+  --world-bg-end: #fcd34d;
+  --world-accent: #d97706;
+  --world-btn-bg: #f59e0b;
+  --world-btn-hover: #b45309;
+  --world-btn-border: #fef08a;
+  --world-btn-text: #ffffff;
+  --world-glow: rgba(245, 158, 11, 0.4);
+}
+
+[data-theme="world_science"] {
+  --world-bg-start: #fecdd3;
+  --world-bg-via: #fff1f2;
+  --world-bg-end: #fda4af;
+  --world-accent: #e11d48;
+  --world-btn-bg: #f43f5e;
+  --world-btn-hover: #be123c;
+  --world-btn-border: #fecdd3;
+  --world-btn-text: #ffffff;
+  --world-glow: rgba(244, 63, 94, 0.4);
+}
+
+[data-theme="world_logic"] {
+  --world-bg-start: #e9d5ff;
+  --world-bg-via: #faf5ff;
+  --world-bg-end: #c084fc;
+  --world-accent: #7c3aed;
+  --world-btn-bg: #8b5cf6;
+  --world-btn-hover: #6d28d9;
+  --world-btn-border: #e9d5ff;
+  --world-btn-text: #ffffff;
+  --world-glow: rgba(139, 92, 246, 0.4);
+}
+
 @layer base {
   body {
     font-family: 'Fredoka', 'Quicksand', system-ui, -apple-system, sans-serif;
@@ -7,8 +81,8 @@
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     overflow-x: hidden;
-    background-color: #0f172a;
-    color: #1e293b;
+    background-color: #f0f7ff;
+    color: #0f172a;
   }
 }
 
@@ -24,6 +98,25 @@
 .touch-kid {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Dynamic World Theme Gradient & Button utilities */
+.bg-world-gradient {
+  background: linear-gradient(135deg, var(--world-bg-start), var(--world-bg-via), var(--world-bg-end));
+  transition: background 0.6s ease-in-out;
+}
+
+.bg-world-btn {
+  background-color: var(--world-btn-bg);
+  border-color: var(--world-btn-border);
+  color: var(--world-btn-text);
+  box-shadow: 0 4px 14px var(--world-glow);
+  transition: all 0.3s ease;
+}
+
+.bg-world-btn:hover {
+  background-color: var(--world-btn-hover);
+  transform: translateY(-2px);
 }
 
 /* Wiggle animation for hints */
@@ -53,4 +146,96 @@
 
 .animate-pulse-ring {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Visual Celebration & Level Up Animations */
+@keyframes sunburst-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.animate-sunburst {
+  animation: sunburst-spin 32s linear infinite;
+}
+
+@keyframes celebration-slam {
+  0% { transform: scale(0.35) translateY(-50px); opacity: 0; }
+  60% { transform: scale(1.1) translateY(6px); opacity: 1; }
+  80% { transform: scale(0.96) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.animate-celebration-slam {
+  animation: celebration-slam 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes level-badge-glow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.6), 0 0 35px rgba(245, 158, 11, 0.35);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(251, 191, 36, 0.95), 0 0 60px rgba(245, 158, 11, 0.65);
+    transform: scale(1.035);
+  }
+}
+
+.animate-level-glow {
+  animation: level-badge-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes star-shimmer-sweep {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  55%, 100% { transform: translateX(220%) skewX(-20deg); }
+}
+
+.animate-star-shimmer {
+  animation: star-shimmer-sweep 2.4s ease-in-out infinite;
+}
+
+@keyframes shockwave-pulse {
+  0% { transform: scale(0.65); opacity: 0.85; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.animate-shockwave {
+  animation: shockwave-pulse 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+@keyframes trophy-dance {
+  0%, 100% { transform: translateY(0) rotate(-4deg) scale(1); }
+  25% { transform: translateY(-7px) rotate(4deg) scale(1.04); }
+  50% { transform: translateY(-11px) rotate(-3deg) scale(1.06); }
+  75% { transform: translateY(-5px) rotate(3deg) scale(1.02); }
+}
+
+.animate-trophy-dance {
+  animation: trophy-dance 2.2s ease-in-out infinite;
+}
+
+@keyframes sparkle-twinkle {
+  0%, 100% { transform: scale(0.35) rotate(0deg); opacity: 0.25; }
+  50% { transform: scale(1.25) rotate(90deg); opacity: 1; }
+}
+
+.animate-sparkle-twinkle {
+  animation: sparkle-twinkle 1.6s ease-in-out infinite;
+}
+
+@keyframes rainbow-cycle {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.animate-rainbow-cycle {
+  animation: rainbow-cycle 6s linear infinite;
+}
+
+@keyframes arrow-bounce-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+
+.animate-arrow-bounce {
+  animation: arrow-bounce-right 1.2s ease-in-out infinite;
 }

@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Pause, RotateCcw, Sparkles, HelpCircle, Check, Home } from 'lucide-react';
+import { Pause, RotateCcw, Sparkles, HelpCircle, Check, Home, ArrowLeft } from 'lucide-react';
 import { AgeGroup, GameState, Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
@@ -23,6 +23,7 @@ interface ColorShadowMatchProps {
   activeProfileId: string;
   initialLevel?: 1 | 2 | 3 | 4 | 5;
   onHome: () => void;
+  onBackToWorld?: () => void;
   onNextGame: () => void;
 }
 
@@ -75,6 +76,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
   activeProfileId,
   initialLevel = 1,
   onHome,
+  onBackToWorld,
   onNextGame
 }) => {
   const [currentLevel, setCurrentLevel] = useState<1 | 2 | 3 | 4 | 5>(initialLevel);
@@ -145,7 +147,21 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
     <div className="relative w-full h-full min-h-[440px] sm:min-h-[500px] bg-gradient-to-b from-purple-800 via-indigo-700 to-fuchsia-900 rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-purple-400 shadow-2xl">
       {/* Top Header */}
       <div className="flex items-center justify-between z-10">
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {onBackToWorld && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onBackToWorld();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-purple-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-purple-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to Island Levels"
+            >
+              <ArrowLeft className="w-4 h-4 text-purple-600 stroke-[2.5]" />
+              <span className="hidden sm:inline">Levels</span>
+            </button>
+          )}
+
           {/* Direct Home Map Button */}
           <button
             onClick={() => {
@@ -293,6 +309,9 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
         score={score}
         timeSpentSeconds={Math.max(1, Math.round((Date.now() - startTime) / 1000))}
         stickerEarned={earnedSticker}
+        currentLevel={currentLevel}
+        gameTitle="Color Shadow Match 🎨"
+        worldName="Brain & Logic"
         onRestart={() => {
           setGameState('PLAYING');
           setPlacedItemIds([]);
@@ -312,6 +331,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           }
         }}
         onHome={onHome}
+        onBackToWorld={onBackToWorld}
       />
 
       {/* Pause Modal */}
@@ -334,6 +354,10 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           setMistakes(0);
         }}
         onHome={onHome}
+        onBackToWorld={onBackToWorld ? () => {
+          setIsPaused(false);
+          onBackToWorld();
+        } : undefined}
       />
     </div>
   );

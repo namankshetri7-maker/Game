@@ -10,8 +10,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Home } from 'lucide-react';
-import { AgeGroup, GameState, Sticker } from '../types/game';
+import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Home, ArrowLeft } from 'lucide-react';
+import { AgeGroup, DifficultyLevel, GameState, Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
@@ -23,6 +23,7 @@ interface DinoAdditionGameProps {
   activeProfileId: string;
   initialLevel?: number;
   onHome: () => void;
+  onBackToWorld?: () => void;
   onNextGame: () => void;
 }
 
@@ -40,10 +41,16 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   activeProfileId,
   initialLevel = 1,
   onHome,
+  onBackToWorld,
   onNextGame
 }) => {
   // Game & Level state
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(() => {
+    if (ageGroup === '3-4') return 'EASY';
+    if (ageGroup === '5-7') return 'MEDIUM';
+    return 'HARD';
+  });
   const [gameState, setGameState] = useState<GameState>('PLAYING');
   const [problemIndex, setProblemIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -56,57 +63,134 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
 
   // Interactive Drag & Drop state
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showHint, setShowHint] = useState(ageGroup === '3-4');
+  const [showHint, setShowHint] = useState(ageGroup === '3-4' || difficulty === 'EASY');
 
   const nestRef = useRef<HTMLDivElement>(null);
 
-  // Helper to generate dynamic problems based on Level (1 to 5) and ageGroup
-  const getProblemsForLevel = (lvl: number): AdditionProblem[] => {
-    if (lvl === 1) {
-      return [
-        { numA: 1, numB: 2, answer: 3, options: [3, 2, 4] },
-        { numA: 2, numB: 2, answer: 4, options: [4, 5, 3] },
-        { numA: 3, numB: 1, answer: 4, options: [2, 4, 5] }
-      ];
-    } else if (lvl === 2) {
-      return [
-        { numA: 3, numB: 3, answer: 6, options: [5, 6, 7] },
-        { numA: 4, numB: 3, answer: 7, options: [6, 7, 8] },
-        { numA: 5, numB: 2, answer: 7, options: [7, 8, 9] },
-        { numA: 2, numB: 6, answer: 8, options: [7, 8, 9] }
-      ];
-    } else if (lvl === 3) {
-      return [
-        { numA: 5, numB: 5, answer: 10, options: [9, 10, 11] },
-        { numA: 6, numB: 4, answer: 10, options: [10, 11, 12] },
-        { numA: 7, numB: 4, answer: 11, options: [10, 11, 12] },
-        { numA: 8, numB: 5, answer: 13, options: [12, 13, 14] }
-      ];
-    } else if (lvl === 4) {
-      return [
-        { numA: 6, numB: 6, answer: 12, isMissingAddend: true, missingPosition: 'B', options: [5, 6, 7] },
-        { numA: 9, numB: 5, answer: 14, isMissingAddend: true, missingPosition: 'A', options: [8, 9, 10] },
-        { numA: 8, numB: 7, answer: 15, isMissingAddend: true, missingPosition: 'B', options: [6, 7, 8] },
-        { numA: 9, numB: 7, answer: 16, options: [15, 16, 17] }
-      ];
+  // Generate 3 distinct difficulty tiers per game level (Levels 1 to 5)
+  const getProblemsForLevelAndDifficulty = (lvl: number, diff: DifficultyLevel): AdditionProblem[] => {
+    if (diff === 'EASY') {
+      // EASY: Sums 1-5 (Levels 1-2) or 1-10 (Levels 3-5), 2 options, clear dots
+      if (lvl === 1) {
+        return [
+          { numA: 1, numB: 2, answer: 3, options: [3, 2] },
+          { numA: 2, numB: 1, answer: 3, options: [4, 3] },
+          { numA: 2, numB: 2, answer: 4, options: [4, 5] }
+        ];
+      } else if (lvl === 2) {
+        return [
+          { numA: 3, numB: 1, answer: 4, options: [3, 4] },
+          { numA: 2, numB: 3, answer: 5, options: [5, 4] },
+          { numA: 1, numB: 4, answer: 5, options: [5, 6] }
+        ];
+      } else if (lvl === 3) {
+        return [
+          { numA: 3, numB: 3, answer: 6, options: [6, 5] },
+          { numA: 4, numB: 2, answer: 6, options: [6, 7] },
+          { numA: 5, numB: 2, answer: 7, options: [7, 8] }
+        ];
+      } else if (lvl === 4) {
+        return [
+          { numA: 4, numB: 4, answer: 8, options: [8, 7] },
+          { numA: 5, numB: 3, answer: 8, options: [8, 9] },
+          { numA: 6, numB: 2, answer: 8, options: [7, 8] }
+        ];
+      } else {
+        // Level 5
+        return [
+          { numA: 5, numB: 5, answer: 10, options: [10, 9] },
+          { numA: 6, numB: 4, answer: 10, options: [9, 10] },
+          { numA: 7, numB: 3, answer: 10, options: [10, 11] }
+        ];
+      }
+    } else if (diff === 'MEDIUM') {
+      // MEDIUM: Sums 1-10 (Levels 1-2) or 1-20 (Levels 3-5), 3 options
+      if (lvl === 1) {
+        return [
+          { numA: 3, numB: 2, answer: 5, options: [4, 5, 6] },
+          { numA: 4, numB: 3, answer: 7, options: [6, 7, 8] },
+          { numA: 2, numB: 5, answer: 7, options: [7, 8, 9] }
+        ];
+      } else if (lvl === 2) {
+        return [
+          { numA: 5, numB: 4, answer: 9, options: [8, 9, 10] },
+          { numA: 6, numB: 3, answer: 9, options: [9, 10, 11] },
+          { numA: 4, numB: 6, answer: 10, options: [9, 10, 11] },
+          { numA: 7, numB: 4, answer: 11, options: [10, 11, 12] }
+        ];
+      } else if (lvl === 3) {
+        return [
+          { numA: 6, numB: 6, answer: 12, options: [11, 12, 13] },
+          { numA: 7, numB: 6, answer: 13, options: [12, 13, 14] },
+          { numA: 8, numB: 6, answer: 14, options: [13, 14, 15] },
+          { numA: 9, numB: 5, answer: 14, options: [14, 15, 16] }
+        ];
+      } else if (lvl === 4) {
+        return [
+          { numA: 8, numB: 7, answer: 15, options: [14, 15, 16] },
+          { numA: 9, numB: 7, answer: 16, options: [15, 16, 17] },
+          { numA: 8, numB: 9, answer: 17, options: [16, 17, 18] },
+          { numA: 9, numB: 9, answer: 18, options: [17, 18, 19] }
+        ];
+      } else {
+        // Level 5
+        return [
+          { numA: 11, numB: 7, answer: 18, options: [17, 18, 19] },
+          { numA: 12, numB: 7, answer: 19, options: [18, 19, 20] },
+          { numA: 13, numB: 8, answer: 21, options: [20, 21, 22] },
+          { numA: 15, numB: 7, answer: 22, options: [21, 22, 23] }
+        ];
+      }
     } else {
-      // Level 5: Champion equations
-      return [
-        { numA: 12, numB: 6, answer: 18, options: [17, 18, 19] },
-        { numA: 14, numB: 7, answer: 21, isMissingAddend: true, missingPosition: 'B', options: [6, 7, 8] },
-        { numA: 15, numB: 9, answer: 24, options: [23, 24, 25] },
-        { numA: 18, numB: 7, answer: 25, isMissingAddend: true, missingPosition: 'A', options: [17, 18, 19] }
-      ];
+      // HARD: Missing addends, algebraic thinking, sums up to 35, 4 options, no visual aids
+      if (lvl === 1) {
+        return [
+          { numA: 4, numB: 5, answer: 9, isMissingAddend: true, missingPosition: 'B', options: [4, 5, 6, 7] },
+          { numA: 3, numB: 6, answer: 9, isMissingAddend: true, missingPosition: 'A', options: [2, 3, 4, 5] },
+          { numA: 6, numB: 7, answer: 13, options: [11, 12, 13, 14] }
+        ];
+      } else if (lvl === 2) {
+        return [
+          { numA: 7, numB: 8, answer: 15, isMissingAddend: true, missingPosition: 'B', options: [6, 7, 8, 9] },
+          { numA: 6, numB: 9, answer: 15, isMissingAddend: true, missingPosition: 'A', options: [5, 6, 7, 8] },
+          { numA: 9, numB: 8, answer: 17, options: [15, 16, 17, 18] },
+          { numA: 8, numB: 6, answer: 14, isMissingAddend: true, missingPosition: 'B', options: [5, 6, 7, 8] }
+        ];
+      } else if (lvl === 3) {
+        return [
+          { numA: 8, numB: 11, answer: 19, isMissingAddend: true, missingPosition: 'B', options: [9, 10, 11, 12] },
+          { numA: 9, numB: 12, answer: 21, isMissingAddend: true, missingPosition: 'A', options: [8, 9, 10, 11] },
+          { numA: 12, numB: 9, answer: 21, options: [19, 20, 21, 22] },
+          { numA: 11, numB: 13, answer: 24, isMissingAddend: true, missingPosition: 'B', options: [11, 12, 13, 14] }
+        ];
+      } else if (lvl === 4) {
+        return [
+          { numA: 14, numB: 11, answer: 25, isMissingAddend: true, missingPosition: 'B', options: [9, 10, 11, 12] },
+          { numA: 13, numB: 15, answer: 28, isMissingAddend: true, missingPosition: 'A', options: [12, 13, 14, 15] },
+          { numA: 16, numB: 13, answer: 29, options: [27, 28, 29, 30] },
+          { numA: 15, numB: 16, answer: 31, isMissingAddend: true, missingPosition: 'B', options: [14, 15, 16, 17] }
+        ];
+      } else {
+        // Level 5
+        return [
+          { numA: 18, numB: 14, answer: 32, isMissingAddend: true, missingPosition: 'B', options: [12, 13, 14, 15] },
+          { numA: 17, numB: 18, answer: 35, isMissingAddend: true, missingPosition: 'A', options: [15, 16, 17, 18] },
+          { numA: 19, numB: 17, answer: 36, options: [34, 35, 36, 37] },
+          { numA: 21, numB: 17, answer: 38, isMissingAddend: true, missingPosition: 'B', options: [15, 16, 17, 18] }
+        ];
+      }
     }
   };
 
-  const [problems, setProblems] = useState<AdditionProblem[]>(() => getProblemsForLevel(currentLevel));
+  const [problems, setProblems] = useState<AdditionProblem[]>(() =>
+    getProblemsForLevelAndDifficulty(currentLevel, difficulty)
+  );
 
   useEffect(() => {
-    setProblems(getProblemsForLevel(currentLevel));
+    setProblems(getProblemsForLevelAndDifficulty(currentLevel, difficulty));
     setProblemIndex(0);
     setSelectedAnswer(null);
-  }, [currentLevel]);
+  }, [currentLevel, difficulty]);
 
   const currentProblem = problems[problemIndex] || problems[0];
 
@@ -178,7 +262,21 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
     <div className="relative w-full h-full min-h-[440px] sm:min-h-[500px] bg-gradient-to-b from-sky-400 via-emerald-300 to-green-600 rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-emerald-400 shadow-2xl">
       {/* Top Header / Status Bar */}
       <div className="flex items-center justify-between z-10">
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {onBackToWorld && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onBackToWorld();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-emerald-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-emerald-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to Island Levels"
+            >
+              <ArrowLeft className="w-4 h-4 text-emerald-700 stroke-[2.5]" />
+              <span className="hidden sm:inline">Levels</span>
+            </button>
+          )}
+
           {/* Direct Home Map Button */}
           <button
             onClick={() => {
@@ -219,9 +317,35 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/90 px-3 py-1.5 rounded-2xl border-2 border-emerald-200 shadow-md">
-          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-          <span className="text-base sm:text-lg font-black text-slate-800 font-fun">{score} pts</span>
+        <div className="flex items-center gap-2">
+          {/* Difficulty Tier Selector (Easy / Medium / Hard) */}
+          <div className="flex bg-black/20 p-1 rounded-2xl border border-white/20 backdrop-blur-sm">
+            {(['EASY', 'MEDIUM', 'HARD'] as DifficultyLevel[]).map((tier) => (
+              <button
+                key={tier}
+                onClick={() => {
+                  soundEngine.playPop();
+                  setDifficulty(tier);
+                }}
+                className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black font-fun transition active:scale-95 ${
+                  difficulty === tier
+                    ? tier === 'EASY'
+                      ? 'bg-emerald-400 text-emerald-950 shadow-sm'
+                      : tier === 'MEDIUM'
+                      ? 'bg-amber-400 text-amber-950 shadow-sm'
+                      : 'bg-rose-500 text-white shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                {tier === 'EASY' ? '🌱 Easy' : tier === 'MEDIUM' ? '⚡ Med' : '🔥 Hard'}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 bg-white/90 px-3 py-1.5 rounded-2xl border-2 border-emerald-200 shadow-md">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+            <span className="text-base sm:text-lg font-black text-slate-800 font-fun">{score} pts</span>
+          </div>
         </div>
       </div>
 
@@ -288,11 +412,11 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
               <span className="p-3 bg-blue-100 border-2 border-blue-300 rounded-2xl shadow-inner text-blue-900 min-w-12 text-center">
                 {currentProblem.isMissingAddend && currentProblem.missingPosition === 'A' ? '?' : currentProblem.numA}
               </span>
-              {/* Visual Counting dots for ages 3-4 & 5-7 */}
-              {ageGroup !== '8-10' && (
-                <div className="flex gap-1 mt-1.5">
+              {/* Visual Counting dots for Easy & Medium */}
+              {difficulty !== 'HARD' && (
+                <div className="flex gap-1 mt-1.5 flex-wrap justify-center max-w-28">
                   {Array.from({ length: currentProblem.numA }).map((_, i) => (
-                    <span key={i} className="w-3 h-3 rounded-full bg-blue-500 shadow-sm inline-block" />
+                    <span key={i} className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-blue-500 shadow-sm inline-block" />
                   ))}
                 </div>
               )}
@@ -305,10 +429,10 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
               <span className="p-3 bg-emerald-100 border-2 border-emerald-300 rounded-2xl shadow-inner text-emerald-900 min-w-12 text-center">
                 {currentProblem.isMissingAddend && currentProblem.missingPosition === 'B' ? '?' : currentProblem.numB}
               </span>
-              {ageGroup !== '8-10' && (
-                <div className="flex gap-1 mt-1.5">
+              {difficulty !== 'HARD' && (
+                <div className="flex gap-1 mt-1.5 flex-wrap justify-center max-w-28">
                   {Array.from({ length: currentProblem.numB }).map((_, i) => (
-                    <span key={i} className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm inline-block" />
+                    <span key={i} className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 shadow-sm inline-block" />
                   ))}
                 </div>
               )}
@@ -326,16 +450,18 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
               }`}
             >
               {selectedAnswer !== null ? selectedAnswer : (
-                <span className="text-xs uppercase font-bold text-amber-600">Drop Egg</span>
+                <span className="text-xs uppercase font-bold text-amber-600">
+                  {difficulty === 'EASY' && showHint ? `Drop ${currentProblem.answer}` : 'Drop Egg'}
+                </span>
               )}
             </div>
           </div>
 
           <p className="text-xs text-slate-500 font-bold mb-4 font-body">
-            {ageGroup === '3-4'
+            {difficulty === 'EASY'
               ? 'Count the colorful dots and tap the correct dino egg!'
               : currentProblem.isMissingAddend
-              ? 'Find the missing number to solve the dinosaur equation!'
+              ? 'Algebraic challenge! Find the missing number to solve the equation!'
               : 'Add the two numbers together and tap or drag the egg!'}
           </p>
 
@@ -397,6 +523,9 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
         score={score}
         timeSpentSeconds={Math.max(1, Math.round((Date.now() - startTime) / 1000))}
         stickerEarned={earnedSticker}
+        currentLevel={currentLevel}
+        gameTitle="Dino Addition 🦖"
+        worldName="Math Valley"
         onRestart={() => {
           setGameState('PLAYING');
           setProblemIndex(0);
@@ -414,6 +543,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           }
         }}
         onHome={onHome}
+        onBackToWorld={onBackToWorld}
       />
 
       {/* Pause Modal */}
@@ -436,6 +566,10 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setSelectedAnswer(null);
         }}
         onHome={onHome}
+        onBackToWorld={onBackToWorld ? () => {
+          setIsPaused(false);
+          onBackToWorld();
+        } : undefined}
       />
     </div>
   );

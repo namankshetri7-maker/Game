@@ -12,6 +12,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   X,
+  Home,
+  ArrowLeft,
   Users,
   Clock,
   Award,
@@ -22,7 +24,11 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  BookOpen
+  BookOpen,
+  KeyRound,
+  AlertTriangle,
+  Smartphone,
+  WifiOff
 } from 'lucide-react';
 import { ChildProfile, SubjectArea } from '../types/game';
 import { storageService, INITIAL_STICKERS } from '../services/storageService';
@@ -32,14 +38,14 @@ interface ParentDashboardProps {
   isOpen: boolean;
   onClose: () => void;
   onProfileSwitched: () => void;
-  onOpenApkBundle?: () => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   isOpen,
   onClose,
   onProfileSwitched,
-  onOpenApkBundle
+  onOpenInstallModal
 }) => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'profiles' | 'stickers' | 'settings'>('analytics');
   const [profiles, setProfiles] = useState<ChildProfile[]>(() => storageService.getProfiles());
@@ -50,6 +56,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [newChildAvatar, setNewChildAvatar] = useState('🦁');
   const [newChildLimit, setNewChildLimit] = useState(45);
   const [parentSettings, setParentSettings] = useState(() => storageService.getParentSettings());
+  const [pinInput, setPinInput] = useState(() => storageService.getParentSettings().parentPin || '1234');
+  const [pinStatusMessage, setPinStatusMessage] = useState('');
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -62,6 +72,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     storageService.setActiveProfileId(id);
     setActiveProfileId(id);
     onProfileSwitched();
+  };
+
+  const handleSavePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\d{4}$/.test(pinInput)) {
+      setPinStatusMessage('PIN must be exactly 4 digits');
+      return;
+    }
+    const updated = { ...parentSettings, parentPin: pinInput };
+    storageService.saveParentSettings(updated);
+    setParentSettings(updated);
+    soundEngine.playSnap();
+    setPinStatusMessage('PIN updated successfully!');
+    setTimeout(() => setPinStatusMessage(''), 3000);
   };
 
   const handleCreateChild = (e: React.FormEvent) => {
@@ -90,7 +114,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
   const handleDeleteChild = (id: string) => {
     if (profiles.length <= 1) {
-      alert('At least one profile must be retained.');
+      setNoticeMessage('At least one child profile must be retained.');
       return;
     }
     soundEngine.playPop();
@@ -101,13 +125,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     onProfileSwitched();
   };
 
-  const handleResetData = () => {
-    if (confirm(`Reset all game progress and stars for ${currentProfile.name}?`)) {
-      soundEngine.playOops();
-      storageService.resetProfileProgress(activeProfileId);
-      setProfiles([...storageService.getProfiles()]);
-      onProfileSwitched();
-    }
+  const handleExecuteReset = () => {
+    soundEngine.playOops();
+    storageService.resetProfileProgress(activeProfileId);
+    setProfiles([...storageService.getProfiles()]);
+    setConfirmResetOpen(false);
+    onProfileSwitched();
   };
 
   const AVATAR_OPTIONS = ['🦁', '🦊', '🐼', '🐨', '🦖', '🦄', '🚀', '⭐'];
@@ -121,32 +144,55 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-md select-none overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 md:p-6 bg-slate-950/90 backdrop-blur-md select-none overflow-hidden font-body">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border-4 border-slate-200 overflow-hidden flex flex-col max-h-[92vh]"
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="w-full max-w-4xl h-full sm:h-auto sm:max-h-[92vh] bg-white rounded-none sm:rounded-3xl shadow-2xl border-0 sm:border-4 border-slate-200 overflow-hidden flex flex-col"
       >
-        {/* Header Bar */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-600 rounded-xl">
-              <ShieldCheck className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold font-fun">Parent Zone & Learning Dashboard</h2>
-              <p className="text-xs text-slate-400">100% Offline • COPPA Safe • Zero Advertising</p>
-            </div>
-          </div>
+        {/* Top Header Bar with Prominent Back to Home Button */}
+        <div className="bg-slate-900 text-white px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between border-b border-slate-800 shrink-0 gap-2 sticky top-0 z-20">
+          {/* Back to Games / Home Button */}
           <button
             onClick={() => {
               soundEngine.playPop();
               onClose();
             }}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 active:scale-95 text-amber-950 font-fun font-black text-xs sm:text-sm shadow-md border-2 border-white transition shrink-0"
+            title="Return to WonderWorld Games Home"
           >
-            <X className="w-6 h-6" />
+            <ArrowLeft className="w-4 h-4 stroke-[3]" />
+            <Home className="w-4 h-4" />
+            <span>Back to Home</span>
+          </button>
+
+          {/* Title & Badge */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 sm:p-2 bg-indigo-600 rounded-xl shrink-0 hidden xs:flex">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0 text-center sm:text-left">
+              <h2 className="text-sm sm:text-lg font-black font-fun text-white truncate">
+                Parent Control Hub 🛡️
+              </h2>
+              <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
+                100% Offline Analytics • Screen Limits • Child Profiles
+              </p>
+            </div>
+          </div>
+
+          {/* Close X Button */}
+          <button
+            onClick={() => {
+              soundEngine.playPop();
+              onClose();
+            }}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-95 shrink-0"
+            title="Close Parent Control"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -523,12 +569,68 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
           {activeTab === 'settings' && (
             <div className="space-y-6">
+              {noticeMessage && (
+                <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl flex items-center justify-between text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>{noticeMessage}</span>
+                  </div>
+                  <button
+                    onClick={() => setNoticeMessage(null)}
+                    className="text-amber-700 hover:text-amber-900 px-2 py-0.5 rounded-lg hover:bg-amber-100"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* Parent PIN Security Configuration */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-indigo-50 text-indigo-700 rounded-xl">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">Parent Gate Security PIN</h3>
+                    <p className="text-xs text-slate-500">Configure your 4-digit code for instant parental access.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSavePin} className="flex flex-wrap items-center gap-3 pt-1">
+                  <div className="w-36">
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={pinInput}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setPinInput(val);
+                      }}
+                      placeholder="1234"
+                      className="w-full px-3 py-2 text-center text-lg font-mono font-bold tracking-widest border-2 border-indigo-200 focus:border-indigo-500 rounded-xl outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold font-fun shadow-sm transition"
+                  >
+                    Save PIN
+                  </button>
+                  {pinStatusMessage && (
+                    <span className="text-xs font-bold text-emerald-600">
+                      {pinStatusMessage}
+                    </span>
+                  )}
+                </form>
+              </div>
+
+              {/* Safety & Compliance */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <h3 className="text-base font-bold text-slate-800">Safety & COPPA Compliance</h3>
                 <div className="space-y-3 text-xs text-slate-600">
                   <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 font-medium">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span><strong>100% Offline:</strong> Zero analytics SDKs, zero telemetry, and zero remote network requests. All data stays on this device.</span>
+                    <span><strong>Private Learning:</strong> Zero analytics SDKs, zero telemetry, and zero remote network requests. All data stays safely on this device.</span>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 font-medium">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -537,49 +639,104 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Mobile App Packages (Android APK & iOS Package) card */}
-              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 p-5 rounded-2xl border-2 border-emerald-300 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 font-fun flex items-center gap-2">
-                      <span>Mobile App Packages (Android APK & iOS)</span>
-                      <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Offline Bundles</span>
-                    </h3>
-                    <p className="text-xs text-slate-600">
-                      Download complete offline Android Studio APK bundle (.zip) and iOS Xcode & iPadOS package (.zip) with zero network permissions.
-                    </p>
+              {/* Offline Capability & Storage Status */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-800">100% Offline Architecture</h3>
+                      <p className="text-xs text-slate-500">Service Worker caching & synthesized audio enabled for iOS & Android.</p>
+                    </div>
                   </div>
-                  <span className="text-2xl">📱</span>
+                  {onOpenInstallModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playPop();
+                        onOpenInstallModal();
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-fun font-bold text-xs border border-indigo-200 transition"
+                    >
+                      View Install Guide
+                    </button>
+                  )}
                 </div>
-                {onOpenApkBundle && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      soundEngine.playPop();
-                      onOpenApkBundle();
-                    }}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:brightness-110 text-white font-fun font-bold text-xs shadow-md transition flex items-center gap-2"
-                  >
-                    <span>Download Android APK & iOS Packages</span>
-                  </button>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Audio Synthesizer:</span>
+                    <span className="font-bold text-emerald-700">Offline Procedural Web Audio</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Player Data Persistence:</span>
+                    <span className="font-bold text-emerald-700">Local Device Storage</span>
+                  </div>
+                </div>
               </div>
 
+              {/* Reset Child Progress */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <h3 className="text-base font-bold text-slate-800">Reset Child Progress</h3>
                 <p className="text-xs text-slate-500">
-                  Reset star scores, attempt logs, and stickers for {currentProfile.name}.
+                  Reset star scores, attempt logs, and unlocked stickers for {currentProfile.name}.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleResetData}
-                  className="px-4 py-2.5 rounded-xl border-2 border-rose-200 text-rose-700 hover:bg-rose-50 font-bold text-xs transition"
-                >
-                  Reset Progress for {currentProfile.name}
-                </button>
+
+                {confirmResetOpen ? (
+                  <div className="p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2 text-rose-800 font-bold text-xs">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Are you sure? This will permanently reset progress for {currentProfile.name}.</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmResetOpen(false)}
+                        className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExecuteReset}
+                        className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700"
+                      >
+                        Yes, Reset {currentProfile.name}'s Progress
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmResetOpen(true)}
+                    className="px-4 py-2.5 rounded-xl border-2 border-rose-200 text-rose-700 hover:bg-rose-50 font-bold text-xs transition"
+                  >
+                    Reset Progress for {currentProfile.name}
+                  </button>
+                )}
               </div>
             </div>
           )}
+        </div>
+
+        {/* Persistent Bottom Action Bar */}
+        <div className="bg-slate-900 text-white px-4 sm:px-6 py-3 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
+          <div className="text-xs text-slate-300 font-medium hidden sm:block">
+            <span>Ready for {currentProfile.name} to continue playing?</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playPop();
+              onClose();
+            }}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-95 text-white font-fun font-bold text-xs sm:text-sm shadow-md border-2 border-emerald-300 transition"
+          >
+            <ArrowLeft className="w-4 h-4 stroke-[3]" />
+            <Home className="w-4 h-4" />
+            <span>Return to Games World Map</span>
+          </button>
         </div>
       </motion.div>
     </div>

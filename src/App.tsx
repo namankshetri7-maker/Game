@@ -27,11 +27,22 @@ import { ParentGateModal } from './components/ParentGateModal';
 import { ParentDashboard } from './components/ParentDashboard';
 import { GameDirectoryModal } from './components/GameDirectoryModal';
 import { StickerBookModal } from './components/StickerBookModal';
-import { ArchitectureViewer } from './components/ArchitectureViewer';
-import { MobilePackagesModal } from './components/MobilePackagesModal';
+import { PWAInstallModal } from './components/PWAInstallModal';
+import { usePWA } from './hooks/usePWA';
 import { storageService } from './services/storageService';
 import { soundEngine } from './services/soundEngine';
 import { ChildProfile } from './types/game';
+import { WorldThemeProvider, useWorldTheme, WorldThemeId } from './services/WorldThemeContext';
+
+const ThemeSyncEffect: React.FC<{ worldId: string }> = ({ worldId }) => {
+  const { setTheme } = useWorldTheme();
+  useEffect(() => {
+    if (worldId) {
+      setTheme(worldId as WorldThemeId);
+    }
+  }, [worldId, setTheme]);
+  return null;
+};
 
 export default function App() {
   // Navigation & View state
@@ -48,8 +59,19 @@ export default function App() {
   const [isParentDashboardOpen, setIsParentDashboardOpen] = useState(false);
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [isStickerBookOpen, setIsStickerBookOpen] = useState(false);
-  const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
-  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  // PWA Offline and Install Hook
+  const {
+    isOnline,
+    isStandalone,
+    canInstallPrompt,
+    isIOS,
+    isAndroid,
+    promptInstall,
+    showIOSInstructions,
+    closeIOSInstructions,
+  } = usePWA();
 
   // Sound state
   const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
@@ -60,18 +82,27 @@ export default function App() {
   };
 
   const handleLaunchGame = (gameId: string, level: number = 1) => {
+    const meta = MINI_GAMES_MATRIX.find(g => g.id === gameId);
+    if (meta) {
+      setSelectedWorldId(meta.worldId);
+    }
     setActiveGameId(gameId);
     setSelectedGameLevel(Math.min(5, Math.max(1, level)) as 1 | 2 | 3 | 4 | 5);
     setCurrentView('game');
   };
 
   const handleNextGameSequence = () => {
-    // Sequence through all 45 games in the educational matrix
-    const allGameIds = MINI_GAMES_MATRIX.map(g => g.id);
-    const currentIndex = allGameIds.indexOf(activeGameId);
-    const nextGame = allGameIds[(currentIndex + 1) % allGameIds.length];
-    setActiveGameId(nextGame);
-    setSelectedGameLevel(1);
+    // Move to the next game in the active thematic world
+    const currentWorldGames = MINI_GAMES_MATRIX.filter(g => g.worldId === selectedWorldId);
+    const currentIndex = currentWorldGames.findIndex(g => g.id === activeGameId);
+    if (currentIndex !== -1 && currentIndex < currentWorldGames.length - 1) {
+      setActiveGameId(currentWorldGames[currentIndex + 1].id);
+      setSelectedGameLevel(1);
+    } else {
+      // Completed all games in this world! Return to island levels view
+      soundEngine.playVictory();
+      setCurrentView('world_detail');
+    }
   };
 
   const handleSelectWorld = (worldId: string) => {
@@ -87,17 +118,23 @@ export default function App() {
   };
 
   return (
-    <DeviceFrameWrapper
-      onOpenParentGate={() => setIsParentGateOpen(true)}
-      onOpenArchitecture={() => setIsArchitectureOpen(true)}
-      onOpenDirectory={() => setIsDirectoryOpen(true)}
-      onOpenApkModal={() => setIsApkModalOpen(true)}
-      isMuted={isMuted}
-      onToggleMute={toggleMute}
-      childAvatar={activeProfile.avatar}
-      childName={activeProfile.name}
-      childAge={activeProfile.age}
-    >
+    <WorldThemeProvider>
+      <ThemeSyncEffect worldId={selectedWorldId} />
+      <DeviceFrameWrapper
+        currentView={currentView}
+        onNavigateHome={() => setCurrentView('world_map')}
+        onNavigateWorld={() => setCurrentView('world_detail')}
+        onOpenParentGate={() => setIsParentGateOpen(true)}
+        onOpenDirectory={() => setIsDirectoryOpen(true)}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        isMuted={isMuted}
+        onToggleMute={toggleMute}
+        childAvatar={activeProfile.avatar}
+        childName={activeProfile.name}
+        childAge={activeProfile.age}
+        isOnline={isOnline}
+        isStandalone={isStandalone}
+      >
       {/* View routing: World Map vs World Detail & Levels vs Active Mini-Game */}
       {currentView === 'world_map' && (
         <WorldMap
@@ -121,60 +158,72 @@ export default function App() {
         <div className="w-full h-full">
           {activeGameId === 'game_dino_addition' && (
             <DinoAdditionGame
+              key={`dino_${selectedGameLevel}`}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
 
           {activeGameId === 'game_word_builder_bee' && (
             <WordBuilderBee
+              key={`wordbee_${selectedGameLevel}`}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
 
           {activeGameId === 'game_continent_jigsaw' && (
             <ContinentJigsaw
+              key={`jigsaw_${selectedGameLevel}`}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
 
           {activeGameId === 'game_animal_sound_memory' && (
             <AnimalSoundMemory
+              key={`animalsound_${selectedGameLevel}`}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
 
           {activeGameId === 'game_color_shadow_match' && (
             <ColorShadowMatch
+              key={`colorshadow_${selectedGameLevel}`}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
 
           {activeGameId === 'game_shape_sorter_express' && (
             <ShapeSorterGame
+              key={`shapesorter_${selectedGameLevel}`}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
@@ -189,63 +238,65 @@ export default function App() {
             'game_shape_sorter_express'
           ].includes(activeGameId) && (
             <UniversalMiniGameRunner
+              key={`${activeGameId}_${selectedGameLevel}`}
               gameId={activeGameId}
               ageGroup={activeProfile.ageGroup}
               activeProfileId={activeProfile.id}
               initialLevel={selectedGameLevel}
               onHome={() => setCurrentView('world_map')}
+              onBackToWorld={() => setCurrentView('world_detail')}
               onNextGame={handleNextGameSequence}
             />
           )}
         </div>
       )}
-
-      {/* COPPA Parent Gate Modal */}
-      <ParentGateModal
-        isOpen={isParentGateOpen}
-        onSuccess={() => {
-          setIsParentGateOpen(false);
-          setIsParentDashboardOpen(true);
-        }}
-        onCancel={() => setIsParentGateOpen(false)}
-      />
-
-      {/* Parent Dashboard & Offline Learning Analytics */}
-      <ParentDashboard
-        isOpen={isParentDashboardOpen}
-        onClose={() => setIsParentDashboardOpen(false)}
-        onProfileSwitched={refreshActiveProfile}
-        onOpenApkBundle={() => {
-          setIsParentDashboardOpen(false);
-          setIsApkModalOpen(true);
-        }}
-      />
-
-      {/* 45 Mini-Game Matrix Directory Modal */}
-      <GameDirectoryModal
-        isOpen={isDirectoryOpen}
-        onClose={() => setIsDirectoryOpen(false)}
-        onLaunchGame={handleLaunchGame}
-      />
-
-      {/* Sticker Album Scrapbook Modal */}
-      <StickerBookModal
-        isOpen={isStickerBookOpen}
-        activeProfileId={activeProfile.id}
-        onClose={() => setIsStickerBookOpen(false)}
-      />
-
-      {/* Architecture & Code Blueprint Viewer Modal */}
-      <ArchitectureViewer
-        isOpen={isArchitectureOpen}
-        onClose={() => setIsArchitectureOpen(false)}
-      />
-
-      {/* Mobile Packages Modal (Android APK & iOS IPA Bundles) */}
-      <MobilePackagesModal
-        isOpen={isApkModalOpen}
-        onClose={() => setIsApkModalOpen(false)}
-      />
     </DeviceFrameWrapper>
+
+    {/* COPPA Parent Gate Modal (Rendered at root for true z-[100] viewport positioning) */}
+    <ParentGateModal
+      isOpen={isParentGateOpen}
+      onSuccess={() => {
+        setIsParentGateOpen(false);
+        setIsParentDashboardOpen(true);
+      }}
+      onCancel={() => setIsParentGateOpen(false)}
+    />
+
+    {/* Parent Dashboard & Learning Analytics (Rendered at root for true z-[100] viewport positioning) */}
+    <ParentDashboard
+      isOpen={isParentDashboardOpen}
+      onClose={() => setIsParentDashboardOpen(false)}
+      onProfileSwitched={refreshActiveProfile}
+      onOpenInstallModal={() => setIsInstallModalOpen(true)}
+    />
+
+    {/* 45 Mini-Game Matrix Directory Modal */}
+    <GameDirectoryModal
+      isOpen={isDirectoryOpen}
+      onClose={() => setIsDirectoryOpen(false)}
+      onLaunchGame={handleLaunchGame}
+    />
+
+    {/* Sticker Album Scrapbook Modal */}
+    <StickerBookModal
+      isOpen={isStickerBookOpen}
+      activeProfileId={activeProfile.id}
+      onClose={() => setIsStickerBookOpen(false)}
+    />
+
+    {/* PWA Offline & Install Guide Modal (Android & iOS) */}
+    <PWAInstallModal
+      isOpen={isInstallModalOpen || showIOSInstructions}
+      onClose={() => {
+        setIsInstallModalOpen(false);
+        closeIOSInstructions();
+      }}
+      onNativeInstall={promptInstall}
+      canInstallNative={canInstallPrompt}
+      isIOS={isIOS}
+      isAndroid={isAndroid}
+      isStandalone={isStandalone}
+    />
+    </WorldThemeProvider>
   );
 }

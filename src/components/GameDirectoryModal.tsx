@@ -6,9 +6,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, Lock, CheckCircle2, Search, Filter } from 'lucide-react';
+import { X, Play, Search } from 'lucide-react';
 import { MINI_GAMES_MATRIX, WORLDS } from '../data/gameMatrix';
-import { MiniGameMeta, SubjectArea } from '../types/game';
+import { SubjectArea } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 
 interface GameDirectoryModalProps {
@@ -46,8 +46,8 @@ export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
           {/* Header */}
           <div className="bg-indigo-900 text-white px-6 py-4 flex items-center justify-between border-b border-indigo-800">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold font-fun">Complete 45 Mini-Game Matrix</h2>
-              <p className="text-xs text-indigo-200">5 Thematic Worlds • Ages 3 to 10 Curriculum Matrix</p>
+              <h2 className="text-xl sm:text-2xl font-black font-fun">WonderWorld: All 45 Mini-Games 🌟</h2>
+              <p className="text-xs text-indigo-200">5 Thematic Worlds · Ages 3 to 10 Curriculum Matrix · 100% Playable Offline</p>
             </div>
             <button
               onClick={() => {
@@ -69,7 +69,7 @@ export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
                   soundEngine.playPop();
                   setSelectedSubject('all');
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   selectedSubject === 'all'
                     ? 'bg-indigo-600 text-white shadow'
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -84,7 +84,7 @@ export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
                     soundEngine.playPop();
                     setSelectedSubject(w.subject);
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 transition ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
                     selectedSubject === w.subject
                       ? 'bg-indigo-600 text-white shadow'
                       : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -114,19 +114,13 @@ export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
             {filteredGames.map(game => (
               <div
                 key={game.id}
-                className={`p-4 rounded-2xl border-2 flex flex-col justify-between transition ${
-                  game.playable
-                    ? 'bg-gradient-to-b from-white to-indigo-50/40 border-indigo-200 hover:border-indigo-400 shadow-sm'
-                    : 'bg-white border-slate-200 opacity-80'
-                }`}
+                className="p-4 rounded-2xl border-2 flex flex-col justify-between transition bg-gradient-to-b from-white to-indigo-50/40 border-indigo-200 hover:border-indigo-400 shadow-sm"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-400">#{game.number}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      game.playable ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {game.playable ? '▶ Ready to Play' : 'Catalog Matrix'}
+                    <span className="text-xs font-bold text-slate-400 font-fun">#{game.number}</span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      ▶ Ready
                     </span>
                   </div>
 
@@ -139,33 +133,23 @@ export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
                   </div>
 
                   {/* Skills tags */}
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {game.skills.map((skill, sIdx) => (
-                      <span key={sIdx} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                        {skill}
-                      </span>
-                    ))}
+                  <div className="text-xs text-slate-500 font-medium mb-3">
+                    {game.skills.join(' · ')}
                   </div>
                 </div>
 
-                {/* Launch button if playable */}
-                {game.playable ? (
-                  <button
-                    onClick={() => {
-                      soundEngine.playPop();
-                      onLaunchGame(game.id);
-                      onClose();
-                    }}
-                    className="w-full py-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl text-xs font-bold font-fun flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Play Now</span>
-                  </button>
-                ) : (
-                  <div className="text-[11px] font-bold text-slate-400 py-1.5 text-center bg-slate-50 rounded-xl border border-slate-200">
-                    Curriculum Level Asset
-                  </div>
-                )}
+                {/* Launch button */}
+                <button
+                  onClick={() => {
+                    soundEngine.playPop();
+                    onLaunchGame(game.id);
+                    onClose();
+                  }}
+                  className="w-full py-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl text-xs font-bold font-fun flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Play Game</span>
+                </button>
               </div>
             ))}
           </div>

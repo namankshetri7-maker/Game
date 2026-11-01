@@ -24,12 +24,16 @@ import {
   Star,
   Award,
   ArrowRight,
+  ArrowLeft,
   Volume2,
   ChevronRight,
   Shield,
   Layers,
   Compass,
-  Heart
+  Heart,
+  Palette,
+  Crosshair,
+  Feather
 } from 'lucide-react';
 import { MINI_GAMES_MATRIX, WORLDS } from '../data/gameMatrix';
 import { AgeGroup, GameState, Sticker } from '../types/game';
@@ -37,6 +41,11 @@ import { soundEngine } from '../services/soundEngine';
 import { storageService } from '../services/storageService';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
+import { FootprintDetectiveGame } from './FootprintDetectiveGame';
+import { BunnyMazeRunnerGame } from './BunnyMazeRunnerGame';
+import { PixelArtColoringGame } from './PixelArtColoringGame';
+import { AbcLetterTraceGame } from './AbcLetterTraceGame';
+import { GreaterDragonScalesGame } from './GreaterDragonScalesGame';
 import confetti from 'canvas-confetti';
 
 interface UniversalMiniGameRunnerProps {
@@ -45,7 +54,18 @@ interface UniversalMiniGameRunnerProps {
   activeProfileId: string;
   initialLevel?: 1 | 2 | 3 | 4 | 5;
   onHome: () => void;
+  onBackToWorld?: () => void;
   onNextGame: () => void;
+}
+
+// Stable deterministic shuffle helper to prevent option jumping during gameplay
+function stableShuffle<T>(arr: T[], seed: number): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.abs((seed * 37 + i * 19 + 7) % (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = ({
@@ -54,6 +74,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   activeProfileId,
   initialLevel = 1,
   onHome,
+  onBackToWorld,
   onNextGame
 }) => {
   const gameMeta = MINI_GAMES_MATRIX.find(g => g.id === gameId) || MINI_GAMES_MATRIX[0];
@@ -71,7 +92,6 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; positive: boolean } | null>(null);
 
   // Sub-game specific state variables
-  const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [countedCount, setCountedCount] = useState(0);
   const [eatenCount, setEatenCount] = useState(0);
@@ -81,6 +101,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   const [selectedColor, setSelectedColor] = useState('#EF4444');
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<number[]>([]);
+  const [sentenceWords, setSentenceWords] = useState<string[]>([]);
+  const [unscrambledLetters, setUnscrambledLetters] = useState<string[]>([]);
+  const [clinicStep, setClinicStep] = useState(0);
+  const [camouflageFound, setCamouflageFound] = useState(false);
 
   // Reset or initialize question on level or game change
   useEffect(() => {
@@ -95,27 +119,30 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     setStars(3);
     setStartTime(Date.now());
     setFeedbackMsg(null);
-    setQuestionIndex(0);
     setSelectedItems([]);
     setCountedCount(0);
     setEatenCount(0);
     setMazePlayerPos({ x: 0, y: 0 });
     setConnectedDots([]);
     setPaintedPixels({});
+    setSelectedColor('#EF4444');
     setFlippedCards([]);
     setMatchedPairs([]);
+    setSentenceWords([]);
+    setUnscrambledLetters([]);
+    setClinicStep(0);
+    setCamouflageFound(false);
   };
 
   const handleCorrect = (points = 100) => {
     soundEngine.playCorrect();
     setScore(prev => prev + points);
-    setFeedbackMsg({ text: 'Wonderful! ⭐', positive: true });
+    setFeedbackMsg({ text: 'Wonderful job! ⭐', positive: true });
 
     setTimeout(() => {
       setFeedbackMsg(null);
-      // Check if level complete
       triggerWin();
-    }, 900);
+    }, 800);
   };
 
   const handleIncorrect = (hint?: string) => {
@@ -171,22 +198,21 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     // MATH 2: NUMBER SAFARI (Counting animals)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_number_safari') {
-      const targetCount = currentLevel * 3 + 2; // Level 1: 5, Level 2: 8, Level 3: 11...
+      const targetCount = currentLevel * 2 + 3; // 5, 7, 9, 11, 13
       const animals = ['🦓', '🦒', '🦁', '🐘', '🦏'];
       const animalIcon = animals[(currentLevel - 1) % animals.length];
-      const options = [targetCount - 1, targetCount, targetCount + 1].sort(() => Math.random() - 0.5);
+      const options = stableShuffle([targetCount - 1, targetCount, targetCount + 1], currentLevel * 3);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <div className="bg-amber-100 border-2 border-amber-300 rounded-2xl px-4 py-2 mb-4">
-            <h3 className="text-base sm:text-xl font-bold font-fun text-amber-900">
+          <div className="mb-3">
+            <h3 className="text-lg sm:text-xl font-black font-fun text-slate-800">
               Count the {animalIcon} Safari Animals!
             </h3>
-            <p className="text-xs text-amber-700">Tap animals to count, then tap the right number!</p>
+            <p className="text-xs text-slate-500 font-semibold">Tap animals to count, then tap the right number!</p>
           </div>
 
-          {/* Animal Field */}
-          <div className="flex flex-wrap justify-center gap-3 max-w-md p-4 bg-emerald-50 rounded-3xl border-4 border-emerald-300 min-h-[140px] items-center mb-6">
+          <div className="flex flex-wrap justify-center gap-3 max-w-md p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-200 min-h-[140px] items-center mb-5 shadow-sm">
             {Array.from({ length: targetCount }).map((_, i) => (
               <motion.button
                 key={i}
@@ -195,14 +221,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                   soundEngine.playPop();
                   setCountedCount(prev => prev + 1);
                 }}
-                className="text-3xl sm:text-4xl p-2 bg-white rounded-2xl shadow hover:bg-emerald-100 transition active:scale-95"
+                className="text-3xl sm:text-4xl p-2 bg-white rounded-xl shadow-sm border border-emerald-100 hover:bg-emerald-100 transition active:scale-95"
               >
                 {animalIcon}
               </motion.button>
             ))}
           </div>
 
-          {/* Answer Badges */}
           <div className="flex items-center gap-3">
             {options.map((num, idx) => (
               <button
@@ -214,7 +239,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Count carefully!');
                   }
                 }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-600 text-white font-fun font-black text-2xl shadow-lg border-2 border-white hover:scale-105 active:scale-95 transition"
+                className="w-16 h-16 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-600 text-white font-fun font-black text-2xl shadow-md border-2 border-white hover:scale-105 active:scale-95 transition"
               >
                 {num}
               </button>
@@ -231,21 +256,20 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       const initialCupcakes = currentLevel * 2 + 3; // 5, 7, 9, 11, 13
       const toEat = Math.min(initialCupcakes - 1, currentLevel + 1);
       const remaining = initialCupcakes - toEat;
-      const options = [remaining, remaining + 1, Math.max(1, remaining - 1)].sort(() => Math.random() - 0.5);
+      const options = stableShuffle([remaining, remaining + 1, Math.max(1, remaining - 1)], currentLevel * 5);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <div className="bg-pink-100 border-2 border-pink-300 rounded-2xl px-4 py-2 mb-3">
-            <h3 className="text-base sm:text-xl font-bold font-fun text-pink-900">
-              Chef baked {initialCupcakes} cupcakes! Tap {toEat} cupcakes to eat them!
+          <div className="mb-3">
+            <h3 className="text-lg sm:text-xl font-black font-fun text-slate-800">
+              Chef baked {initialCupcakes} cupcakes! Tap {toEat} to eat them!
             </h3>
-            <p className="text-xs text-pink-700">
+            <p className="text-xs text-slate-500 font-semibold">
               Equation: {initialCupcakes} - {eatenCount} = {initialCupcakes - eatenCount} left
             </p>
           </div>
 
-          {/* Bakery Tray */}
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 p-4 bg-amber-50 rounded-3xl border-4 border-amber-300 mb-5">
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 p-4 bg-amber-50 rounded-2xl border-2 border-amber-200 mb-5 shadow-sm">
             {Array.from({ length: initialCupcakes }).map((_, i) => {
               const isEaten = i < eatenCount;
               return (
@@ -256,10 +280,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     soundEngine.playCrunch();
                     setEatenCount(prev => Math.min(toEat, prev + 1));
                   }}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition border-2 ${
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition border ${
                     isEaten
                       ? 'bg-slate-200 border-slate-300 opacity-30 cursor-not-allowed'
-                      : 'bg-white border-pink-200 hover:scale-110 shadow active:scale-95'
+                      : 'bg-white border-pink-200 hover:scale-110 shadow-sm active:scale-95'
                   }`}
                 >
                   {isEaten ? '✨' : '🧁'}
@@ -281,7 +305,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Check how many cupcakes are left!');
                   }
                 }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-b from-pink-500 to-rose-600 text-white font-fun font-black text-2xl shadow-lg border-2 border-white hover:scale-105 active:scale-95 transition"
+                className="w-16 h-16 rounded-2xl bg-gradient-to-b from-pink-500 to-rose-600 text-white font-fun font-black text-2xl shadow-md border-2 border-white hover:scale-105 active:scale-95 transition"
               >
                 {opt}
               </button>
@@ -298,19 +322,18 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       const numA = currentLevel + 1;
       const numB = (currentLevel * 2) % 6 + 2;
       const product = numA * numB;
-      const options = [product, product + numA, Math.max(1, product - numB)].sort(() => Math.random() - 0.5);
+      const options = stableShuffle([product, product + numA, Math.max(1, product - numB)], currentLevel * 7);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <div className="text-5xl mb-2 animate-bounce">👾</div>
-          <div className="bg-purple-100 border-2 border-purple-300 rounded-2xl px-5 py-3 mb-4">
-            <span className="text-xs uppercase font-extrabold text-purple-700 block tracking-wider">Monster Equation</span>
-            <span className="text-3xl font-black font-fun text-purple-950">
+          <div className="mb-3">
+            <span className="text-xs uppercase font-extrabold text-purple-600 block tracking-wider">Monster Equation</span>
+            <span className="text-3xl font-black font-fun text-slate-800">
               {numA} × {numB} = ?
             </span>
           </div>
-
-          <p className="text-xs text-slate-500 mb-4 font-bold">Zap the energy crystal with the right answer!</p>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Zap the crystal with the right answer!</p>
 
           <div className="flex gap-4">
             {options.map((ans, idx) => (
@@ -324,7 +347,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Try multiplying again!');
                   }
                 }}
-                className="px-6 py-4 rounded-2xl bg-gradient-to-b from-purple-600 to-indigo-700 text-white font-fun font-black text-2xl shadow-xl border-2 border-purple-300 hover:scale-105 active:scale-95 transition"
+                className="px-6 py-4 rounded-2xl bg-gradient-to-b from-purple-600 to-indigo-700 text-white font-fun font-black text-2xl shadow-md border-2 border-purple-300 hover:scale-105 active:scale-95 transition"
               >
                 ⚡ {ans}
               </button>
@@ -349,11 +372,11 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <div className="bg-amber-100 border-2 border-amber-300 rounded-2xl px-4 py-2 mb-3">
-            <h3 className="text-lg font-bold font-fun text-amber-900">
-              Serve {currentFrac.label} of the pizza to our friendly hungry bear! 🐻
+          <div className="mb-3">
+            <h3 className="text-lg font-black font-fun text-slate-800">
+              Serve {currentFrac.label} of the pizza! 🍕
             </h3>
-            <p className="text-xs text-amber-700">Tap {currentFrac.required} of {currentFrac.total} slices!</p>
+            <p className="text-xs text-slate-500 font-semibold">Tap {currentFrac.required} of {currentFrac.total} slices!</p>
           </div>
 
           <div className="flex gap-2 mb-6">
@@ -370,7 +393,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                       setSelectedItems(prev => [...prev, `slice_${idx}`]);
                     }
                   }}
-                  className={`w-14 h-20 rounded-2xl flex flex-col items-center justify-center text-3xl border-4 transition ${
+                  className={`w-14 h-20 rounded-2xl flex flex-col items-center justify-center text-3xl border-2 transition ${
                     isSelected
                       ? 'bg-amber-200 border-amber-500 scale-105 shadow-md'
                       : 'bg-white border-slate-200 hover:border-amber-300'
@@ -404,25 +427,25 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_clockwork_owl') {
       const times = [
-        { time: '3:00', hour: '3', min: '00', icon: '🕒' },
-        { time: '6:30', hour: '6', min: '30', icon: '🕡' },
-        { time: '9:00', hour: '9', min: '00', icon: '🕘' },
-        { time: '12:15', hour: '12', min: '15', icon: '🕛' },
-        { time: '4:45', hour: '4', min: '45', icon: '🕓' }
+        { time: '3:00', icon: '🕒' },
+        { time: '6:30', icon: '🕡' },
+        { time: '9:00', icon: '🕘' },
+        { time: '12:15', icon: '🕛' },
+        { time: '4:45', icon: '🕓' }
       ];
       const targetTime = times[(currentLevel - 1) % times.length];
-      const options = [targetTime.time, '1:30', '8:00'].sort(() => Math.random() - 0.5);
+      const options = stableShuffle([targetTime.time, '1:30', '8:00'], currentLevel * 11);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-4xl mb-1">🦉</span>
-          <div className="bg-indigo-100 border-2 border-indigo-300 rounded-2xl px-4 py-2 mb-3">
-            <h3 className="text-base sm:text-lg font-bold font-fun text-indigo-900">
+          <div className="mb-3">
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
               Professor Owl asks: What time is on the clock?
             </h3>
           </div>
 
-          <div className="w-28 h-28 rounded-full bg-white border-4 border-indigo-400 shadow-xl flex items-center justify-center text-5xl mb-4">
+          <div className="w-28 h-28 rounded-full bg-white border-4 border-indigo-400 shadow-md flex items-center justify-center text-5xl mb-5">
             {targetTime.icon}
           </div>
 
@@ -437,7 +460,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Look at the hour and minute hands!');
                   }
                 }}
-                className="px-5 py-3 rounded-2xl bg-white border-2 border-indigo-200 hover:border-indigo-500 text-indigo-900 font-fun font-black text-xl shadow-md active:scale-95 transition"
+                className="px-5 py-3 rounded-2xl bg-white border-2 border-indigo-200 hover:border-indigo-500 text-indigo-900 font-fun font-black text-xl shadow-sm active:scale-95 transition"
               >
                 {t}
               </button>
@@ -463,13 +486,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-4xl mb-1">🚂</span>
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-2">
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-2">
             Complete the Pattern Train!
           </h3>
 
-          <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-2xl border-2 border-slate-300 mb-5 overflow-x-auto">
+          <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-2xl border border-slate-200 mb-5 overflow-x-auto">
             {currentPattern.seq.map((item, idx) => (
-              <div key={idx} className="w-12 h-12 bg-white rounded-xl shadow flex items-center justify-center text-2xl font-bold font-fun">
+              <div key={idx} className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-2xl font-bold font-fun">
                 {item}
               </div>
             ))}
@@ -489,7 +512,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Look closely at the pattern order!');
                   }
                 }}
-                className="w-14 h-14 bg-white rounded-2xl border-2 border-indigo-300 hover:border-indigo-600 text-2xl flex items-center justify-center shadow-lg active:scale-95 transition"
+                className="w-14 h-14 bg-white rounded-2xl border-2 border-indigo-200 hover:border-indigo-500 text-2xl flex items-center justify-center shadow-sm active:scale-95 transition"
               >
                 {opt}
               </button>
@@ -514,11 +537,11 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <div className="bg-amber-100 border-2 border-amber-300 rounded-2xl px-5 py-2 mb-3">
-            <h3 className="text-base sm:text-lg font-bold font-fun text-amber-900">
+          <div className="mb-3">
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
               Buy {marketItem.name} for {marketItem.price}¢
             </h3>
-            <p className="text-xs text-amber-700">Cash in hand: {countedCount}¢</p>
+            <p className="text-xs text-slate-500 font-semibold">Cash in hand: {countedCount}¢</p>
           </div>
 
           <div className="flex gap-2 sm:gap-3 mb-5">
@@ -534,7 +557,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                   soundEngine.playCoin();
                   setCountedCount(prev => prev + coin.val);
                 }}
-                className="p-2 sm:p-3 bg-white rounded-2xl border-2 border-amber-300 hover:bg-amber-50 shadow active:scale-95 transition flex flex-col items-center"
+                className="p-2 sm:p-3 bg-white rounded-2xl border border-amber-200 hover:bg-amber-50 shadow-sm active:scale-95 transition flex flex-col items-center"
               >
                 <span className="text-2xl">{coin.icon}</span>
                 <span className="text-[10px] font-bold text-slate-700 mt-1">+{coin.val}¢</span>
@@ -572,50 +595,12 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     // MATH 10: GREATER DRAGON SCALES (<, >, =)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_greater_dragon_scales') {
-      const pairs = [
-        { left: 4, right: 7, op: '<' },
-        { left: 9, right: 3, op: '>' },
-        { left: 6, right: 6, op: '=' },
-        { left: 15, right: 20, op: '<' },
-        { left: 24, right: 18, op: '>' }
-      ];
-      const scale = pairs[(currentLevel - 1) % pairs.length];
-
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🐲</span>
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-2">
-            Balance the Dragon's Scales!
-          </h3>
-
-          <div className="flex items-center gap-4 bg-orange-50 border-4 border-orange-200 rounded-3xl p-4 mb-5">
-            <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center text-3xl font-black font-fun text-indigo-700">
-              {scale.left}
-            </div>
-            <div className="text-2xl font-black text-amber-500">⚖️</div>
-            <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center text-3xl font-black font-fun text-purple-700">
-              {scale.right}
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            {['<', '=', '>'].map((op, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (op === scale.op) {
-                    handleCorrect();
-                  } else {
-                    handleIncorrect('Compare the numbers on both sides!');
-                  }
-                }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-b from-indigo-500 to-blue-600 text-white font-fun font-black text-3xl shadow-lg border-2 border-white hover:scale-105 active:scale-95 transition"
-              >
-                {op}
-              </button>
-            ))}
-          </div>
-        </div>
+        <GreaterDragonScalesGame
+          currentLevel={currentLevel}
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+        />
       );
     }
 
@@ -631,13 +616,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { letter: 'F', sound: '/f/ as in Fox 🦊' }
       ];
       const target = sounds[(currentLevel - 1) % sounds.length];
-      const popsicles = [target.letter, 'P', 'R', 'K'].sort(() => Math.random() - 0.5);
+      const popsicles = stableShuffle([target.letter, 'P', 'R', 'K'], currentLevel * 13);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-4xl mb-1">🍧</span>
-          <div className="bg-emerald-100 border-2 border-emerald-300 rounded-2xl px-4 py-2 mb-4">
-            <h3 className="text-base sm:text-lg font-bold font-fun text-emerald-900">
+          <div className="mb-4">
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
               Pop the popsicle for sound {target.sound}!
             </h3>
           </div>
@@ -646,8 +631,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
             {popsicles.map((lettr, idx) => (
               <motion.button
                 key={idx}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={() => {
                   if (lettr === target.letter) {
                     handleCorrect();
@@ -655,7 +640,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Listen carefully to the sound!');
                   }
                 }}
-                className="w-16 h-24 rounded-3xl bg-gradient-to-b from-pink-400 to-rose-500 text-white font-fun font-black text-3xl shadow-xl border-4 border-white flex flex-col items-center justify-center"
+                className="w-16 h-24 rounded-3xl bg-gradient-to-b from-pink-400 to-rose-500 text-white font-fun font-black text-3xl shadow-md border-2 border-white flex flex-col items-center justify-center"
               >
                 <span>{lettr}</span>
                 <span className="text-xs">🍧</span>
@@ -670,48 +655,12 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     // PHONICS 13: ABC LETTER TRACE
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_abc_letter_trace') {
-      const letters = ['A', 'B', 'C', 'D', 'E'];
-      const targetChar = letters[(currentLevel - 1) % letters.length];
-
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-3xl mb-1">✍️</span>
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-1">
-            Tap Stars 1 → 2 → 3 → 4 to Trace '{targetChar}'!
-          </h3>
-
-          <div className="relative w-48 h-48 bg-white border-4 border-indigo-200 rounded-3xl shadow-lg flex items-center justify-center mb-4">
-            <span className="text-8xl font-black font-fun text-indigo-100 absolute select-none">
-              {targetChar}
-            </span>
-
-            {/* Checkpoint Stars */}
-            <div className="absolute inset-4 flex flex-wrap justify-between items-center p-2">
-              {[1, 2, 3, 4].map(pt => {
-                const isTapped = connectedDots.includes(pt);
-                return (
-                  <button
-                    key={pt}
-                    onClick={() => {
-                      soundEngine.playPop();
-                      setConnectedDots(prev => [...prev, pt]);
-                      if (connectedDots.length === 3) {
-                        handleCorrect();
-                      }
-                    }}
-                    className={`w-10 h-10 rounded-full font-bold font-fun text-sm shadow-md transition flex items-center justify-center ${
-                      isTapped
-                        ? 'bg-emerald-500 text-white scale-110'
-                        : 'bg-amber-400 hover:bg-amber-500 text-white'
-                    }`}
-                  >
-                    ⭐ {pt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <AbcLetterTraceGame
+          currentLevel={currentLevel}
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+        />
       );
     }
 
@@ -731,9 +680,9 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-4xl mb-1">🚀</span>
-          <div className="bg-blue-100 border-2 border-blue-300 rounded-2xl px-4 py-2 mb-4">
-            <h3 className="text-base sm:text-lg font-bold font-fun text-blue-900">
-              Fuel the rocket! What rhymes with <span className="underline font-black">{pair.word}</span>?
+          <div className="mb-4">
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+              Fuel the rocket! What rhymes with <span className="underline font-black text-indigo-600">{pair.word}</span>?
             </h3>
           </div>
 
@@ -748,7 +697,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Listen to the ending sounds!');
                   }
                 }}
-                className="px-6 py-4 rounded-2xl bg-white border-2 border-blue-300 hover:border-blue-600 font-fun font-black text-xl text-blue-900 shadow-md active:scale-95 transition"
+                className="px-6 py-4 rounded-2xl bg-white border-2 border-indigo-200 hover:border-indigo-500 font-fun font-black text-xl text-indigo-900 shadow-sm active:scale-95 transition"
               >
                 {opt}
               </button>
@@ -764,14 +713,14 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     if (gameMeta.id === 'game_sight_word_treasure_hunt') {
       const sightWords = ['THE', 'AND', 'YOU', 'WAS', 'PLAY'];
       const targetWord = sightWords[(currentLevel - 1) % sightWords.length];
-      const chests = [targetWord, 'FOR', 'ARE', 'WITH'].sort(() => Math.random() - 0.5);
+      const chests = stableShuffle([targetWord, 'FOR', 'ARE', 'WITH'], currentLevel * 17);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-4xl mb-1">🗝️</span>
-          <div className="bg-amber-100 border-2 border-amber-300 rounded-2xl px-4 py-2 mb-4">
-            <h3 className="text-base sm:text-lg font-bold font-fun text-amber-900">
-              Dig open the chest containing: <span className="font-black underline">{targetWord}</span>!
+          <div className="mb-4">
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+              Dig open the chest containing: <span className="font-black underline text-amber-600">{targetWord}</span>!
             </h3>
           </div>
 
@@ -786,13 +735,288 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Look for the matching letters!');
                   }
                 }}
-                className="p-4 bg-white rounded-2xl border-2 border-amber-300 hover:border-amber-600 shadow-md font-fun font-black text-lg text-amber-950 flex flex-col items-center justify-center active:scale-95 transition"
+                className="p-4 bg-white rounded-2xl border-2 border-amber-200 hover:border-amber-500 shadow-sm font-fun font-black text-lg text-amber-950 flex flex-col items-center justify-center active:scale-95 transition"
               >
                 <span>📦</span>
                 <span>{w}</span>
               </button>
             ))}
           </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // PHONICS 16: VOWEL VOYAGE (Short vs Long Vowels Cargo)
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_vowel_voyage') {
+      const quests = [
+        { word: 'CAT', isLong: false, label: 'Short /æ/ sound' },
+        { word: 'CAKE', isLong: true, label: 'Long /eɪ/ sound' },
+        { word: 'BED', isLong: false, label: 'Short /e/ sound' },
+        { word: 'BIKE', isLong: true, label: 'Long /aɪ/ sound' },
+        { word: 'SUN', isLong: false, label: 'Short /ʌ/ sound' }
+      ];
+      const currentQuest = quests[(currentLevel - 1) % quests.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">⛵</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Vowel Voyage: <span className="text-indigo-600 font-black">{currentQuest.word}</span>
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Which boat should this word cargo board?</p>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => {
+                if (!currentQuest.isLong) {
+                  handleCorrect();
+                } else {
+                  handleIncorrect('Listen to the vowel sound: is it short or long?');
+                }
+              }}
+              className="p-4 w-36 rounded-2xl bg-white border-2 border-teal-300 hover:border-teal-500 shadow-sm flex flex-col items-center active:scale-95 transition"
+            >
+              <span className="text-3xl mb-1">⛵</span>
+              <span className="text-sm font-black font-fun text-teal-800">Short Vowel</span>
+              <span className="text-[10px] text-slate-400 font-bold">Quick sound</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (currentQuest.isLong) {
+                  handleCorrect();
+                } else {
+                  handleIncorrect('Listen to the vowel sound: does it say its name?');
+                }
+              }}
+              className="p-4 w-36 rounded-2xl bg-white border-2 border-indigo-300 hover:border-indigo-500 shadow-sm flex flex-col items-center active:scale-95 transition"
+            >
+              <span className="text-3xl mb-1">🚢</span>
+              <span className="text-sm font-black font-fun text-indigo-800">Long Vowel</span>
+              <span className="text-[10px] text-slate-400 font-bold">Says its letter name</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // PHONICS 17: GRAMMAR SAFARI (Nouns, Verbs, Adjectives)
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_grammar_safari') {
+      const words = [
+        { word: 'ELEPHANT 🐘', type: 'Noun' },
+        { word: 'RUN 🏃', type: 'Verb' },
+        { word: 'SUNNY ☀️', type: 'Adjective' },
+        { word: 'SWIM 🏊', type: 'Verb' },
+        { word: 'GIGANTIC 🦕', type: 'Adjective' }
+      ];
+      const curWord = words[(currentLevel - 1) % words.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🍃</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Grammar Leaf: <span className="text-emerald-700 underline">{curWord.word}</span>
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">What part of speech is this word?</p>
+
+          <div className="flex flex-col gap-2.5 w-full max-w-xs">
+            {['Noun (Person, Place, Thing)', 'Verb (Action word)', 'Adjective (Describing word)'].map((choice, idx) => {
+              const baseName = choice.split(' ')[0];
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (baseName === curWord.type) {
+                      handleCorrect();
+                    } else {
+                      handleIncorrect(`Think about what ${curWord.word} does!`);
+                    }
+                  }}
+                  className="py-3 px-4 rounded-xl bg-white border-2 border-emerald-200 hover:border-emerald-500 font-fun font-bold text-slate-800 text-sm shadow-sm active:scale-95 transition"
+                >
+                  {choice}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // PHONICS 18: OPPOSITE ANIMALS (Antonyms)
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_opposite_animals') {
+      const antonyms = [
+        { prompt: 'BIG 🐘', answer: 'SMALL 🐁', options: ['SMALL 🐁', 'TALL 🦒', 'FAST 🐆'] },
+        { prompt: 'FAST 🐆', answer: 'SLOW 🐢', options: ['SLOW 🐢', 'LOUD 🦁', 'BIG 🐘'] },
+        { prompt: 'HOT ☀️', answer: 'COLD ❄️', options: ['COLD ❄️', 'DRY 🏜️', 'WET 🌧️'] },
+        { prompt: 'HEAVY 🦏', answer: 'LIGHT 🪶', options: ['LIGHT 🪶', 'HARD 🪨', 'SOFT ☁️'] },
+        { prompt: 'HIGH 🦅', answer: 'LOW 🦔', options: ['LOW 🦔', 'WIDE 🌊', 'DARK 🌑'] }
+      ];
+      const cur = antonyms[(currentLevel - 1) % antonyms.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🦒</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Opposite of: <span className="text-purple-700 underline">{cur.prompt}</span>
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Find the antonym animal pair!</p>
+
+          <div className="flex gap-3">
+            {cur.options.map((opt, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (opt === cur.answer) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Look for the direct opposite!');
+                  }
+                }}
+                className="px-4 py-3 rounded-2xl bg-white border-2 border-purple-200 hover:border-purple-500 font-fun font-black text-slate-800 text-sm shadow-sm active:scale-95 transition"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // PHONICS 19: SENTENCE BUILDER EXPRESS
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_sentence_builder_express') {
+      const sentences = [
+        { words: ['The', 'lion', 'can', 'roar'], correct: 'The lion can roar' },
+        { words: ['Birds', 'fly', 'in', 'sky'], correct: 'Birds fly in sky' },
+        { words: ['I', 'love', 'sweet', 'apples'], correct: 'I love sweet apples' },
+        { words: ['Frogs', 'jump', 'very', 'high'], correct: 'Frogs jump very high' },
+        { words: ['Stars', 'shine', 'at', 'night'], correct: 'Stars shine at night' }
+      ];
+      const sentence = sentences[(currentLevel - 1) % sentences.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🧩</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-2">
+            Assemble the Sentence Carriages!
+          </h3>
+
+          <div className="min-h-[50px] p-3 bg-indigo-50 border-2 border-indigo-200 rounded-2xl flex items-center justify-center gap-2 mb-4 w-full max-w-sm">
+            {sentenceWords.length === 0 ? (
+              <span className="text-xs text-indigo-400 font-bold">Tap word blocks below in order!</span>
+            ) : (
+              sentenceWords.map((w, idx) => (
+                <span key={idx} className="px-3 py-1 bg-white rounded-lg font-fun font-bold text-xs text-indigo-900 shadow-sm border border-indigo-200">
+                  {w}
+                </span>
+              ))
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-center mb-4">
+            {sentence.words.map((w, idx) => (
+              <button
+                key={idx}
+                disabled={sentenceWords.includes(w)}
+                onClick={() => {
+                  soundEngine.playPop();
+                  const nextWords = [...sentenceWords, w];
+                  setSentenceWords(nextWords);
+                  if (nextWords.length === sentence.words.length) {
+                    if (nextWords.join(' ') === sentence.correct) {
+                      handleCorrect();
+                    } else {
+                      handleIncorrect('Reset and check word order!');
+                    }
+                  }
+                }}
+                className={`px-4 py-2 rounded-xl font-fun font-bold text-sm border-2 transition ${
+                  sentenceWords.includes(w)
+                    ? 'bg-slate-100 text-slate-400 border-slate-200'
+                    : 'bg-white text-slate-800 border-indigo-300 hover:border-indigo-600 shadow-sm active:scale-95'
+                }`}
+              >
+                {w}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setSentenceWords([])}
+            className="text-xs text-slate-500 font-bold underline hover:text-slate-700"
+          >
+            Clear / Reset
+          </button>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // PHONICS 20: SPELLING BEE MATCH
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_spelling_bee_match') {
+      const words = [
+        { word: 'BEE', letters: ['E', 'B', 'E'], hint: 'Busy pollinator 🐝' },
+        { word: 'FROG', letters: ['G', 'R', 'F', 'O'], hint: 'Pond hopper 🐸' },
+        { word: 'STAR', letters: ['A', 'S', 'R', 'T'], hint: 'Night sky light ⭐' },
+        { word: 'BEAR', letters: ['R', 'E', 'B', 'A'], hint: 'Honey loving friend 🐻' },
+        { word: 'TIGER', letters: ['E', 'T', 'G', 'I', 'R'], hint: 'Striped jungle cat 🐯' }
+      ];
+      const target = words[(currentLevel - 1) % words.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🍯</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Spell: {target.hint}
+          </h3>
+          <p className="text-xs text-slate-500 mb-3 font-semibold">Unscramble the honeycomb letters:</p>
+
+          <div className="h-14 px-4 bg-amber-50 border-2 border-amber-200 rounded-2xl flex items-center justify-center gap-2 mb-4 min-w-[200px]">
+            {unscrambledLetters.map((l, idx) => (
+              <span key={idx} className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center font-fun font-black text-xl text-amber-950 border border-amber-200">
+                {l}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mb-3">
+            {target.letters.map((lettr, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  soundEngine.playPop();
+                  const next = [...unscrambledLetters, lettr];
+                  setUnscrambledLetters(next);
+                  if (next.length === target.word.length) {
+                    if (next.join('') === target.word) {
+                      handleCorrect();
+                    } else {
+                      handleIncorrect('Letters are out of order, try again!');
+                    }
+                  }
+                }}
+                className="w-12 h-12 rounded-xl bg-amber-400 hover:bg-amber-300 font-fun font-black text-2xl text-amber-950 shadow-sm border border-white active:scale-95 transition"
+              >
+                {lettr}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setUnscrambledLetters([])}
+            className="text-xs text-slate-500 font-bold underline"
+          >
+            Reset Letters
+          </button>
         </div>
       );
     }
@@ -813,7 +1037,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-6xl mb-2">{item.flag}</span>
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-4">
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-4">
             Which country does this flag belong to?
           </h3>
 
@@ -828,7 +1052,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Look at the colors and symbols on the flag!');
                   }
                 }}
-                className="py-3 px-4 rounded-xl bg-white border-2 border-slate-300 hover:border-amber-500 font-fun font-bold text-slate-800 shadow active:scale-95 transition"
+                className="py-3 px-4 rounded-xl bg-white border-2 border-slate-200 hover:border-amber-500 font-fun font-bold text-slate-800 shadow-sm active:scale-95 transition"
               >
                 {country}
               </button>
@@ -854,10 +1078,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-5xl mb-1">{cur.icon}</span>
-          <h3 className="text-base sm:text-xl font-bold font-fun text-slate-800 mb-1">
+          <h3 className="text-base sm:text-xl font-black font-fun text-slate-800 mb-1">
             {cur.name}
           </h3>
-          <p className="text-xs text-slate-500 mb-4">Where in the world is this famous landmark located?</p>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Where in the world is this famous landmark located?</p>
 
           <div className="flex flex-col gap-2 w-full max-w-xs">
             {cur.options.map((loc, idx) => (
@@ -870,11 +1094,321 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Try recalling which continent it belongs to!');
                   }
                 }}
-                className="py-3 px-4 rounded-xl bg-white border-2 border-amber-300 hover:border-amber-600 font-fun font-bold text-amber-950 shadow active:scale-95 transition"
+                className="py-3 px-4 rounded-xl bg-white border-2 border-amber-200 hover:border-amber-500 font-fun font-bold text-amber-950 shadow-sm active:scale-95 transition"
               >
                 {loc}
               </button>
             ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 24: CAPITAL CITY QUIZ
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_capital_city_quiz') {
+      const capitals = [
+        { country: 'Japan 🇯🇵', capital: 'Tokyo', options: ['Tokyo', 'Kyoto', 'Seoul'] },
+        { country: 'France 🇫🇷', capital: 'Paris', options: ['Paris', 'Lyon', 'Madrid'] },
+        { country: 'Egypt 🇪🇬', capital: 'Cairo', options: ['Cairo', 'Alexandria', 'Nairobi'] },
+        { country: 'Australia 🇦🇺', capital: 'Canberra', options: ['Canberra', 'Sydney', 'Melbourne'] },
+        { country: 'USA 🇺🇸', capital: 'Washington, D.C.', options: ['Washington, D.C.', 'New York', 'Los Angeles'] }
+      ];
+      const cur = capitals[(currentLevel - 1) % capitals.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">📍</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            What is the capital of {cur.country}?
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Tap the capital city pin:</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {cur.options.map((cap, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (cap === cur.capital) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Check which city is the official capital!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-orange-200 hover:border-orange-500 font-fun font-bold text-slate-800 shadow-sm active:scale-95 transition"
+              >
+                📍 {cap}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 25: ANIMAL HABITAT MAP
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_animal_habitat_map') {
+      const habitats = [
+        { animal: 'Kangaroo 🦘', home: 'Australia', options: ['Australia', 'Africa', 'Europe'] },
+        { animal: 'Giant Panda 🐼', home: 'Asia', options: ['Asia', 'North America', 'Antarctica'] },
+        { animal: 'Penguin 🐧', home: 'Antarctica', options: ['Antarctica', 'South America', 'Asia'] },
+        { animal: 'Toucan 🦜', home: 'South America', options: ['South America', 'Europe', 'Australia'] },
+        { animal: 'African Lion 🦁', home: 'Africa', options: ['Africa', 'North America', 'Antarctica'] }
+      ];
+      const cur = habitats[(currentLevel - 1) % habitats.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">{cur.animal.split(' ')[1]}</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Where is the natural home of the {cur.animal.split(' ')[0]}?
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Match creature to its home continent:</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {cur.options.map((continent, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (continent === cur.home) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Think about where this animal lives in the wild!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-amber-200 hover:border-amber-500 font-fun font-bold text-slate-800 shadow-sm active:scale-95 transition"
+              >
+                🌍 {continent}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 26: OCEAN DEPTH EXPLORER
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_ocean_depth_explorer') {
+      const creatures = [
+        { name: 'Dolphin 🐬', zone: 'Sunlight Zone (Top 200m)' },
+        { name: 'Sea Turtle 🐢', zone: 'Sunlight Zone (Top 200m)' },
+        { name: 'Giant Octopus 🐙', zone: 'Twilight Zone (200m - 1000m)' },
+        { name: 'Anglerfish 🐡', zone: 'Midnight Abyss (>1000m deep)' },
+        { name: 'Giant Squid 🦑', zone: 'Midnight Abyss (>1000m deep)' }
+      ];
+      const cur = creatures[(currentLevel - 1) % creatures.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Ocean Depth: {cur.name.split(' ')[0]}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Which ocean layer does this creature swim in?</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {['Sunlight Zone (Top 200m)', 'Twilight Zone (200m - 1000m)', 'Midnight Abyss (>1000m deep)'].map((zone, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (zone === cur.zone) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Check how deep and dark the water is!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-cyan-200 hover:border-cyan-500 font-fun font-bold text-slate-800 text-xs shadow-sm active:scale-95 transition"
+              >
+                🌊 {zone}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 27: GLOBE SPINNER
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_globe_spinner') {
+      const questions = [
+        { target: 'Equator', desc: 'The invisible line dividing Northern & Southern halves', options: ['Equator', 'North Pole', 'Prime Meridian'] },
+        { target: 'North Pole', desc: 'The frozen northernmost tip where polar bears roam', options: ['North Pole', 'South Pole', 'Equator'] },
+        { target: 'Southern Hemisphere', desc: 'The half of Earth south of the Equator', options: ['Southern Hemisphere', 'Northern Hemisphere', 'Eastern Orbit'] },
+        { target: 'South Pole', desc: 'The icy continent at the bottom of the globe', options: ['South Pole', 'North Pole', 'Greenland'] },
+        { target: 'Northern Hemisphere', desc: 'The half of Earth where Europe and North America sit', options: ['Northern Hemisphere', 'Southern Hemisphere', 'Equator'] }
+      ];
+      const cur = questions[(currentLevel - 1) % questions.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">🌐</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Globe Spotter: {cur.target}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">{cur.desc}</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {cur.options.map((opt, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (opt === cur.target) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Look at the position on the globe!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-blue-200 hover:border-blue-500 font-fun font-bold text-slate-800 shadow-sm active:scale-95 transition"
+              >
+                🌐 {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 28: CLIMATE & DRESS-UP
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_climate_dress_up') {
+      const climates = [
+        { climate: 'Polar Tundra ❄️', outfit: 'Heavy Parka & Snow Boots 🧥', options: ['Heavy Parka & Snow Boots 🧥', 'Swimsuit & Flip Flops 🩱', 'T-Shirt & Shorts 👕'] },
+        { climate: 'Sahara Desert 🏜️', outfit: 'Light Cotton Clothes & Sunhat 👒', options: ['Light Cotton Clothes & Sunhat 👒', 'Snowsuit & Fur Hat ❄️', 'Raincoat & Umbrella ☔'] },
+        { climate: 'Tropical Rainforest 🌴', outfit: 'Breathable Rain Jacket & Boots 🥾', options: ['Breathable Rain Jacket & Boots 🥾', 'Heavy Wool Coat 🧣', 'Ski Goggles 🥽'] },
+        { climate: 'Sunny Beach 🏖️', outfit: 'Swimwear & Sunglasses 🕶️', options: ['Swimwear & Sunglasses 🕶️', 'Winter Mittens 🧤', 'Heavy Boots 🥾'] },
+        { climate: 'Autumn Woods 🍂', outfit: 'Warm Sweater & Scarf 🧣', options: ['Warm Sweater & Scarf 🧣', 'Swim Trunks 🩳', 'Sun Visor 🧢'] }
+      ];
+      const cur = climates[(currentLevel - 1) % climates.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🧥</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Dress for: {cur.climate}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Pick the best clothing for this weather:</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {cur.options.map((opt, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (opt === cur.outfit) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Check whether it is freezing or scorching hot!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-amber-200 hover:border-amber-500 font-fun font-bold text-slate-800 text-xs shadow-sm active:scale-95 transition"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 29: WORLD MUSIC TAP
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_world_music_tap') {
+      const instruments = [
+        { name: 'Didgeridoo 🪈', region: 'Australia', options: ['Australia', 'Europe', 'South America'] },
+        { name: 'Sitar 🪕', region: 'India (Asia)', options: ['India (Asia)', 'Africa', 'North America'] },
+        { name: 'Djembe Drum 🪘', region: 'Africa', options: ['Africa', 'Australia', 'Europe'] },
+        { name: 'Bagpipes 🎵', region: 'Scotland (Europe)', options: ['Scotland (Europe)', 'Asia', 'South America'] },
+        { name: 'Maracas 🪇', region: 'Latin America', options: ['Latin America', 'Asia', 'Africa'] }
+      ];
+      const cur = instruments[(currentLevel - 1) % instruments.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            {cur.name.split(' ')[0]}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Where in the world was this traditional instrument born?</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {cur.options.map((reg, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (reg === cur.region) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Think about folk music around the world!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-indigo-200 hover:border-indigo-500 font-fun font-bold text-slate-800 shadow-sm active:scale-95 transition"
+              >
+                🌍 {reg}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // GEOGRAPHY 30: COMPASS NAVIGATOR
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_compass_navigator') {
+      const quests = [
+        { direction: 'North (⬆️)', hint: 'Steer toward the polar star!', target: 'N' },
+        { direction: 'East (➡️)', hint: 'Steer toward where the sun rises!', target: 'E' },
+        { direction: 'South (⬇️)', hint: 'Steer toward warm tropical waters!', target: 'S' },
+        { direction: 'West (⬅️)', hint: 'Steer toward where the sun sets!', target: 'W' },
+        { direction: 'North-East (↗️)', hint: 'Sail between North and East!', target: 'NE' }
+      ];
+      const cur = quests[(currentLevel - 1) % quests.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">🧭</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Steer the Ship: {cur.direction}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">{cur.hint}</p>
+
+          <div className="grid grid-cols-3 gap-2 max-w-[200px]">
+            <div />
+            <button
+              onClick={() => (cur.target === 'N' ? handleCorrect() : handleIncorrect('Check the compass rose!'))}
+              className="p-3 bg-indigo-600 text-white font-fun font-black rounded-xl shadow-sm hover:bg-indigo-700 active:scale-95"
+            >
+              N ⬆️
+            </button>
+            <div />
+
+            <button
+              onClick={() => (cur.target === 'W' ? handleCorrect() : handleIncorrect('West is to the left!'))}
+              className="p-3 bg-indigo-600 text-white font-fun font-black rounded-xl shadow-sm hover:bg-indigo-700 active:scale-95"
+            >
+              ⬅️ W
+            </button>
+            <div className="flex items-center justify-center text-2xl">⛵</div>
+            <button
+              onClick={() => (cur.target === 'E' ? handleCorrect() : handleIncorrect('East is to the right!'))}
+              className="p-3 bg-indigo-600 text-white font-fun font-black rounded-xl shadow-sm hover:bg-indigo-700 active:scale-95"
+            >
+              E ➡️
+            </button>
+
+            <div />
+            <button
+              onClick={() => (cur.target === 'S' ? handleCorrect() : handleIncorrect('South points downwards!'))}
+              className="p-3 bg-indigo-600 text-white font-fun font-black rounded-xl shadow-sm hover:bg-indigo-700 active:scale-95"
+            >
+              S ⬇️
+            </button>
+            <div />
           </div>
         </div>
       );
@@ -896,10 +1430,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <div className="text-5xl mb-2">{critter.name.split(' ')[1]}</div>
-          <h3 className="text-lg font-bold font-fun text-slate-800 mb-1">
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
             What kind of eater is the {critter.name.split(' ')[0]}?
           </h3>
-          <p className="text-xs text-slate-500 mb-4">Sort into the correct diet category:</p>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Sort into the correct diet category:</p>
 
           <div className="flex flex-col gap-2.5 w-full max-w-xs">
             {['Herbivore (Plants)', 'Carnivore (Meat)', 'Omnivore (Both)'].map((cat, idx) => (
@@ -912,13 +1446,26 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Think about what this animal eats!');
                   }
                 }}
-                className="py-3 px-4 rounded-xl bg-white border-2 border-emerald-300 hover:border-emerald-600 font-fun font-bold text-emerald-950 shadow active:scale-95 transition"
+                className="py-3 px-4 rounded-xl bg-white border-2 border-emerald-200 hover:border-emerald-500 font-fun font-bold text-slate-800 shadow-sm active:scale-95 transition"
               >
                 {cat}
               </button>
             ))}
           </div>
         </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // SCIENCE 33: FOOTPRINT DETECTIVE
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_footprint_detective') {
+      return (
+        <FootprintDetectiveGame
+          currentLevel={currentLevel}
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+        />
       );
     }
 
@@ -938,10 +1485,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
           <span className="text-5xl mb-1">{pair.mama.split(' ')[1]}</span>
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-1">
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
             What is a baby {pair.mama.split(' ')[0]} called?
           </h3>
-          <p className="text-xs text-slate-500 mb-4">Match the mama to her little one!</p>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Match the mama to her little one!</p>
 
           <div className="flex gap-3">
             {pair.options.map((opt, idx) => (
@@ -954,7 +1501,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     handleIncorrect('Think about baby animal names!');
                   }
                 }}
-                className="px-5 py-3 rounded-2xl bg-white border-2 border-pink-300 hover:border-pink-600 text-pink-950 font-fun font-bold text-lg shadow active:scale-95 transition"
+                className="px-5 py-3 rounded-2xl bg-white border-2 border-pink-200 hover:border-pink-500 text-pink-950 font-fun font-bold text-lg shadow-sm active:scale-95 transition"
               >
                 {opt}
               </button>
@@ -965,86 +1512,479 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     }
 
     // -----------------------------------------------------------------------
-    // LOGIC 44: KIDS MAZE RUNNER
+    // SCIENCE 35: CAMOUFLAGE SEEK
     // -----------------------------------------------------------------------
-    if (gameMeta.id === 'game_kids_maze_runner') {
-      const targetPos = { x: 3, y: 3 };
-
-      const movePlayer = (dx: number, dy: number) => {
-        const nextX = Math.max(0, Math.min(3, mazePlayerPos.x + dx));
-        const nextY = Math.max(0, Math.min(3, mazePlayerPos.y + dy));
-        soundEngine.playPop();
-        setMazePlayerPos({ x: nextX, y: nextY });
-
-        if (nextX === targetPos.x && nextY === targetPos.y) {
-          handleCorrect();
-        }
-      };
+    if (gameMeta.id === 'game_camouflage_seek') {
+      const critters = [
+        { name: 'Chameleon 🦎', bg: 'bg-emerald-200', deco: ['🍃', '🌿', '🌱', '🍃', '🦎', '🌿'] },
+        { name: 'Stick Bug 🦗', bg: 'bg-amber-200', deco: ['🪵', '🍂', '🪵', '🦗', '🪵', '🍂'] },
+        { name: 'Snowy Owl 🦉', bg: 'bg-slate-100', deco: ['❄️', '☁️', '❄️', '🦉', '❄️', '☁️'] },
+        { name: 'Desert Lizard 🦎', bg: 'bg-yellow-100', deco: ['🌵', '🏜️', '🌵', '🦎', '🏜️', '🌵'] },
+        { name: 'Octopus 🐙', bg: 'bg-cyan-200', deco: ['🪸', '🌊', '🪸', '🐙', '🌊', '🪸'] }
+      ];
+      const cur = critters[(currentLevel - 1) % critters.length];
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-2">
-            Guide Bunny 🐰 to the Golden Carrot 🥕!
+          <span className="text-4xl mb-1">🔍</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Camouflage Seek: Find the {cur.name}!
           </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">It blends right into its environment!</p>
 
-          {/* 4x4 Maze Grid */}
-          <div className="grid grid-cols-4 gap-1.5 p-3 bg-purple-50 rounded-2xl border-4 border-purple-200 mb-4">
-            {Array.from({ length: 16 }).map((_, idx) => {
-              const x = idx % 4;
-              const y = Math.floor(idx / 4);
-              const isPlayer = mazePlayerPos.x === x && mazePlayerPos.y === y;
-              const isTarget = targetPos.x === x && targetPos.y === y;
+          <div className={`grid grid-cols-3 gap-3 p-4 rounded-3xl border-2 border-slate-300 ${cur.bg} max-w-xs shadow-inner`}>
+            {cur.deco.map((item, idx) => {
+              const isTarget = item === cur.name.split(' ')[1];
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (isTarget) {
+                      soundEngine.playPop();
+                      setCamouflageFound(true);
+                      handleCorrect();
+                    } else {
+                      handleIncorrect('Keep looking! That is just part of the scenery.');
+                    }
+                  }}
+                  className="w-16 h-16 rounded-2xl bg-white/40 hover:bg-white/70 flex items-center justify-center text-3xl transition active:scale-90"
+                >
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
 
+    // -----------------------------------------------------------------------
+    // SCIENCE 36: LIFE CYCLE WHEEL
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_life_cycle_wheel') {
+      const cycles = [
+        {
+          name: 'Butterfly Metamorphosis 🦋',
+          steps: ['Egg 🥚', 'Caterpillar 🐛', 'Chrysalis 🪆', 'Butterfly 🦋']
+        },
+        {
+          name: 'Frog Metamorphosis 🐸',
+          steps: ['Frogspawn 🫧', 'Tadpole 🐟', 'Froglet 🐸', 'Adult Frog 🐸']
+        },
+        {
+          name: 'Sunflower Growth 🌻',
+          steps: ['Seed 🌱', 'Sprout 🌿', 'Young Plant 🪴', 'Golden Flower 🌻']
+        },
+        {
+          name: 'Chicken Life Cycle 🐔',
+          steps: ['Egg 🥚', 'Hatching 🐣', 'Yellow Chick 🐥', 'Hen 🐔']
+        },
+        {
+          name: 'Apple Tree Cycle 🍎',
+          steps: ['Apple Seed 🌰', 'Sapling 🪴', 'Blossom Tree 🌸', 'Red Apples 🍎']
+        }
+      ];
+      const cur = cycles[(currentLevel - 1) % cycles.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🔄</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            {cur.name}
+          </h3>
+          <p className="text-xs text-slate-500 mb-3 font-semibold">Tap the steps in life cycle sequence (1 to 4):</p>
+
+          <div className="flex gap-2 mb-4">
+            {cur.steps.map((st, idx) => {
+              const isSelected = selectedItems.includes(st);
               return (
                 <div
                   key={idx}
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold border-2 transition ${
-                    isPlayer
-                      ? 'bg-amber-200 border-amber-400 scale-105'
-                      : isTarget
-                      ? 'bg-emerald-100 border-emerald-400'
-                      : 'bg-white border-slate-200'
+                  className={`px-2.5 py-1.5 rounded-xl border-2 text-xs font-fun font-bold flex flex-col items-center ${
+                    isSelected ? 'bg-emerald-100 border-emerald-400 text-emerald-900' : 'bg-slate-100 border-slate-300 text-slate-400'
                   }`}
                 >
-                  {isPlayer ? '🐰' : isTarget ? '🥕' : ''}
+                  <span className="text-lg">{st.split(' ')[1]}</span>
+                  <span>{st.split(' ')[0]}</span>
                 </div>
               );
             })}
           </div>
 
-          {/* D-Pad Navigation Controls */}
-          <div className="grid grid-cols-3 gap-1.5 max-w-[160px]">
-            <div />
-            <button
-              onClick={() => movePlayer(0, -1)}
-              className="p-3 bg-indigo-600 text-white rounded-xl font-bold shadow hover:bg-indigo-700 active:scale-90"
-            >
-              ⬆️
-            </button>
-            <div />
-            <button
-              onClick={() => movePlayer(-1, 0)}
-              className="p-3 bg-indigo-600 text-white rounded-xl font-bold shadow hover:bg-indigo-700 active:scale-90"
-            >
-              ⬅️
-            </button>
-            <div />
-            <button
-              onClick={() => movePlayer(1, 0)}
-              className="p-3 bg-indigo-600 text-white rounded-xl font-bold shadow hover:bg-indigo-700 active:scale-90"
-            >
-              ➡️
-            </button>
-            <div />
-            <button
-              onClick={() => movePlayer(0, 1)}
-              className="p-3 bg-indigo-600 text-white rounded-xl font-bold shadow hover:bg-indigo-700 active:scale-90"
-            >
-              ⬇️
-            </button>
-            <div />
+          <div className="flex flex-wrap gap-2 justify-center max-w-xs">
+            {cur.steps.map((st, idx) => (
+              <button
+                key={idx}
+                disabled={selectedItems.includes(st)}
+                onClick={() => {
+                  soundEngine.playPop();
+                  const expectedNext = cur.steps[selectedItems.length];
+                  if (st === expectedNext) {
+                    const next = [...selectedItems, st];
+                    setSelectedItems(next);
+                    if (next.length === cur.steps.length) {
+                      handleCorrect();
+                    }
+                  } else {
+                    handleIncorrect('Check what happens next in the life cycle!');
+                  }
+                }}
+                className={`py-2.5 px-3.5 rounded-xl font-fun font-bold text-xs border-2 shadow-sm transition active:scale-95 ${
+                  selectedItems.includes(st)
+                    ? 'bg-slate-200 border-slate-300 text-slate-400'
+                    : 'bg-white border-pink-300 hover:border-pink-500 text-slate-800'
+                }`}
+              >
+                {st}
+              </button>
+            ))}
           </div>
         </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // SCIENCE 37: BIRD BEAK & FOOD MATCH
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_bird_beak_match') {
+      const beaks = [
+        { bird: 'Pelican 🦤', beakType: 'Large pouch beak', food: 'Fish in the water 🐟' },
+        { bird: 'Hummingbird 🐦', beakType: 'Long slender straw', food: 'Flower nectar 🌸' },
+        { bird: 'Eagle 🦅', beakType: 'Sharp curved hook', food: 'Prey & meat 🥩' },
+        { bird: 'Woodpecker 🪵', beakType: 'Strong chisel beak', food: 'Tree bark insects 🐛' },
+        { bird: 'Sparrow 🌾', beakType: 'Short cone beak', food: 'Seeds & grains 🌾' }
+      ];
+      const cur = beaks[(currentLevel - 1) % beaks.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1">🦜</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Bird Adaptation: {cur.bird}
+          </h3>
+          <p className="text-xs text-slate-500 mb-1 font-semibold">Beak: {cur.beakType}</p>
+          <p className="text-xs text-indigo-600 mb-4 font-bold">What is this beak specially shaped to eat?</p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            {['Fish in the water 🐟', 'Flower nectar 🌸', 'Prey & meat 🥩', 'Tree bark insects 🐛'].map((food, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (food === cur.food) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Look at the shape of the beak!');
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-white border-2 border-slate-200 hover:border-indigo-500 font-fun font-bold text-slate-800 text-xs shadow-sm active:scale-95 transition"
+              >
+                {food}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // SCIENCE 38: DOMAIN CLASSIFIER (Land, Air, Water)
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_domain_classifier') {
+      const animals = [
+        { name: 'Dolphin 🐬', domain: 'Water 🌊' },
+        { name: 'Eagle 🦅', domain: 'Air ☁️' },
+        { name: 'Cheetah 🐆', domain: 'Land 🌳' },
+        { name: 'Bat 🦇', domain: 'Air ☁️' },
+        { name: 'Sea Turtle 🐢', domain: 'Water 🌊' }
+      ];
+      const cur = animals[(currentLevel - 1) % animals.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Domain of {cur.name.split(' ')[0]}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Does this creature primarily belong to Land, Air, or Water?</p>
+
+          <div className="flex gap-3">
+            {['Land 🌳', 'Air ☁️', 'Water 🌊'].map((d, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (d === cur.domain) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect('Think where this animal moves best!');
+                  }
+                }}
+                className="p-3 w-24 rounded-2xl bg-white border-2 border-emerald-200 hover:border-emerald-500 font-fun font-bold text-slate-800 text-sm shadow-sm active:scale-95 transition flex flex-col items-center"
+              >
+                <span className="text-2xl mb-1">{d.split(' ')[1]}</span>
+                <span>{d.split(' ')[0]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // SCIENCE 39: NOCTURNAL VS DIURNAL (Day vs Night)
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_nocturnal_diurnal') {
+      const creatures = [
+        { name: 'Barn Owl 🦉', isNight: true },
+        { name: 'Golden Retriever 🐕', isNight: false },
+        { name: 'Fruit Bat 🦇', isNight: true },
+        { name: 'Squirrel 🐿️', isNight: false },
+        { name: 'Firefly ✨', isNight: true }
+      ];
+      const cur = creatures[(currentLevel - 1) % creatures.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            {cur.name.split(' ')[0]}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">Is this animal active during the Day (Diurnal) or Night (Nocturnal)?</p>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => {
+                if (!cur.isNight) {
+                  handleCorrect();
+                } else {
+                  handleIncorrect('This animal comes out when the stars shine!');
+                }
+              }}
+              className="p-4 w-36 rounded-2xl bg-amber-50 border-2 border-amber-300 hover:border-amber-500 shadow-sm flex flex-col items-center active:scale-95 transition"
+            >
+              <span className="text-4xl mb-1">☀️</span>
+              <span className="font-fun font-black text-amber-900 text-sm">Daytime (Diurnal)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (cur.isNight) {
+                  handleCorrect();
+                } else {
+                  handleIncorrect('This animal sleeps during the day!');
+                }
+              }}
+              className="p-4 w-36 rounded-2xl bg-indigo-50 border-2 border-indigo-300 hover:border-indigo-500 shadow-sm flex flex-col items-center active:scale-95 transition"
+            >
+              <span className="text-4xl mb-1">🌙</span>
+              <span className="font-fun font-black text-indigo-900 text-sm">Nighttime (Nocturnal)</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // SCIENCE 40: PET CARE CLINIC
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_pet_care_clinic') {
+      const steps = [
+        { task: 'Check Puppy Temperature 🌡️', icon: '🌡️', hint: 'Take friendly vitals!' },
+        { task: 'Clean & Bandage Little Paw 🩹', icon: '🩹', hint: 'Wrap with care!' },
+        { task: 'Provide Fresh Cool Water 🥛', icon: '🥛', hint: 'Hydration time!' },
+        { task: 'Feed Nutritious Kibble 🥣', icon: '🥣', hint: 'Healthy energy food!' },
+        { task: 'Gentle Fur Brush & Petting 🪮', icon: '🪮', hint: 'Happy and healthy puppy!' }
+      ];
+      const curStep = steps[clinicStep % steps.length];
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-5xl mb-1">🐶</span>
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
+            Pet Care Step {clinicStep + 1} of 3: {curStep.task}
+          </h3>
+          <p className="text-xs text-slate-500 mb-4 font-semibold">{curStep.hint}</p>
+
+          <button
+            onClick={() => {
+              soundEngine.playPop();
+              const nextStep = clinicStep + 1;
+              setClinicStep(nextStep);
+              if (nextStep >= 3) {
+                handleCorrect();
+              }
+            }}
+            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-fun font-black text-lg shadow-md active:scale-95 transition flex items-center gap-2"
+          >
+            <span className="text-2xl">{curStep.icon}</span>
+            <span>Apply Care Action</span>
+          </button>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // LOGIC 42: CONNECT THE DOTS & DOT-TO-DOT CONSTELLATION
+    // -----------------------------------------------------------------------
+    if (['game_connect_the_dots', 'game_dot_to_dot_constellation', 'game_phonics_alphabet_connect'].includes(gameMeta.id)) {
+      const dotCount = Math.min(8, currentLevel + 3); // 4 to 8 dots
+      const ALL_DOTS = [
+        { id: 1, x: 50, y: 15 },
+        { id: 2, x: 20, y: 35 },
+        { id: 3, x: 80, y: 35 },
+        { id: 4, x: 72, y: 72 },
+        { id: 5, x: 28, y: 72 },
+        { id: 6, x: 50, y: 88 },
+        { id: 7, x: 12, y: 52 },
+        { id: 8, x: 88, y: 52 }
+      ];
+      const dots = ALL_DOTS.slice(0, dotCount);
+      const nextExpected = connectedDots.length + 1;
+      const isComplete = connectedDots.length === dotCount;
+
+      // Build SVG line paths for connected dots
+      const svgLinePoints = connectedDots.map(id => {
+        const d = dots.find(pt => pt.id === id);
+        return d ? `${d.x},${d.y}` : null;
+      }).filter(Boolean).join(' ');
+
+      return (
+        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+          <span className="text-4xl mb-1 animate-bounce" style={{ animationDuration: '3s' }}>✨</span>
+          <h3 className="text-lg sm:text-xl font-black font-fun text-slate-800 mb-0.5">
+            Connect Dots in Order (1 → {dotCount})!
+          </h3>
+          <p className="text-xs font-bold text-indigo-700 mb-3 font-fun bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+            {isComplete ? '🎉 Constellation Complete!' : `👉 Tap Dot #${nextExpected} next!`}
+          </p>
+
+          <div className="relative w-80 h-72 sm:w-96 sm:h-80 bg-slate-950 rounded-3xl border-4 border-amber-300 shadow-2xl overflow-hidden mb-2">
+            {/* Ambient Starfield Background */}
+            <div className="absolute inset-0 opacity-40 pointer-events-none">
+              <div className="absolute top-4 left-6 text-xs text-yellow-200">✦</div>
+              <div className="absolute top-12 right-10 text-xs text-white">★</div>
+              <div className="absolute bottom-8 left-12 text-xs text-cyan-200">✦</div>
+              <div className="absolute bottom-16 right-16 text-xs text-pink-200">★</div>
+            </div>
+
+            {/* Glowing Connecting SVG Lines */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Completed lines */}
+              {connectedDots.map((id, index) => {
+                if (index === 0) return null;
+                const prev = dots.find(p => p.id === connectedDots[index - 1]);
+                const curr = dots.find(p => p.id === id);
+                if (!prev || !curr) return null;
+                return (
+                  <line
+                    key={`line_${prev.id}_${curr.id}`}
+                    x1={prev.x}
+                    y1={prev.y}
+                    x2={curr.x}
+                    y2={curr.y}
+                    stroke="#F59E0B"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    className="drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+                  />
+                );
+              })}
+
+              {/* Loop closing line on completion */}
+              {isComplete && dots.length > 2 && (
+                <line
+                  x1={dots[dots.length - 1].x}
+                  y1={dots[dots.length - 1].y}
+                  x2={dots[0].x}
+                  y2={dots[0].y}
+                  stroke="#10B981"
+                  strokeWidth="4"
+                  strokeDasharray="4 2"
+                  className="animate-pulse drop-shadow-[0_0_10px_rgba(16,185,129,0.9)]"
+                />
+              )}
+            </svg>
+
+            {/* Secret Revealed Artwork Emblem on Completion */}
+            {isComplete && (
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-indigo-950/70 backdrop-blur-sm z-20 text-white font-fun"
+              >
+                <span className="text-7xl mb-2 drop-shadow-lg animate-bounce">
+                  {currentLevel === 1 ? '⭐' : currentLevel === 2 ? '🚀' : currentLevel === 3 ? '🦖' : currentLevel === 4 ? '🏰' : '👑'}
+                </span>
+                <span className="text-lg font-black text-amber-300 drop-shadow">
+                  Magic Constellation Unlocked!
+                </span>
+              </motion.div>
+            )}
+
+            {/* Interactive Number Dots */}
+            {dots.map(d => {
+              const isTapped = connectedDots.includes(d.id);
+              const isTarget = d.id === nextExpected;
+
+              return (
+                <motion.button
+                  key={d.id}
+                  style={{ left: `${d.x}%`, top: `${d.y}%` }}
+                  whileHover={{ scale: 1.25 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    if (d.id === nextExpected) {
+                      soundEngine.playCoin();
+                      const next = [...connectedDots, d.id];
+                      setConnectedDots(next);
+                      if (next.length === dotCount) {
+                        handleCorrect(150);
+                      }
+                    } else if (isTapped) {
+                      soundEngine.playPop();
+                    } else {
+                      handleIncorrect(`Tap dot #${nextExpected} next!`);
+                    }
+                  }}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full font-fun font-black text-sm sm:text-base flex items-center justify-center transition-all z-10 cursor-pointer ${
+                    isTapped
+                      ? 'bg-gradient-to-tr from-emerald-400 to-green-300 text-slate-950 scale-110 shadow-lg shadow-emerald-400/60 ring-4 ring-white'
+                      : isTarget
+                      ? 'bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 scale-125 ring-4 ring-amber-300 animate-pulse shadow-xl shadow-amber-400/80'
+                      : 'bg-white hover:bg-slate-100 text-indigo-950 border-2 border-indigo-300'
+                  }`}
+                >
+                  {isTapped ? '⭐' : d.id}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // LOGIC 43: PIXEL ART COLORING
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_pixel_art_coloring') {
+      return (
+        <PixelArtColoringGame
+          currentLevel={currentLevel}
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+        />
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // LOGIC 44: KIDS MAZE RUNNER
+    // -----------------------------------------------------------------------
+    if (gameMeta.id === 'game_kids_maze_runner') {
+      return (
+        <BunnyMazeRunnerGame
+          currentLevel={currentLevel}
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+        />
       );
     }
 
@@ -1077,7 +2017,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <h3 className="text-base sm:text-lg font-bold font-fun text-slate-800 mb-3">
+          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-3">
             Find Matching Animal Pairs! ({matchedPairs.length / 2}/4)
           </h3>
 
@@ -1088,7 +2028,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                 <button
                   key={idx}
                   onClick={() => handleFlip(idx)}
-                  className={`w-14 h-16 rounded-2xl flex items-center justify-center text-3xl font-bold border-2 transition active:scale-95 shadow ${
+                  className={`w-14 h-16 rounded-2xl flex items-center justify-center text-3xl font-bold border-2 transition active:scale-95 shadow-sm ${
                     isRevealed
                       ? 'bg-white border-purple-400 rotate-0'
                       : 'bg-gradient-to-b from-purple-500 to-indigo-600 border-white text-transparent'
@@ -1103,72 +2043,29 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       );
     }
 
-    // -----------------------------------------------------------------------
-    // UNIVERSAL ADAPTIVE FALLBACK FOR ALL REMAINING MATRIX GAMES
-    // -----------------------------------------------------------------------
-    const skillsList = gameMeta.skills.join(', ');
-    const promptText = `Solve Level ${currentLevel} Challenge for ${gameMeta.title}`;
-
-    return (
-      <div className="flex flex-col items-center justify-center p-4 h-full text-center max-w-lg mx-auto">
-        <div className="w-20 h-20 rounded-3xl bg-white border-4 border-indigo-200 shadow-xl flex items-center justify-center text-5xl mb-3">
-          {gameMeta.icon}
-        </div>
-
-        <h3 className="text-lg sm:text-2xl font-black font-fun text-slate-900 mb-1">
-          {gameMeta.title}
-        </h3>
-        <p className="text-xs text-indigo-700 font-bold mb-3">
-          Focus: {skillsList} • {gameMeta.ageRecommendation}
-        </p>
-
-        <div className="p-4 bg-white/90 rounded-2xl border-2 border-indigo-100 shadow-sm w-full mb-5">
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Level {currentLevel} Quest
-          </div>
-          <p className="text-sm font-fun font-bold text-slate-800">
-            {currentLevel === 1 && `Welcome to Level 1! Master the basics of ${gameMeta.title}.`}
-            {currentLevel === 2 && `Level 2: Step up your speed and accuracy in ${gameMeta.title}!`}
-            {currentLevel === 3 && `Level 3 Challenge: Complex thinking in ${gameMeta.title}!`}
-            {currentLevel === 4 && `Level 4 Master: Advanced puzzles in ${gameMeta.title}!`}
-            {currentLevel === 5 && `Level 5 Champion: The final trophy quest in ${gameMeta.title}!`}
-          </p>
-        </div>
-
-        {/* Interactive Multi-Choice Challenge Badges */}
-        <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-          {[
-            { label: 'Option A ⭐', correct: false },
-            { label: 'Correct Answer ✅', correct: true },
-            { label: 'Option C 🌟', correct: false },
-            { label: 'Option D ✨', correct: false }
-          ]
-            .sort(() => Math.random() - 0.5)
-            .map((choice, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (choice.correct) {
-                    handleCorrect();
-                  } else {
-                    handleIncorrect('Think carefully about the challenge!');
-                  }
-                }}
-                className="py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-fun font-bold text-xs shadow-md hover:from-indigo-600 hover:to-blue-700 active:scale-95 transition border border-white"
-              >
-                {choice.label}
-              </button>
-            ))}
-        </div>
-      </div>
-    );
+    // Safety fallback
+    return null;
   };
 
   return (
     <div className={`relative w-full h-full min-h-[500px] bg-gradient-to-b ${worldMeta.bgGradient} rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-white shadow-2xl font-body`}>
       {/* Top Header Bar with 1-Tap Home Button */}
       <div className="relative z-10 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {onBackToWorld && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onBackToWorld();
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-fun font-bold text-xs sm:text-sm shadow-md border-2 border-white/80 transition"
+              title="Return to Island Levels"
+            >
+              <ArrowLeft className="w-4 h-4 text-indigo-600 stroke-[2.5]" />
+              <span>Levels</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               soundEngine.playPop();
@@ -1178,7 +2075,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
             title="Return to World Map"
           >
             <Home className="w-4 h-4 text-indigo-600" />
-            <span>World Map</span>
+            <span className="hidden sm:inline">World Map</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -1269,9 +2166,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         score={score}
         timeSpentSeconds={Math.max(1, Math.round((Date.now() - startTime) / 1000))}
         stickerEarned={earnedSticker}
+        currentLevel={currentLevel}
+        gameTitle={`${gameMeta.icon} ${gameMeta.title}`}
+        worldName={worldMeta.title}
         onRestart={() => resetGameState(currentLevel)}
         onNextLevel={handleNextLevel}
         onHome={onHome}
+        onBackToWorld={onBackToWorld}
       />
 
       {/* Pause Modal */}
@@ -1288,6 +2189,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
           setIsPauseOpen(false);
           onHome();
         }}
+        onBackToWorld={onBackToWorld ? () => {
+          setIsPauseOpen(false);
+          onBackToWorld();
+        } : undefined}
       />
     </div>
   );

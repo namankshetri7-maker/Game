@@ -11,12 +11,12 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
+        includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png', 'assets/aistudio/Wonder_World_Kids_Adventure_Badge_ba215e1b.png', 'favicon.png'],
         manifest: {
           id: '/',
           name: 'Wonder World Kids Learning',
           short_name: 'WonderWorld',
-          description: '100% offline educational game suite for kids aged 3–10 across Android & iOS.',
+          description: '100% offline educational game suite for kids aged 3–10 across Android, iOS, iPad, Mac & Windows.',
           theme_color: '#4f46e5',
           background_color: '#0f172a',
           display: 'standalone',
@@ -45,6 +45,7 @@ export default defineConfig(() => {
           ]
         },
         workbox: {
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {
@@ -78,8 +79,7 @@ export default defineConfig(() => {
           ]
         },
         devOptions: {
-          enabled: true,
-          type: 'module'
+          enabled: false
         }
       })
     ],

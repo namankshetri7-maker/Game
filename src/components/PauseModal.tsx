@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, RotateCcw, Home, Volume2, VolumeX, Music } from 'lucide-react';
+import { Play, RotateCcw, Home, Volume2, VolumeX, Music, ArrowLeft } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
 
 interface PauseModalProps {
@@ -15,6 +15,7 @@ interface PauseModalProps {
   onResume: () => void;
   onRestart: () => void;
   onHome: () => void;
+  onBackToWorld?: () => void;
 }
 
 export const PauseModal: React.FC<PauseModalProps> = ({
@@ -23,7 +24,8 @@ export const PauseModal: React.FC<PauseModalProps> = ({
   onToggleMute,
   onResume,
   onRestart,
-  onHome
+  onHome,
+  onBackToWorld
 }) => {
   if (!isOpen) return null;
 
@@ -63,12 +65,25 @@ export const PauseModal: React.FC<PauseModalProps> = ({
               <span>Restart Level</span>
             </button>
 
+            {onBackToWorld && (
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onBackToWorld();
+                }}
+                className="w-full py-2.5 px-4 rounded-2xl bg-indigo-50 text-indigo-900 font-fun font-semibold hover:bg-indigo-100 active:scale-95 flex items-center justify-center gap-2 border border-indigo-200"
+              >
+                <ArrowLeft className="w-5 h-5 text-indigo-700 stroke-[2.5]" />
+                <span>Back to Island Levels</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 soundEngine.playPop();
                 onHome();
               }}
-              className="w-full py-3 px-4 rounded-2xl bg-slate-100 text-slate-700 font-fun font-semibold hover:bg-slate-200 active:scale-95 flex items-center justify-center gap-2 border border-slate-300"
+              className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 text-slate-700 font-fun font-semibold hover:bg-slate-200 active:scale-95 flex items-center justify-center gap-2 border border-slate-300"
             >
               <Home className="w-5 h-5" />
               <span>Back to World Map</span>

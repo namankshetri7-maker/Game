@@ -8,9 +8,8 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Home, Star, Play, Sparkles, Award, Lock, CheckCircle2 } from 'lucide-react';
+import { Home, Star, Play, Sparkles, CheckCircle2 } from 'lucide-react';
 import { WORLDS, MINI_GAMES_MATRIX } from '../data/gameMatrix';
-import { WorldMeta, MiniGameMeta } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { storageService } from '../services/storageService';
 
@@ -39,6 +38,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
   const selectedGame = gamesInWorld.find(g => g.id === selectedGameId) || gamesInWorld[0];
   const progressList = storageService.getProgressList(activeProfileId);
   const gameProgress = progressList.find(p => p.gameId === selectedGameId);
+  const stats = storageService.getAggregatedStats(activeProfileId);
 
   // 5 progressive levels definition for each game
   const LEVELS = [
@@ -119,13 +119,9 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                       <span className="text-[10px] text-slate-500 block">{g.ageRecommendation}</span>
                     </div>
                   </div>
-                  {g.playable ? (
-                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                      Play
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-bold text-slate-400">Soon</span>
-                  )}
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                    Ready
+                  </span>
                 </button>
               );
             })}
@@ -136,71 +132,68 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
         <div className="md:col-span-2 bg-white/95 rounded-2xl p-4 sm:p-5 border-2 border-white shadow-lg flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className="text-3xl">{selectedGame.icon}</span>
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-slate-800 font-fun">
-                    {selectedGame.title} - Select Level
+                    {selectedGame.title}
                   </h3>
-                  <div className="flex gap-1.5 mt-0.5">
-                    {selectedGame.skills.map((s, idx) => (
-                      <span key={idx} className="text-[9px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-bold">
-                        {s}
-                      </span>
-                    ))}
+                  <div className="text-xs text-indigo-700 font-semibold mt-0.5">
+                    {selectedGame.skills.join(' · ')}
                   </div>
                 </div>
               </div>
 
-              {selectedGame.playable && (
-                <button
-                  onClick={() => {
-                    soundEngine.playPop();
-                    onLaunchGameLevel(selectedGame.id, 1);
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-fun font-bold text-xs shadow-md flex items-center gap-1.5 transition active:scale-95"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Start Level 1</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onLaunchGameLevel(selectedGame.id, 1);
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-fun font-bold text-xs shadow-md flex items-center gap-1.5 transition active:scale-95"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Play Level 1</span>
+              </button>
             </div>
 
             {/* Level Road / Track Nodes */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 my-3">
-              {LEVELS.map(lvl => {
-                const isPlayable = selectedGame.playable;
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 my-3">
+              {LEVELS.map((lvl) => {
+                const LEVEL_COLORS = [
+                  { bg: 'from-emerald-50 to-green-100', border: 'border-emerald-300 hover:border-emerald-500', numBg: 'bg-emerald-600', text: 'text-emerald-950' },
+                  { bg: 'from-sky-50 to-blue-100', border: 'border-sky-300 hover:border-sky-500', numBg: 'bg-sky-600', text: 'text-sky-950' },
+                  { bg: 'from-amber-50 to-orange-100', border: 'border-amber-300 hover:border-amber-500', numBg: 'bg-amber-600', text: 'text-amber-950' },
+                  { bg: 'from-purple-50 to-indigo-100', border: 'border-purple-300 hover:border-purple-500', numBg: 'bg-purple-600', text: 'text-purple-950' },
+                  { bg: 'from-pink-50 to-rose-100', border: 'border-pink-300 hover:border-pink-500', numBg: 'bg-rose-600', text: 'text-rose-950' }
+                ];
+                const theme = LEVEL_COLORS[(lvl.level - 1) % LEVEL_COLORS.length];
+
                 return (
                   <motion.div
                     key={lvl.level}
-                    whileHover={isPlayable ? { scale: 1.05 } : {}}
-                    whileTap={isPlayable ? { scale: 0.95 } : {}}
+                    whileHover={{ scale: 1.06, y: -4 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
-                      if (!isPlayable) return;
                       soundEngine.playPop();
                       onLaunchGameLevel(selectedGame.id, lvl.level);
                     }}
-                    className={`p-3 rounded-2xl border-2 text-center transition cursor-pointer flex flex-col justify-between ${
-                      isPlayable
-                        ? 'bg-gradient-to-b from-indigo-50 to-white border-indigo-200 hover:border-indigo-400 shadow-sm'
-                        : 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed'
-                    }`}
+                    className={`p-3 rounded-2xl border-3 text-center transition cursor-pointer flex flex-col justify-between bg-gradient-to-b ${theme.bg} ${theme.border} shadow-md group`}
                   >
                     <div>
-                      <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-black font-fun text-sm flex items-center justify-center mx-auto mb-1.5 shadow">
+                      <div className={`w-10 h-10 rounded-2xl ${theme.numBg} text-white font-black font-fun text-base flex items-center justify-center mx-auto mb-1.5 shadow-md border-2 border-white group-hover:scale-110 transition`}>
                         {lvl.level}
                       </div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider block text-indigo-800">
+                      <span className={`text-[11px] font-black uppercase tracking-wider block font-fun ${theme.text}`}>
                         {lvl.badge}
                       </span>
                     </div>
 
-                    <div className="mt-2 pt-2 border-t border-slate-100">
-                      <div className="flex justify-center text-amber-400 text-xs">
-                        {isPlayable ? '⭐⭐⭐' : '🔒'}
+                    <div className="mt-2 pt-2 border-t border-black/10">
+                      <div className="flex justify-center text-amber-500 text-xs drop-shadow-sm">
+                        ⭐⭐⭐
                       </div>
-                      <span className="text-[9px] font-bold text-slate-500 block mt-0.5">
-                        {isPlayable ? 'Tap to Play' : 'Locked'}
+                      <span className="text-[10px] font-black text-indigo-900 font-fun block mt-0.5 uppercase bg-white/80 py-0.5 rounded-lg border border-white">
+                        Play
                       </span>
                     </div>
                   </motion.div>
@@ -210,10 +203,10 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
           </div>
 
           {/* Bottom helper tip */}
-          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+          <div className="p-3 bg-amber-50/90 rounded-2xl border-2 border-amber-200 text-xs text-amber-950 font-bold font-body flex items-center gap-2 shadow-sm">
+            <Sparkles className="w-4 h-4 text-amber-600 shrink-0 fill-amber-400" />
             <span>
-              Each level introduces richer equations, vocabulary, and puzzle mechanics adapting to child age!
+              Adaptive Level Engine automatically matches child age ({stats.profile.age} yrs) with guided hints, custom counters, and offline sound!
             </span>
           </div>
         </div>

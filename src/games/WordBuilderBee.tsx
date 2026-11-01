@@ -10,8 +10,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Home } from 'lucide-react';
-import { AgeGroup, GameState, Sticker } from '../types/game';
+import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Home, ArrowLeft } from 'lucide-react';
+import { AgeGroup, DifficultyLevel, GameState, Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
@@ -23,6 +23,7 @@ interface WordBuilderBeeProps {
   activeProfileId: string;
   initialLevel?: number;
   onHome: () => void;
+  onBackToWorld?: () => void;
   onNextGame: () => void;
 }
 
@@ -37,9 +38,15 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   activeProfileId,
   initialLevel = 1,
   onHome,
+  onBackToWorld,
   onNextGame
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(() => {
+    if (ageGroup === '3-4') return 'EASY';
+    if (ageGroup === '5-7') return 'MEDIUM';
+    return 'HARD';
+  });
   const [gameState, setGameState] = useState<GameState>('PLAYING');
   const [wordIndex, setWordIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -48,72 +55,160 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   const [startTime] = useState(Date.now());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
-  const [showHint, setShowHint] = useState(ageGroup === '3-4');
+  const [showHint, setShowHint] = useState(ageGroup === '3-4' || difficulty === 'EASY');
 
-  // Dynamic 5-level word dictionary
-  const getWordsForLevel = (lvl: number): PhonicsWord[] => {
-    if (lvl === 1) {
-      return [
-        { word: 'CAT', emoji: '🐱', clue: 'Furry pet that says meow' },
-        { word: 'SUN', emoji: '☀️', clue: 'Shines bright in the warm sky' },
-        { word: 'BEE', emoji: '🐝', clue: 'Makes sweet honey in the hive' }
-      ];
-    } else if (lvl === 2) {
-      return [
-        { word: 'FROG', emoji: '🐸', clue: 'Green hopper on lily pads' },
-        { word: 'STAR', emoji: '⭐', clue: 'Twinkles in the night sky' },
-        { word: 'BOAT', emoji: '⛵', clue: 'Floats on the ocean waves' }
-      ];
-    } else if (lvl === 3) {
-      return [
-        { word: 'TRAIN', emoji: '🚂', clue: 'Rides on the railroad tracks' },
-        { word: 'WHALE', emoji: '🐋', clue: 'Giant gentle swimmer in the sea' },
-        { word: 'SHEEP', emoji: '🐑', clue: 'Fluffy farm friend that says baa' }
-      ];
-    } else if (lvl === 4) {
-      return [
-        { word: 'JUNGLE', emoji: '🌴', clue: 'Dense rainforest filled with wildlife' },
-        { word: 'PLANET', emoji: '🪐', clue: 'Orbits around a glowing star' },
-        { word: 'FLOWER', emoji: '🌸', clue: 'Blooms with sweet nectar for bees' }
-      ];
+  // Dynamic 3-tier dictionary across all 5 levels
+  const getWordsForLevelAndDifficulty = (lvl: number, diff: DifficultyLevel): PhonicsWord[] => {
+    if (diff === 'EASY') {
+      // EASY: 3-letter CVC & simple 4-letter words with picture cues
+      if (lvl === 1) {
+        return [
+          { word: 'CAT', emoji: '🐱', clue: 'Furry pet that says meow' },
+          { word: 'SUN', emoji: '☀️', clue: 'Shines bright in the warm sky' },
+          { word: 'BEE', emoji: '🐝', clue: 'Makes sweet honey in the hive' }
+        ];
+      } else if (lvl === 2) {
+        return [
+          { word: 'BUG', emoji: '🐛', clue: 'Little crawler on green leaves' },
+          { word: 'PIG', emoji: '🐷', clue: 'Oinks cheerfully in the farm' },
+          { word: 'FOX', emoji: '🦊', clue: 'Clever friend with an orange tail' }
+        ];
+      } else if (lvl === 3) {
+        return [
+          { word: 'FROG', emoji: '🐸', clue: 'Green hopper on lily pads' },
+          { word: 'STAR', emoji: '⭐', clue: 'Twinkles in the night sky' },
+          { word: 'DUCK', emoji: '🦆', clue: 'Swims in pond and says quack' }
+        ];
+      } else if (lvl === 4) {
+        return [
+          { word: 'FISH', emoji: '🐟', clue: 'Swims quickly in clear water' },
+          { word: 'BOAT', emoji: '⛵', clue: 'Floats across the ocean waves' },
+          { word: 'LION', emoji: '🦁', clue: 'Brave king of the savanna' }
+        ];
+      } else {
+        // Level 5
+        return [
+          { word: 'TRAIN', emoji: '🚂', clue: 'Chug-chug rides down the track' },
+          { word: 'WHALE', emoji: '🐋', clue: 'Giant friendly ocean swimmer' },
+          { word: 'SHEEP', emoji: '🐑', clue: 'Fluffy farm friend says baa' }
+        ];
+      }
+    } else if (diff === 'MEDIUM') {
+      // MEDIUM: 4-6 letter phonics blends
+      if (lvl === 1) {
+        return [
+          { word: 'FROG', emoji: '🐸', clue: 'Green hopper on lily pads' },
+          { word: 'STAR', emoji: '⭐', clue: 'Twinkles in the night sky' },
+          { word: 'BOAT', emoji: '⛵', clue: 'Floats on the ocean waves' }
+        ];
+      } else if (lvl === 2) {
+        return [
+          { word: 'TRAIN', emoji: '🚂', clue: 'Rides on the railroad tracks' },
+          { word: 'WHALE', emoji: '🐋', clue: 'Giant gentle swimmer in the sea' },
+          { word: 'SHEEP', emoji: '🐑', clue: 'Fluffy farm friend that says baa' }
+        ];
+      } else if (lvl === 3) {
+        return [
+          { word: 'JUNGLE', emoji: '🌴', clue: 'Dense rainforest filled with wildlife' },
+          { word: 'PLANET', emoji: '🪐', clue: 'Orbits around a glowing star' },
+          { word: 'FLOWER', emoji: '🌸', clue: 'Blooms with sweet nectar for bees' }
+        ];
+      } else if (lvl === 4) {
+        return [
+          { word: 'DOLPHIN', emoji: '🐬', clue: 'Smart ocean friend that loves to leap' },
+          { word: 'GIRAFFE', emoji: '🦒', clue: 'Tallest animal reaching top tree branches' },
+          { word: 'PENGUIN', emoji: '🐧', clue: 'Waddles and slides across snowy ice' }
+        ];
+      } else {
+        // Level 5
+        return [
+          { word: 'RAINBOW', emoji: '🌈', clue: 'Colorful arc across the sky after rain' },
+          { word: 'SUNSHINE', emoji: '☀️', clue: 'Golden warmth that brightens the day' },
+          { word: 'BUTTERFLY', emoji: '🦋', clue: 'Fluttering wings painted with vivid colors' }
+        ];
+      }
     } else {
-      // Level 5: Wonder Champion
-      return [
-        { word: 'RAINBOW', emoji: '🌈', clue: 'Colorful arc across the sky' },
-        { word: 'DOLPHIN', emoji: '🐬', clue: 'Smart ocean friend that loves to leap' },
-        { word: 'BUTTERFLY', emoji: '🦋', clue: 'Fluttering wings of many colors' }
-      ];
+      // HARD: Advanced vocabulary, multi-syllable science & nature words
+      if (lvl === 1) {
+        return [
+          { word: 'JUNGLE', emoji: '🌴', clue: 'Tropical rainforest habitat with exotic birds' },
+          { word: 'PLANET', emoji: '🪐', clue: 'Celestial body in orbit around a star' },
+          { word: 'FLOWER', emoji: '🌸', clue: 'Botanical blossom rich with pollen & nectar' }
+        ];
+      } else if (lvl === 2) {
+        return [
+          { word: 'DOLPHIN', emoji: '🐬', clue: 'Highly intelligent aquatic mammal' },
+          { word: 'OCTOPUS', emoji: '🐙', clue: 'Eight-armed ocean explorer of the coral reefs' },
+          { word: 'VOLCANO', emoji: '🌋', clue: 'Geological mountain that erupts hot molten lava' }
+        ];
+      } else if (lvl === 3) {
+        return [
+          { word: 'RAINBOW', emoji: '🌈', clue: 'Atmospheric spectrum created by light & raindrops' },
+          { word: 'BUTTERFLY', emoji: '🦋', clue: 'Metamorphic creature that transforms from caterpillar' },
+          { word: 'DINOSAUR', emoji: '🦖', clue: 'Magnificent prehistoric reptile of ancient Earth' }
+        ];
+      } else if (lvl === 4) {
+        return [
+          { word: 'ASTRONAUT', emoji: '👨‍🚀', clue: 'Intrepid space explorer beyond Earth atmosphere' },
+          { word: 'TELESCOPE', emoji: '🔭', clue: 'Optical instrument for stargazing distant galaxies' },
+          { word: 'SUBMARINE', emoji: '🚤', clue: 'Deep-diving submersible vessel in ocean depths' }
+        ];
+      } else {
+        // Level 5
+        return [
+          { word: 'CONSTELLATION', emoji: '✨', clue: 'Pattern of brilliant stars forming sky legends' },
+          { word: 'METEORITE', emoji: '☄️', clue: 'Space rock shooting across the night atmosphere' },
+          { word: 'ECOSYSTEM', emoji: '🌿', clue: 'Interconnected community of living organisms' }
+        ];
+      }
     }
   };
 
-  const [wordList, setWordList] = useState<PhonicsWord[]>(() => getWordsForLevel(currentLevel));
+  const [wordList, setWordList] = useState<PhonicsWord[]>(() =>
+    getWordsForLevelAndDifficulty(currentLevel, difficulty)
+  );
 
   useEffect(() => {
-    setWordList(getWordsForLevel(currentLevel));
+    setWordList(getWordsForLevelAndDifficulty(currentLevel, difficulty));
     setWordIndex(0);
-  }, [currentLevel]);
+  }, [currentLevel, difficulty]);
 
-  const currentWordObj = wordList[wordIndex];
+  const currentWordObj = wordList[wordIndex] || wordList[0];
   const targetWord = currentWordObj.word;
 
   // Honeycomb slots state
   const [placedLetters, setPlacedLetters] = useState<(string | null)[]>([]);
   const [availableTiles, setAvailableTiles] = useState<{ id: string; letter: string; isUsed: boolean }[]>([]);
 
-  // Initialize honeycomb tiles
+  // Initialize honeycomb tiles with tier-appropriate distractors
   useEffect(() => {
     const letters = targetWord.split('');
     setPlacedLetters(new Array(letters.length).fill(null));
 
-    // Jumble letters and add 1 extra distractor for Medium/Hard
     const tiles = letters.map((l, i) => ({ id: `tile_${i}_${l}`, letter: l, isUsed: false }));
-    if (ageGroup !== '3-4') {
-      tiles.push({ id: `tile_distract_${wordIndex}`, letter: 'M', isUsed: false });
+
+    // Distractor letters based on difficulty tier
+    const distractorPool = ['R', 'S', 'T', 'L', 'N', 'A', 'E', 'M', 'P', 'B', 'D'];
+    let numDistractors = 0;
+    if (difficulty === 'EASY') {
+      numDistractors = currentLevel >= 4 ? 1 : 0;
+    } else if (difficulty === 'MEDIUM') {
+      numDistractors = 2;
+    } else {
+      // HARD
+      numDistractors = 4;
     }
-    // Shuffle
+
+    const availablePool = distractorPool.filter(l => !targetWord.includes(l));
+    for (let d = 0; d < numDistractors; d++) {
+      const distractorChar = availablePool[d % availablePool.length] || 'X';
+      tiles.push({ id: `tile_distract_${d}_${distractorChar}`, letter: distractorChar, isUsed: false });
+    }
+
+    // Shuffle tiles
     const shuffled = [...tiles].sort(() => Math.random() - 0.5);
     setAvailableTiles(shuffled);
-  }, [wordIndex, targetWord, ageGroup]);
+  }, [wordIndex, targetWord, difficulty, currentLevel]);
 
   // Handle letter slot drop or tap
   const handleSelectLetter = (tileId: string, letter: string) => {
@@ -205,7 +300,21 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
     <div className="relative w-full h-full min-h-[440px] sm:min-h-[500px] bg-gradient-to-b from-amber-300 via-yellow-200 to-emerald-600 rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-amber-400 shadow-2xl">
       {/* Top Status Bar */}
       <div className="flex items-center justify-between z-10">
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {onBackToWorld && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onBackToWorld();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-amber-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-amber-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to Island Levels"
+            >
+              <ArrowLeft className="w-4 h-4 text-amber-700 stroke-[2.5]" />
+              <span className="hidden sm:inline">Levels</span>
+            </button>
+          )}
+
           {/* Direct Home Map Button */}
           <button
             onClick={() => {
@@ -246,9 +355,35 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/90 px-3 py-1.5 rounded-2xl border-2 border-amber-300 shadow-md">
-          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-          <span className="text-base sm:text-lg font-black text-amber-950 font-fun">{score} pts</span>
+        <div className="flex items-center gap-2">
+          {/* Difficulty Tier Selector (Easy / Medium / Hard) */}
+          <div className="flex bg-black/20 p-1 rounded-2xl border border-white/20 backdrop-blur-sm">
+            {(['EASY', 'MEDIUM', 'HARD'] as DifficultyLevel[]).map((tier) => (
+              <button
+                key={tier}
+                onClick={() => {
+                  soundEngine.playPop();
+                  setDifficulty(tier);
+                }}
+                className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black font-fun transition active:scale-95 ${
+                  difficulty === tier
+                    ? tier === 'EASY'
+                      ? 'bg-emerald-400 text-emerald-950 shadow-sm'
+                      : tier === 'MEDIUM'
+                      ? 'bg-amber-400 text-amber-950 shadow-sm'
+                      : 'bg-rose-500 text-white shadow-sm'
+                    : 'text-amber-950/80 hover:text-amber-950'
+                }`}
+              >
+                {tier === 'EASY' ? '🌱 Easy' : tier === 'MEDIUM' ? '⚡ Med' : '🔥 Hard'}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 bg-white/90 px-3 py-1.5 rounded-2xl border-2 border-amber-300 shadow-md">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+            <span className="text-base sm:text-lg font-black text-amber-950 font-fun">{score} pts</span>
+          </div>
         </div>
       </div>
 
@@ -271,7 +406,9 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           <div className="bg-white/95 px-5 py-3 rounded-3xl border-3 border-amber-400 shadow-lg flex items-center gap-3">
             <span className="text-4xl sm:text-5xl">{currentWordObj.emoji}</span>
             <div>
-              <span className="text-xs uppercase font-extrabold text-amber-600 tracking-wider block">Spell The Word</span>
+              <span className="text-xs uppercase font-extrabold text-amber-600 tracking-wider block">
+                {difficulty === 'HARD' ? 'Vocabulary Master' : 'Spell The Word'}
+              </span>
               <p className="text-sm font-bold text-slate-800 font-body">{currentWordObj.clue}</p>
             </div>
           </div>
@@ -287,16 +424,18 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleClearSlot(idx)}
-                    className={`w-14 h-16 sm:w-16 sm:h-20 flex items-center justify-center font-fun text-2xl sm:text-3xl font-black rounded-2xl border-4 transition-all shadow-md ${
+                    className={`w-12 h-14 sm:w-16 sm:h-20 flex items-center justify-center font-fun text-xl sm:text-3xl font-black rounded-2xl border-4 transition-all shadow-md ${
                       placed
                         ? 'bg-amber-400 border-amber-600 text-amber-950 shadow-amber-400/50'
                         : 'bg-amber-50 border-dashed border-amber-400 text-amber-300'
                     }`}
                   >
-                    {placed || (ageGroup === '3-4' ? (
+                    {placed || (difficulty === 'EASY' ? (
                       <span className="opacity-40 text-amber-500">{char}</span>
+                    ) : difficulty === 'MEDIUM' ? (
+                      <span className="opacity-40 text-amber-500">?</span>
                     ) : (
-                      '?'
+                      <span className="opacity-30 text-amber-600 font-sans">_</span>
                     ))}
                   </motion.button>
                   <span className="text-[10px] font-bold text-slate-400 mt-1">Slot {idx + 1}</span>
@@ -305,10 +444,12 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
             })}
           </div>
 
-          <p className="text-xs text-amber-900 font-bold mb-4 font-body">
-            {ageGroup === '3-4'
-              ? 'Tap each letter to hear its phonics sound and fill the honeycomb!'
-              : 'Tap the letters in the correct order to spell the word!'}
+          <p className="text-xs text-amber-900 font-bold mb-4 font-body text-center">
+            {difficulty === 'EASY'
+              ? 'Ghost letters guide the way! Tap each letter tile to fill the honeycomb.'
+              : difficulty === 'MEDIUM'
+              ? 'Sound out the phonics word and tap letters in the correct sequence!'
+              : 'Master tier! Unscramble the advanced vocabulary tiles without letter guides.'}
           </p>
 
           {/* Letter Honeycomb Tiles (+20dp touch targets) */}
@@ -365,6 +506,9 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
         score={score}
         timeSpentSeconds={Math.max(1, Math.round((Date.now() - startTime) / 1000))}
         stickerEarned={earnedSticker}
+        currentLevel={currentLevel}
+        gameTitle="Word Builder Bee 🐝"
+        worldName="Language Jungle"
         onRestart={() => {
           setGameState('PLAYING');
           setWordIndex(0);
@@ -382,6 +526,7 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           }
         }}
         onHome={onHome}
+        onBackToWorld={onBackToWorld}
       />
 
       {/* Pause Modal */}
@@ -404,6 +549,10 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           setPlacedLetters([]);
         }}
         onHome={onHome}
+        onBackToWorld={onBackToWorld ? () => {
+          setIsPaused(false);
+          onBackToWorld();
+        } : undefined}
       />
     </div>
   );

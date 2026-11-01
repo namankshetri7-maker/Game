@@ -1,190 +1,177 @@
 /**
- * Cross-Platform Device Frame & Aspect Ratio Controller
- * Simulates iPad (4:3), Android Tablet (16:10), Mobile Phone (16:9), and Fullscreen.
- * Demonstrates seamless multi-device compliance requested in the prompt.
+ * Universal Responsive App Container & Kid-Friendly Theme Wrapper
+ * Automatically adapts seamlessly across Android (phones & tablets), iOS (iPads & iPhones),
+ * macOS, and Windows screens without artificial device frames or fixed aspect ratios.
  */
 
-import React, { useState } from 'react';
-import { Tablet, Smartphone, Monitor, RotateCw, Sparkles, Volume2, VolumeX, Shield, BookOpen, Layers, Download } from 'lucide-react';
+import React from 'react';
+import { Volume2, VolumeX, Shield, Download, WifiOff, Smartphone, CheckCircle2 } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
-
-export type DeviceMode = 'ipad_4_3' | 'android_16_10' | 'phone_16_9' | 'responsive';
+import { BrandLogo } from './BrandLogo';
+import { WonderBunnyCompanion } from './WonderBunnyCompanion';
+import { WorldThemeSwitcherPill } from './WorldThemeSwitcherPill';
 
 interface DeviceFrameWrapperProps {
   children: React.ReactNode;
+  currentView?: 'world_map' | 'world_detail' | 'game';
+  onNavigateHome?: () => void;
+  onNavigateWorld?: () => void;
   onOpenParentGate: () => void;
-  onOpenArchitecture: () => void;
   onOpenDirectory: () => void;
-  onOpenApkModal: () => void;
+  onOpenInstallModal: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
   childAvatar: string;
   childName: string;
   childAge: number;
+  isOnline: boolean;
+  isStandalone: boolean;
 }
 
 export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
   children,
+  currentView = 'world_map',
+  onNavigateHome,
+  onNavigateWorld,
   onOpenParentGate,
-  onOpenArchitecture,
   onOpenDirectory,
-  onOpenApkModal,
   isMuted,
   onToggleMute,
   childAvatar,
   childName,
-  childAge
+  childAge,
+  onOpenInstallModal,
+  isOnline,
+  isStandalone
 }) => {
-  const [deviceMode, setDeviceMode] = useState<DeviceMode>('ipad_4_3');
-  const [isPortrait, setIsPortrait] = useState<boolean>(false);
-
-  const handleDeviceChange = (mode: DeviceMode) => {
-    soundEngine.playPop();
-    setDeviceMode(mode);
-  };
-
-  const toggleOrientation = () => {
-    soundEngine.playPop();
-    setIsPortrait(prev => !prev);
-  };
-
-  // Compute container dimensions based on device preset and orientation
-  const getFrameStyles = (): React.CSSProperties => {
-    if (deviceMode === 'responsive') {
-      return { width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%' };
-    }
-
-    if (deviceMode === 'ipad_4_3') {
-      // 4:3 ratio
-      return isPortrait
-        ? { width: 'min(92vw, 680px)', aspectRatio: '3 / 4' }
-        : { width: 'min(94vw, 980px)', aspectRatio: '4 / 3' };
-    }
-
-    if (deviceMode === 'android_16_10') {
-      // 16:10 ratio
-      return isPortrait
-        ? { width: 'min(88vw, 620px)', aspectRatio: '10 / 16' }
-        : { width: 'min(95vw, 1020px)', aspectRatio: '16 / 10' };
-    }
-
-    if (deviceMode === 'phone_16_9') {
-      // 16:9 ratio
-      return isPortrait
-        ? { width: 'min(85vw, 420px)', aspectRatio: '9 / 16' }
-        : { width: 'min(92vw, 860px)', aspectRatio: '16 / 9' };
-    }
-
-    return { width: '100%', height: '100%' };
-  };
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-body selection:bg-indigo-500 selection:text-white">
-      {/* Top Universal App Header Bar */}
-      <header className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 z-30 shadow-md">
-        {/* App Branding */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 to-indigo-500 flex items-center justify-center text-xl shadow-md border border-white/20">
-            🌟
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-sm font-fun tracking-wide text-white">
-                Wonder World Kids Learning
-              </span>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                100% Offline Suite
-              </span>
+    <div className="min-h-screen w-full bg-world-gradient text-slate-800 flex flex-col font-body selection:bg-pink-400 selection:text-white transition-all duration-700 relative overflow-x-hidden">
+      {/* Playful Ambient Background Stars & Clouds */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-40 select-none overflow-hidden">
+        <div className="absolute top-12 left-10 text-4xl animate-bounce" style={{ animationDuration: '4s' }}>🎈</div>
+        <div className="absolute top-24 right-12 text-3xl animate-pulse">⭐</div>
+        <div className="absolute bottom-16 left-8 text-4xl animate-bounce" style={{ animationDuration: '6s' }}>🌈</div>
+        <div className="absolute bottom-20 right-16 text-3xl">✨</div>
+      </div>
+
+      {/* Top Bright Kid-Friendly App Header Bar */}
+      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b-2 border-indigo-100 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between flex-wrap gap-2.5 z-30 shadow-sm">
+        {/* App Branding & Navigation */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Professional Brand Logo button that returns home on tap */}
+          <button
+            onClick={() => {
+              soundEngine.playPop();
+              onNavigateHome?.();
+            }}
+            className="flex items-center gap-2 cursor-pointer group text-left"
+            title="WonderWorld Super Quest Home"
+          >
+            <BrandLogo size="md" showText={false} />
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-black text-base sm:text-xl font-fun tracking-wide bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+                  WonderWorld
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-black uppercase px-2 sm:px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 text-white shadow-sm font-fun flex items-center gap-1">
+                  <span>Pip's Quest</span>
+                  <span className="text-xs">🦊</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 mt-0.5">
+                <span className="inline-flex items-center gap-1 bg-amber-100/90 text-amber-900 px-2 py-0.5 rounded-lg border border-amber-300 text-[11px]">
+                  <span>{childAvatar}</span>
+                  <span>{childName} ({childAge} yrs)</span>
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-              <span>Active Player: <strong className="text-white">{childAvatar} {childName} ({childAge}y)</strong></span>
+          </button>
+
+          {/* Contextual Navigation Buttons */}
+          {currentView === 'game' && (
+            <div className="flex items-center gap-1.5 ml-1">
+              {onNavigateWorld && (
+                <button
+                  onClick={() => {
+                    soundEngine.playPop();
+                    onNavigateWorld();
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-100 active:scale-95 text-slate-700 font-fun font-bold text-xs shadow-sm border border-slate-200 transition"
+                  title="Return to Island Levels"
+                >
+                  <span>←</span>
+                  <span className="hidden sm:inline">Island Levels</span>
+                </button>
+              )}
+              {onNavigateHome && (
+                <button
+                  onClick={() => {
+                    soundEngine.playPop();
+                    onNavigateHome();
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-fun font-bold text-xs shadow-md border-2 border-white transition"
+                  title="Return to World Map"
+                >
+                  <span>🗺️</span>
+                  <span className="hidden md:inline">World Map</span>
+                </button>
+              )}
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Center: Device Aspect Ratio & Orientation Controls */}
-        <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-2xl border border-slate-700">
-          <button
-            onClick={() => handleDeviceChange('ipad_4_3')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-              deviceMode === 'ipad_4_3' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-            title="iPad 4:3 Aspect Ratio"
-          >
-            <Tablet className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">iPad (4:3)</span>
-          </button>
-
-          <button
-            onClick={() => handleDeviceChange('android_16_10')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-              deviceMode === 'android_16_10' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-            title="Android Tablet 16:10"
-          >
-            <Tablet className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Android (16:10)</span>
-          </button>
-
-          <button
-            onClick={() => handleDeviceChange('phone_16_9')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-              deviceMode === 'phone_16_9' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-            title="Mobile Phone 16:9"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Phone (16:9)</span>
-          </button>
-
-          <button
-            onClick={() => handleDeviceChange('responsive')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-              deviceMode === 'responsive' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-            title="Responsive Full Viewport"
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Full</span>
-          </button>
-
-          {deviceMode !== 'responsive' && (
+          {currentView === 'world_detail' && onNavigateHome && (
             <button
-              onClick={toggleOrientation}
-              className="p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 ml-1 border-l border-slate-700 pl-2"
-              title="Rotate Screen Orientation"
+              onClick={() => {
+                soundEngine.playPop();
+                onNavigateHome();
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-fun font-bold text-xs shadow-md border-2 border-white transition ml-1"
+              title="Return to World Map"
             >
-              <RotateCw className="w-3.5 h-3.5" />
+              <span>←</span>
+              <span>World Map</span>
             </button>
           )}
         </div>
 
-        {/* Right Tools: APK Bundle, Architecture Inspector, Audio, Parent Gate */}
-        <div className="flex items-center gap-2">
-          {/* Mobile Packages (Android APK & iOS IPA) */}
+        {/* Right Tools: Offline Status, Install Button, Sound Toggle, Parent Gate */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Offline indicator if disconnected */}
+          {!isOnline && (
+            <div className="flex items-center gap-1 bg-amber-100 text-amber-900 text-xs font-fun font-bold px-2.5 py-1.5 rounded-xl border border-amber-300 animate-pulse">
+              <WifiOff className="w-3.5 h-3.5 text-amber-700" />
+              <span className="hidden sm:inline">Offline Mode</span>
+            </div>
+          )}
+
+          {/* Install / Offline Mode helper button */}
           <button
             onClick={() => {
               soundEngine.playPop();
-              onOpenApkModal();
+              onOpenInstallModal();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:brightness-110 text-white text-xs font-bold shadow-md shadow-emerald-600/30 border border-emerald-400/30 transition active:scale-95"
-            title="Download Android APK & iOS Packages"
+            className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-2xl text-xs font-fun font-black shadow-sm border-2 transition active:scale-95 ${
+              isStandalone
+                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-gradient-to-r from-amber-400 to-orange-400 hover:brightness-105 text-amber-950 border-white'
+            }`}
+            title="Install App for 100% Offline Play on iOS & Android"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span className="font-fun">Download Apps (Android & iOS)</span>
+            {isStandalone ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">Offline Ready</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5" />
+                <span>Offline App</span>
+              </>
+            )}
           </button>
 
-          {/* Architecture Blueprint modal trigger */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onOpenArchitecture();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold border border-slate-700 shadow-sm"
-          >
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden md:inline">Tech Blueprint</span>
-          </button>
+          {/* Dynamic World Theme Palette Switcher Pill */}
+          <WorldThemeSwitcherPill />
 
           {/* Sound Toggle */}
           <button
@@ -192,10 +179,10 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
               soundEngine.playPop();
               onToggleMute();
             }}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+            className="p-2 rounded-2xl bg-white hover:bg-slate-50 active:scale-95 text-slate-700 border-2 border-slate-200 shadow-sm transition"
             title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
           >
-            {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-emerald-600" />}
           </button>
 
           {/* Parent Gate Button */}
@@ -204,7 +191,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
               soundEngine.playPop();
               onOpenParentGate();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-600/30 border border-indigo-400/30"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:brightness-105 active:scale-95 text-white text-xs font-fun font-bold shadow-md shadow-purple-500/20 border-2 border-white/60 transition"
           >
             <Shield className="w-3.5 h-3.5" />
             <span>Parent Gate</span>
@@ -212,30 +199,15 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
         </div>
       </header>
 
-      {/* Main Viewport Container */}
-      <main className="flex-1 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 overflow-hidden">
-        {deviceMode === 'responsive' ? (
-          <div className="w-full h-full max-w-7xl mx-auto flex items-center justify-center">
-            {children}
-          </div>
-        ) : (
-          <div
-            style={getFrameStyles()}
-            className="relative bg-slate-950 p-3 sm:p-4 rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border-4 border-slate-800 flex flex-col justify-center items-center transition-all duration-300 ring-1 ring-white/10"
-          >
-            {/* Camera / Speaker dot */}
-            <div className="absolute top-2 w-12 h-2 rounded-full bg-slate-800/80 mb-1 z-20" />
-
-            {/* Simulated Kid Screen */}
-            <div className="w-full h-full rounded-[28px] overflow-hidden relative shadow-inner bg-slate-900">
-              {children}
-            </div>
-
-            {/* Home indicator bar at bottom */}
-            <div className="absolute bottom-1 w-24 h-1 rounded-full bg-slate-700/80 mt-1 z-20" />
-          </div>
-        )}
+      {/* Main Fluid & Responsive Content Area - Automatically fits any screen */}
+      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 flex flex-col justify-center items-stretch">
+        <div className="w-full h-full flex flex-col">
+          {children}
+        </div>
       </main>
+
+      {/* Persistent Wonder Bunny Companion Guide */}
+      <WonderBunnyCompanion currentView={currentView} childName={childName} />
     </div>
   );
 };
