@@ -57,7 +57,29 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
             </div>
           </div>
 
-          {/* Already installed banner */}
+          {/* Instant Play Banner - 100% Offline */}
+          <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex items-center justify-between gap-3 text-emerald-900 shadow-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="text-xs font-black font-fun text-emerald-900 leading-tight">
+                  100% Offline Ready!
+                </p>
+                <p className="text-[11px] font-bold text-emerald-700">
+                  Zero internet required to play all 45 games right now.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onClose();
+              }}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-fun font-black shadow-md active:scale-95 transition cursor-pointer shrink-0"
+            >
+              Play Now 🚀
+            </button>
+          </div>
           {isStandalone ? (
             <div className="mb-4 p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex items-center gap-3 text-emerald-800">
               <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0" />

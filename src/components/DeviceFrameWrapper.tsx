@@ -136,15 +136,15 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
 
         {/* Right Tools: Offline Status, Install Button, Sound Toggle, Parent Gate */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Offline indicator if disconnected */}
+          {/* Reassuring Offline Status Badge */}
           {!isOnline && (
-            <div className="flex items-center gap-1 bg-amber-100 text-amber-900 text-xs font-fun font-bold px-2.5 py-1.5 rounded-xl border border-amber-300 animate-pulse">
-              <WifiOff className="w-3.5 h-3.5 text-amber-700" />
-              <span className="hidden sm:inline">Offline Mode</span>
+            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 text-xs font-fun font-bold px-2.5 py-1.5 rounded-xl border border-emerald-300 shadow-sm">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">100% Offline Ready</span>
             </div>
           )}
 
-          {/* Install / Offline Mode helper button */}
+          {/* Optional Install / Home Screen shortcut button */}
           <button
             onClick={() => {
               soundEngine.playPop();
@@ -155,17 +155,17 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                 ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
                 : 'bg-gradient-to-r from-amber-400 to-orange-400 hover:brightness-105 text-amber-950 border-white'
             }`}
-            title="Install App for 100% Offline Play on iOS & Android"
+            title="Install Wonder World on your Home Screen or Desktop"
           >
             {isStandalone ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">Offline Ready</span>
+                <span className="hidden sm:inline">Installed</span>
               </>
             ) : (
               <>
-                <Download className="w-3.5 h-3.5" />
-                <span>Offline App</span>
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Install App</span>
               </>
             )}
           </button>

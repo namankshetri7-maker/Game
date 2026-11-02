@@ -3,8 +3,8 @@ import {registerSW} from 'virtual:pwa-register';
 import App from './App.tsx';
 import './index.css';
 
-// Register Service Worker for offline capability on Android, iOS, and desktop in production
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// Register Service Worker for 100% offline capability on Android, iOS, and desktop
+if ('serviceWorker' in navigator) {
   registerSW({
     immediate: true,
     onNeedRefresh() {
