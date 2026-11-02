@@ -3,9 +3,20 @@
  * Geometry & 2D/3D Shape Sorting with an animated choo-choo train.
  */
 
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Pause, RotateCcw, Sparkles, HelpCircle, Check, Home, ArrowLeft } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Pause,
+  RotateCcw,
+  Sparkles,
+  HelpCircle,
+  Check,
+  Home,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Volume2
+} from 'lucide-react';
 import { AgeGroup, GameState, Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
@@ -27,42 +38,43 @@ interface ShapeItem {
   name: string;
   color: string;
   icon: string;
+  hint: string;
 }
 
 const LEVEL_SHAPES: Record<number, ShapeItem[]> = {
   1: [
-    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴' },
-    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦' },
-    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺' },
+    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴', hint: 'Round like a coin or clock!' },
+    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦', hint: '4 equal sides and 4 corners!' },
+    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺', hint: '3 straight sides and 3 sharp points!' },
   ],
   2: [
-    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴' },
-    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦' },
-    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺' },
-    { id: 'star', name: 'Star', color: '#F59E0B', icon: '⭐' },
+    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴', hint: 'Round and smooth!' },
+    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦', hint: '4 equal sides!' },
+    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺', hint: '3 sides!' },
+    { id: 'star', name: 'Star', color: '#F59E0B', icon: '⭐', hint: '5 twinkling points in the sky!' },
   ],
   3: [
-    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴' },
-    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦' },
-    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺' },
-    { id: 'star', name: 'Star', color: '#F59E0B', icon: '⭐' },
-    { id: 'heart', name: 'Heart', color: '#EC4899', icon: '💖' },
+    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴', hint: 'Round like the sun!' },
+    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦', hint: 'Box with 4 equal sides!' },
+    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺', hint: '3 corners!' },
+    { id: 'star', name: 'Star', color: '#F59E0B', icon: '⭐', hint: 'Twinkling golden star!' },
+    { id: 'heart', name: 'Heart', color: '#EC4899', icon: '💖', hint: 'Lovely heart with two curves!' },
   ],
   4: [
-    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴' },
-    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦' },
-    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺' },
-    { id: 'star', name: 'Star', color: '#F59E0B', icon: '⭐' },
-    { id: 'heart', name: 'Heart', color: '#EC4899', icon: '💖' },
-    { id: 'diamond', name: 'Diamond', color: '#06B6D4', icon: '💎' },
+    { id: 'circle', name: 'Circle', color: '#EF4444', icon: '🔴', hint: 'Round curve with no corners!' },
+    { id: 'square', name: 'Square', color: '#3B82F6', icon: '🟦', hint: 'Square building block!' },
+    { id: 'triangle', name: 'Triangle', color: '#10B981', icon: '🔺', hint: 'Roof of a house!' },
+    { id: 'star', name: 'Star', color: '#F59E0B', icon: '⭐', hint: 'Twinkle twinkle little star!' },
+    { id: 'heart', name: 'Heart', color: '#EC4899', icon: '💖', hint: 'Sweet pink heart!' },
+    { id: 'diamond', name: 'Diamond', color: '#06B6D4', icon: '💎', hint: 'Sparkling tilted rhombus gem!' },
   ],
   5: [
-    { id: 'cube', name: 'Cube', color: '#6366F1', icon: '🧊' },
-    { id: 'sphere', name: 'Sphere', color: '#A855F7', icon: '🔮' },
-    { id: 'cylinder', name: 'Cylinder', color: '#EC4899', icon: '🛢️' },
-    { id: 'cone', name: 'Cone', color: '#F59E0B', icon: '🍦' },
-    { id: 'pyramid', name: 'Pyramid', color: '#EF4444', icon: '🔺' },
-    { id: 'ring', name: 'Torus/Ring', color: '#10B981', icon: '💍' },
+    { id: 'cube', name: '3D Cube', color: '#6366F1', icon: '🧊', hint: '6 square faces like a playing die!' },
+    { id: 'sphere', name: '3D Sphere', color: '#A855F7', icon: '🔮', hint: 'Round 3D ball that rolls anywhere!' },
+    { id: 'cylinder', name: 'Cylinder', color: '#EC4899', icon: '🛢️', hint: 'Round top and bottom like a soda can!' },
+    { id: 'cone', name: 'Cone', color: '#F59E0B', icon: '🍦', hint: 'Pointed top like an ice cream cone!' },
+    { id: 'pyramid', name: 'Pyramid', color: '#EF4444', icon: '🔺', hint: 'Ancient Egyptian wonder with triangular sides!' },
+    { id: 'ring', name: 'Torus/Ring', color: '#10B981', icon: '🍩', hint: 'Yummy donut shape with a hole in the middle!' },
   ]
 };
 
@@ -86,60 +98,123 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
   const targetShapes = LEVEL_SHAPES[currentLevel] || LEVEL_SHAPES[1];
   const [placedShapeIds, setPlacedShapeIds] = useState<string[]>([]);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [isDeparting, setIsDeparting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  // Train track horizontal scroll reference
+  const trackScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollTrack = (direction: 'left' | 'right') => {
+    soundEngine.playPop();
+    if (trackScrollRef.current) {
+      const offset = direction === 'left' ? -220 : 220;
+      trackScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
+
+  const speakShapeName = (name: string) => {
+    if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(name);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.2;
+        window.speechSynthesis.speak(utterance);
+      } catch {}
+    }
+  };
+
+  const handleLoadShape = (shape: ShapeItem) => {
+    if (placedShapeIds.includes(shape.id) || isDeparting) return;
+
+    soundEngine.playSnap();
+    speakShapeName(shape.name);
+
+    const updated = [...placedShapeIds, shape.id];
+    setPlacedShapeIds(updated);
+    setSelectedShapeId(null);
+    setScore(prev => prev + 100);
+    setStatusMessage(`Loaded ${shape.name}! ${shape.hint}`);
+
+    // Check if all train cars are fully loaded!
+    if (updated.length === targetShapes.length) {
+      setIsDeparting(true);
+      setStatusMessage('🚂 All aboard! The Shape Express is rolling out!');
+      soundEngine.playCelebration();
+
+      setTimeout(() => {
+        let calculatedStars = 3;
+        if (mistakes === 1) calculatedStars = 2;
+        else if (mistakes > 1) calculatedStars = 1;
+
+        setStars(calculatedStars);
+        setGameState('LEVEL_COMPLETE');
+        soundEngine.playVictory();
+
+        try {
+          confetti({ particleCount: 85, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+
+        const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+        storageService.recordGameResult(
+          activeProfileId,
+          'game_shape_sorter_express',
+          'world_math',
+          calculatedStars,
+          score + 150,
+          timeSec,
+          true
+        );
+      }, 1600);
+    }
+  };
+
+  // Direct Click on Train Car
   const handleCartClick = (shape: ShapeItem) => {
-    if (placedShapeIds.includes(shape.id)) return;
-    if (!selectedShapeId) {
+    if (placedShapeIds.includes(shape.id) || isDeparting) {
       soundEngine.playPop();
-      setSelectedShapeId(shape.id);
+      speakShapeName(shape.name);
       return;
     }
 
-    if (selectedShapeId === shape.id) {
-      soundEngine.playSnap();
-      const updated = [...placedShapeIds, shape.id];
-      setPlacedShapeIds(updated);
-      setSelectedShapeId(null);
-      setScore(prev => prev + 100);
-
-      if (updated.length === targetShapes.length) {
-        setTimeout(() => {
-          let calculatedStars = 3;
-          if (mistakes === 1) calculatedStars = 2;
-          else if (mistakes > 1) calculatedStars = 1;
-
-          setStars(calculatedStars);
-          setGameState('LEVEL_COMPLETE');
-          soundEngine.playVictory();
-
-          try {
-            confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-          } catch {}
-
-          const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-          storageService.recordGameResult(
-            activeProfileId,
-            'game_shape_sorter_express',
-            'world_math',
-            calculatedStars,
-            score + 150,
-            timeSec,
-            true
-          );
-        }, 700);
-      }
+    // If matching shape or no shape currently selected: 1-Tap Load!
+    if (!selectedShapeId || selectedShapeId === shape.id) {
+      handleLoadShape(shape);
     } else {
-      soundEngine.playOops();
-      setMistakes(prev => prev + 1);
+      // Selected another shape, check match
+      const selectedItem = targetShapes.find(s => s.id === selectedShapeId);
+      if (selectedItem && selectedItem.id === shape.id) {
+        handleLoadShape(shape);
+      } else {
+        soundEngine.playOops();
+        setMistakes(prev => prev + 1);
+        setStatusMessage(`That car needs a ${shape.name}! Check your selected shape.`);
+      }
+    }
+  };
+
+  // Click on Shape Station Item
+  const handleStationShapeClick = (shape: ShapeItem) => {
+    if (isDeparting) return;
+    soundEngine.playPop();
+    speakShapeName(shape.name);
+
+    if (selectedShapeId === shape.id) {
+      // Direct load if already selected!
+      handleLoadShape(shape);
+    } else {
+      setSelectedShapeId(shape.id);
+      setStatusMessage(`Selected ${shape.name}! Tap its matching train car above.`);
     }
   };
 
   const unplacedShapes = targetShapes.filter(s => !placedShapeIds.includes(s.id));
 
   return (
-    <div className="relative w-full h-full min-h-[520px] bg-gradient-to-b from-sky-400 via-indigo-300 to-purple-600 rounded-3xl p-4 sm:p-6 flex flex-col justify-between overflow-hidden select-none border-4 border-indigo-300 shadow-2xl">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between z-10">
+    <div className="relative w-full h-full min-h-[560px] max-h-[92vh] overflow-y-auto bg-gradient-to-b from-sky-400 via-indigo-300 to-purple-600 rounded-3xl p-3 sm:p-5 flex flex-col justify-between select-none border-4 border-indigo-300 shadow-2xl font-body">
+      
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between z-10 flex-wrap gap-2 mb-2 bg-white/90 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border-2 border-indigo-200 shadow-sm">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {onBackToWorld && (
             <button
@@ -147,7 +222,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
                 soundEngine.playPop();
                 onBackToWorld();
               }}
-              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-indigo-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-indigo-200 active:scale-95 transition flex items-center gap-1.5"
+              className="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-fun font-bold text-xs sm:text-sm rounded-xl shadow-sm border border-indigo-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer"
               title="Return to Island Levels"
             >
               <ArrowLeft className="w-4 h-4 text-indigo-600 stroke-[2.5]" />
@@ -155,13 +230,12 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
             </button>
           )}
 
-          {/* Direct Home Map Button */}
           <button
             onClick={() => {
               soundEngine.playPop();
               onHome();
             }}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-indigo-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-indigo-200 active:scale-95 transition flex items-center gap-1.5"
+            className="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-fun font-bold text-xs sm:text-sm rounded-xl shadow-sm border border-indigo-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer"
             title="Return to World Map"
           >
             <Home className="w-4 h-4 text-indigo-600" />
@@ -174,82 +248,131 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
               setIsPaused(true);
               setGameState('PAUSED');
             }}
-            className="p-2 sm:p-2.5 bg-white/90 hover:bg-white text-indigo-950 rounded-2xl shadow-md border-2 border-indigo-200"
+            className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 rounded-xl shadow-sm border border-indigo-200 cursor-pointer"
+            title="Pause Game"
           >
             <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
+
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider px-2 py-0.5 bg-amber-400 text-amber-950 rounded-full shadow-sm">
                 Level {currentLevel} of 5
               </span>
-              <span className="text-[10px] sm:text-xs font-bold text-white bg-black/20 px-2 py-0.5 rounded-full">
-                Shapes: {placedShapeIds.length} / {targetShapes.length}
+              <span className="text-[10px] sm:text-xs font-bold text-indigo-900 bg-indigo-100 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                Cars Loaded: {placedShapeIds.length} / {targetShapes.length}
               </span>
             </div>
-            <h2 className="text-lg sm:text-2xl font-black text-white font-fun drop-shadow-md">
-              Shape Sorter Express 🚂
+            <h2 className="text-base sm:text-xl font-black text-slate-900 font-fun leading-tight flex items-center gap-1.5 mt-0.5">
+              <span>Shape Sorter Express</span>
+              <span>🚂</span>
             </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-2xl border-2 border-indigo-200 shadow-md">
-          <Sparkles className="w-5 h-5 text-amber-500" />
-          <span className="text-lg font-black text-slate-800 font-fun">{score} pts</span>
+        <div className="flex items-center gap-2 bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-300 shadow-sm">
+          <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
+          <span className="text-sm sm:text-base font-black text-amber-950 font-fun">{score} pts</span>
         </div>
       </div>
 
-      {/* Main Train Carts Stage */}
-      <div className="flex-1 flex flex-col items-center justify-center my-2 sm:my-3 z-10">
-        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-2xl border-4 border-indigo-300 flex flex-col items-center relative overflow-hidden">
-          {/* Header guidance */}
-          <div className="text-xs sm:text-sm font-black text-indigo-950 mb-3 font-fun text-center bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-200">
-            {selectedShapeId
-              ? '👉 Great! Now tap the matching train car to load your shape!'
-              : '🚂 Select a colorful shape from the station below to load into the train:'}
-          </div>
-
-          {/* Train Tracks Stage */}
-          <div className="relative w-full py-4 bg-gradient-to-r from-sky-100 via-indigo-50 to-pink-100 rounded-2xl border-2 border-indigo-200 shadow-inner px-3 overflow-x-auto flex flex-col items-center">
-            {/* Steam Clouds from Locomotive */}
-            <div className="absolute top-1 left-8 flex gap-1 animate-pulse">
-              <span className="text-xs">💨</span>
-              <span className="text-sm">💨</span>
-              <span className="text-base">💨</span>
+      {/* Main Train Depot Stage */}
+      <div className="flex-1 flex flex-col justify-between gap-3 my-1 z-10">
+        
+        {/* Train Track Card Container */}
+        <div className="w-full bg-white/95 backdrop-blur-md rounded-3xl p-3 sm:p-5 shadow-2xl border-4 border-indigo-300 flex flex-col items-center relative overflow-hidden">
+          
+          {/* Train Departure Track Header & Direction Indicator */}
+          <div className="w-full flex items-center justify-between flex-wrap gap-2 mb-2 pb-2 border-b border-indigo-100">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm font-fun flex items-center gap-1">
+                <span>🛤️ Track 1</span>
+                <span className="animate-pulse">➔</span>
+                <span>Eastbound to Wonder Star</span>
+              </span>
             </div>
 
-            {/* Train Engine + Carts Row */}
-            <div className="flex items-end justify-center gap-2 sm:gap-3 py-2 min-w-max">
-              {/* Locomotive Engine */}
-              <div className="p-3 bg-gradient-to-b from-rose-500 to-red-600 text-white rounded-2xl flex flex-col items-center shadow-lg border-3 border-red-800 min-w-20 relative shrink-0">
-                <span className="text-4xl animate-bounce" style={{ animationDuration: '3s' }}>🚂</span>
-                <span className="text-[10px] font-black uppercase font-fun mt-1 bg-red-900/60 px-2 py-0.5 rounded-md">
-                  Express
+            {/* Scroll Navigation Buttons for Train Track */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => scrollTrack('left')}
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-fun font-bold text-xs flex items-center gap-1 shadow-sm active:scale-95 transition cursor-pointer"
+                title="Scroll Train Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Left</span>
+              </button>
+              <button
+                onClick={() => scrollTrack('right')}
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-fun font-bold text-xs flex items-center gap-1 shadow-sm active:scale-95 transition cursor-pointer"
+                title="Scroll Train Right"
+              >
+                <span className="hidden sm:inline">Right</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Instruction Toast */}
+          <div className="text-xs sm:text-sm font-black text-indigo-950 mb-2 font-fun text-center bg-indigo-50/90 px-4 py-1.5 rounded-full border border-indigo-200 shadow-sm max-w-xl">
+            {statusMessage || (
+              selectedShapeId
+                ? '👉 Tap the matching train car on the track to load your shape!'
+                : '🚂 Tap any train car or select from the station below to load cargo!'
+            )}
+          </div>
+
+          {/* Horizontally Scrollable Train Stage */}
+          <div
+            ref={trackScrollRef}
+            className="relative w-full py-3 bg-gradient-to-r from-sky-100 via-indigo-50 to-pink-100 rounded-2xl border-2 border-indigo-200 shadow-inner px-4 overflow-x-auto scrollbar-thin scrollbar-thumb-indigo-300"
+          >
+            {/* Animated Train Moving Container */}
+            <motion.div
+              animate={isDeparting ? { x: [0, 50, 900], opacity: [1, 1, 0] } : { x: 0 }}
+              transition={{ duration: 1.5, ease: 'easeInOut' }}
+              className="flex items-end justify-start sm:justify-center gap-2 sm:gap-3 py-2 min-w-max mx-auto"
+            >
+              {/* Locomotive Engine with Choo-Choo Smoke */}
+              <div className="p-3 bg-gradient-to-b from-rose-500 via-red-600 to-rose-700 text-white rounded-2xl flex flex-col items-center shadow-xl border-3 border-red-900 min-w-24 sm:min-w-28 relative shrink-0">
+                {/* Steam Clouds Billowing Backwards */}
+                <div className="absolute -top-6 -left-2 flex gap-1 animate-pulse pointer-events-none">
+                  <span className="text-sm animate-bounce" style={{ animationDelay: '0s' }}>💨</span>
+                  <span className="text-base animate-bounce" style={{ animationDelay: '0.2s' }}>💨</span>
+                  <span className="text-lg animate-bounce" style={{ animationDelay: '0.4s' }}>💨</span>
+                </div>
+
+                <span className="text-4xl sm:text-5xl animate-bounce" style={{ animationDuration: '2.5s' }}>
+                  🚂
                 </span>
-                {/* Wheels */}
-                <div className="flex justify-between w-full -mb-5 px-1">
-                  <span className="text-base animate-spin" style={{ animationDuration: '4s' }}>⚙️</span>
-                  <span className="text-base animate-spin" style={{ animationDuration: '4s' }}>⚙️</span>
+                <span className="text-[10px] font-black uppercase font-fun mt-1 bg-red-950/70 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/40">
+                  Express ➔
+                </span>
+                
+                {/* Engine Wheels */}
+                <div className="flex justify-between w-full -mb-5 px-1 mt-1">
+                  <span className={`text-lg ${isDeparting ? 'animate-spin' : ''}`}>⚙️</span>
+                  <span className={`text-lg ${isDeparting ? 'animate-spin' : ''}`}>⚙️</span>
                 </div>
               </div>
 
-              {/* Connecting Coupling Hook */}
-              <span className="text-indigo-400 font-black text-lg mb-4">🔗</span>
+              {/* Connecting Hook */}
+              <span className="text-indigo-400 font-black text-xl mb-4 shrink-0">🔗</span>
 
-              {/* Shape Cargo Cars */}
+              {/* Train Cargo Cars */}
               {targetShapes.map((shape, idx) => {
                 const isPlaced = placedShapeIds.includes(shape.id);
                 const isTargeted = selectedShapeId === shape.id;
 
-                const CART_STYLES = [
-                  { bg: 'from-amber-100 to-amber-200', border: 'border-amber-500', header: 'bg-amber-600' },
-                  { bg: 'from-emerald-100 to-emerald-200', border: 'border-emerald-500', header: 'bg-emerald-600' },
-                  { bg: 'from-sky-100 to-sky-200', border: 'border-sky-500', header: 'bg-sky-600' },
-                  { bg: 'from-purple-100 to-purple-200', border: 'border-purple-500', header: 'bg-purple-600' },
-                  { bg: 'from-pink-100 to-pink-200', border: 'border-pink-500', header: 'bg-pink-600' },
-                  { bg: 'from-cyan-100 to-cyan-200', border: 'border-cyan-500', header: 'bg-cyan-600' }
+                const CART_COLORS = [
+                  { bg: 'from-amber-100 to-amber-200', border: 'border-amber-500', roof: 'bg-amber-600' },
+                  { bg: 'from-emerald-100 to-emerald-200', border: 'border-emerald-500', roof: 'bg-emerald-600' },
+                  { bg: 'from-sky-100 to-sky-200', border: 'border-sky-500', roof: 'bg-sky-600' },
+                  { bg: 'from-purple-100 to-purple-200', border: 'border-purple-500', roof: 'bg-purple-600' },
+                  { bg: 'from-pink-100 to-pink-200', border: 'border-pink-500', roof: 'bg-pink-600' },
+                  { bg: 'from-cyan-100 to-cyan-200', border: 'border-cyan-500', roof: 'bg-cyan-600' }
                 ];
-                const cartStyle = CART_STYLES[idx % CART_STYLES.length];
+                const cartColor = CART_COLORS[idx % CART_COLORS.length];
 
                 return (
                   <React.Fragment key={shape.id}>
@@ -257,84 +380,127 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleCartClick(shape)}
-                      className={`p-3 sm:p-4 rounded-2xl border-3 flex flex-col items-center justify-center min-w-22 sm:min-w-28 transition-all shadow-md cursor-pointer relative bg-gradient-to-b ${
+                      className={`p-3 sm:p-4 rounded-2xl border-3 flex flex-col items-center justify-center min-w-24 sm:min-w-28 transition-all shadow-lg cursor-pointer relative bg-gradient-to-b shrink-0 ${
                         isPlaced
-                          ? 'from-emerald-200 to-green-300 border-emerald-600 scale-105 shadow-emerald-300/50'
+                          ? 'from-emerald-100 via-green-200 to-emerald-300 border-emerald-600 scale-105 ring-4 ring-emerald-300 shadow-emerald-400/30'
                           : isTargeted
-                          ? 'from-yellow-100 to-amber-200 border-dashed border-amber-500 ring-4 ring-amber-400 animate-pulse scale-105'
-                          : `${cartStyle.bg} ${cartStyle.border} hover:brightness-105`
+                          ? 'from-yellow-100 via-amber-200 to-yellow-300 border-amber-500 ring-4 ring-yellow-400 animate-bounce scale-105'
+                          : `${cartColor.bg} ${cartColor.border} hover:brightness-105`
                       }`}
                     >
-                      <span className="text-xs font-black uppercase font-fun text-slate-700 mb-1">
+                      {/* Car Number Label */}
+                      <span className="text-[10px] font-black uppercase font-fun text-slate-700 bg-white/80 px-2 py-0.5 rounded-full border border-slate-200 shadow-sm mb-1">
                         Car #{idx + 1}
                       </span>
 
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/90 border-2 border-white flex items-center justify-center text-3xl sm:text-4xl shadow-inner my-1">
-                        {isPlaced ? shape.icon : (
-                          <span className="opacity-35 hover:opacity-70 transition font-fun text-2xl sm:text-3xl">
+                      {/* Shape Slot Cradle */}
+                      <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-white/95 border-2 border-white flex items-center justify-center text-3xl sm:text-4xl shadow-inner my-1 relative">
+                        {isPlaced ? (
+                          <motion.span
+                            initial={{ scale: 0.5, rotate: -20 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            className="drop-shadow-md select-none"
+                          >
                             {shape.icon}
+                          </motion.span>
+                        ) : isTargeted ? (
+                          <div className="flex flex-col items-center">
+                            <span className="text-3xl animate-pulse">{shape.icon}</span>
+                            <span className="text-[8px] font-black text-amber-800 uppercase font-fun leading-none mt-0.5">
+                              TAP!
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="opacity-30 hover:opacity-60 transition text-2xl sm:text-3xl font-fun">
+                            {shape.icon}
+                          </span>
+                        )}
+
+                        {isPlaced && (
+                          <span className="absolute -top-2 -right-2 bg-emerald-500 text-white rounded-full p-0.5 shadow-md border border-white">
+                            <Check className="w-4 h-4 stroke-[3]" />
                           </span>
                         )}
                       </div>
 
-                      <span className="text-xs font-black text-slate-800 font-fun">
+                      {/* Shape Name Badge */}
+                      <span className="text-xs font-black text-slate-800 font-fun mt-0.5">
                         {shape.name}
                       </span>
 
                       {isPlaced && (
-                        <span className="text-[10px] text-emerald-950 font-black font-fun uppercase bg-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500 flex items-center gap-0.5 mt-1 shadow-sm">
-                          <Check className="w-3 h-3 stroke-[3]" /> Loaded
+                        <span className="text-[9px] text-emerald-950 font-black font-fun uppercase bg-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500 mt-1 shadow-sm">
+                          Loaded ✅
                         </span>
                       )}
 
-                      {/* Train Wheels */}
-                      <div className="flex justify-between w-full -mb-6 px-1">
-                        <span className="text-sm">⚙️</span>
-                        <span className="text-sm">⚙️</span>
+                      {/* Train Car Wheels */}
+                      <div className="flex justify-between w-full -mb-5 px-1 mt-1">
+                        <span className={`text-base ${isDeparting ? 'animate-spin' : ''}`}>⚙️</span>
+                        <span className={`text-base ${isDeparting ? 'animate-spin' : ''}`}>⚙️</span>
                       </div>
                     </motion.button>
+
                     {idx < targetShapes.length - 1 && (
-                      <span className="text-indigo-400 font-black text-sm mb-4">🔗</span>
+                      <span className="text-indigo-400 font-black text-lg mb-4 shrink-0">🔗</span>
                     )}
                   </React.Fragment>
                 );
               })}
-            </div>
+            </motion.div>
 
-            {/* Railway Track Line */}
-            <div className="w-full h-3 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 rounded-full mt-3 flex items-center justify-around border border-amber-950">
-              <span className="text-[8px] text-amber-200 font-mono">||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||</span>
+            {/* Railway Steel Track Line */}
+            <div className="w-full h-3.5 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 rounded-full mt-3 flex items-center justify-around border border-amber-950 shadow-inner min-w-max">
+              <span className="text-[8px] text-amber-200 font-mono tracking-widest select-none">
+                ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Shape Station Platform */}
-        <div className="mt-4 bg-white/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border-2 border-indigo-200 shadow-xl flex items-center justify-center gap-3 flex-wrap">
-          <span className="text-xs font-black uppercase text-indigo-900 font-fun w-full text-center">
-            🚉 Shape Cargo Station:
-          </span>
-          {unplacedShapes.map(shape => {
-            const isSelected = selectedShapeId === shape.id;
-            return (
-              <motion.button
-                key={shape.id}
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => {
-                  soundEngine.playPop();
-                  setSelectedShapeId(shape.id);
-                }}
-                className={`p-3 sm:p-4 rounded-2xl border-3 flex flex-col items-center justify-center min-w-20 shadow-md transition cursor-pointer ${
-                  isSelected
-                    ? 'ring-4 ring-yellow-400 bg-amber-100 border-amber-500 scale-110 shadow-lg'
-                    : 'bg-white border-slate-300 hover:border-indigo-400'
-                }`}
-              >
-                <span className="text-4xl drop-shadow">{shape.icon}</span>
-                <span className="text-xs font-black font-fun text-slate-800 mt-1">{shape.name}</span>
-              </motion.button>
-            );
-          })}
+        {/* Shape Cargo Station Platform */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 border-2 border-indigo-200 shadow-xl flex flex-col items-center gap-2">
+          <div className="flex items-center justify-between w-full flex-wrap gap-1 px-1">
+            <span className="text-xs font-black uppercase text-indigo-900 font-fun flex items-center gap-1.5">
+              <span>🚉 Cargo Loading Platform</span>
+              <span className="text-[11px] font-bold text-slate-500">
+                ({unplacedShapes.length} shapes waiting to board)
+              </span>
+            </span>
+
+            <span className="text-[11px] text-indigo-700 font-bold font-fun">
+              👉 Tap any shape below to load it into its train car!
+            </span>
+          </div>
+
+          <div className="flex items-center justify-center gap-2.5 sm:gap-3.5 flex-wrap w-full py-1">
+            {unplacedShapes.map(shape => {
+              const isSelected = selectedShapeId === shape.id;
+              return (
+                <motion.button
+                  key={shape.id}
+                  whileHover={{ scale: 1.08, y: -2 }}
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => handleStationShapeClick(shape)}
+                  className={`p-3 sm:p-4 rounded-2xl border-3 flex flex-col items-center justify-center min-w-20 sm:min-w-24 shadow-md transition cursor-pointer ${
+                    isSelected
+                      ? 'ring-4 ring-yellow-400 bg-amber-100 border-amber-500 scale-105 shadow-xl shadow-amber-400/30'
+                      : 'bg-white border-slate-300 hover:border-indigo-400 hover:shadow-lg'
+                  }`}
+                >
+                  <span className="text-4xl sm:text-5xl drop-shadow select-none">{shape.icon}</span>
+                  <span className="text-xs font-black font-fun text-slate-800 mt-1">{shape.name}</span>
+                </motion.button>
+              );
+            })}
+
+            {unplacedShapes.length === 0 && (
+              <div className="py-2 px-4 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-emerald-950 font-fun font-black text-xs sm:text-sm flex items-center gap-2 shadow-sm">
+                <Check className="w-5 h-5 text-emerald-600 stroke-[3]" />
+                <span>All cargo loaded! Express departing on schedule!</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -352,6 +518,8 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           setGameState('PLAYING');
           setPlacedShapeIds([]);
           setSelectedShapeId(null);
+          setIsDeparting(false);
+          setStatusMessage(null);
           setScore(0);
           setMistakes(0);
         }}
@@ -361,6 +529,8 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
             setGameState('PLAYING');
             setPlacedShapeIds([]);
             setSelectedShapeId(null);
+            setIsDeparting(false);
+            setStatusMessage(null);
             setMistakes(0);
           } else {
             onNextGame();
@@ -386,6 +556,8 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           setGameState('PLAYING');
           setPlacedShapeIds([]);
           setSelectedShapeId(null);
+          setIsDeparting(false);
+          setStatusMessage(null);
           setScore(0);
           setMistakes(0);
         }}
