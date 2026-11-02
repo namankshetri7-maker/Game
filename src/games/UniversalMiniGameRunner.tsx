@@ -46,6 +46,7 @@ import { BunnyMazeRunnerGame } from './BunnyMazeRunnerGame';
 import { PixelArtColoringGame } from './PixelArtColoringGame';
 import { AbcLetterTraceGame } from './AbcLetterTraceGame';
 import { GreaterDragonScalesGame } from './GreaterDragonScalesGame';
+import { MemoryCardFlipGame } from './MemoryCardFlipGame';
 import confetti from 'canvas-confetti';
 
 interface UniversalMiniGameRunnerProps {
@@ -1992,54 +1993,12 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     // LOGIC 45: MEMORY CARD FLIP
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_memory_card_flip') {
-      const cards = ['🐶', '🐱', '🐼', '🦊', '🐶', '🐱', '🐼', '🦊'];
-
-      const handleFlip = (idx: number) => {
-        if (flippedCards.length === 2 || flippedCards.includes(idx) || matchedPairs.includes(idx)) return;
-        soundEngine.playPop();
-        const newFlipped = [...flippedCards, idx];
-        setFlippedCards(newFlipped);
-
-        if (newFlipped.length === 2) {
-          const [first, second] = newFlipped;
-          if (cards[first] === cards[second]) {
-            soundEngine.playCorrect();
-            setMatchedPairs(prev => [...prev, first, second]);
-            setFlippedCards([]);
-            if (matchedPairs.length + 2 === cards.length) {
-              handleCorrect();
-            }
-          } else {
-            setTimeout(() => setFlippedCards([]), 900);
-          }
-        }
-      };
-
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-3">
-            Find Matching Animal Pairs! ({matchedPairs.length / 2}/4)
-          </h3>
-
-          <div className="grid grid-cols-4 gap-2.5 max-w-xs">
-            {cards.map((emoji, idx) => {
-              const isRevealed = flippedCards.includes(idx) || matchedPairs.includes(idx);
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleFlip(idx)}
-                  className={`w-14 h-16 rounded-2xl flex items-center justify-center text-3xl font-bold border-2 transition active:scale-95 shadow-sm ${
-                    isRevealed
-                      ? 'bg-white border-purple-400 rotate-0'
-                      : 'bg-gradient-to-b from-purple-500 to-indigo-600 border-white text-transparent'
-                  }`}
-                >
-                  {isRevealed ? emoji : '❓'}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <MemoryCardFlipGame
+          currentLevel={currentLevel}
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+        />
       );
     }
 
