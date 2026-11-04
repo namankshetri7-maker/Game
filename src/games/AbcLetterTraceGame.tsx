@@ -262,12 +262,15 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
 
   // History of strokes for Undo
   const strokeHistoryRef = useRef<ImageData[]>([]);
+  // Last pointer point for smooth quadratic curve interpolation
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
   // Reset drawing state when letter changes
   useEffect(() => {
     setTracedCheckpoints([]);
     setHasCompleted(false);
     strokeHistoryRef.current = [];
+    lastPointRef.current = null;
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -302,11 +305,15 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
     if (!canvas) return;
 
     // Capture pointer for smooth drawing across borders
-    canvas.setPointerCapture(e.pointerId);
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {}
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -317,22 +324,47 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
       if (strokeHistoryRef.current.length > 10) strokeHistoryRef.current.shift();
     } catch {}
 
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = brushWidth;
+
+    if (activeTool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      const strokeCol = selectedColor.isRainbow
+        ? `hsl(${rainbowHue}, 90%, 55%)`
+        : selectedColor.color;
+      ctx.strokeStyle = strokeCol;
+      ctx.fillStyle = strokeCol;
+    }
+
+    // Draw initial contact dot
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.arc(canvasX, canvasY, brushWidth / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(canvasX, canvasY);
+    lastPointRef.current = { x: canvasX, y: canvasY };
     setIsDrawing(true);
 
-    checkCheckpointHit(x, y, rect.width, rect.height);
+    checkCheckpointHit(canvasX, canvasY, canvas.width, canvas.height);
   };
 
-  // Handle pointer move
+  // Handle pointer move with smooth Bezier/quadratic midpoint smoothing
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -354,10 +386,21 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
       }
     }
 
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    if (lastPointRef.current) {
+      // Quadratic midpoint interpolation makes lines look like smooth fluid ink
+      const midX = (lastPointRef.current.x + canvasX) / 2;
+      const midY = (lastPointRef.current.y + canvasY) / 2;
+      ctx.quadraticCurveTo(lastPointRef.current.x, lastPointRef.current.y, midX, midY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(midX, midY);
+    } else {
+      ctx.lineTo(canvasX, canvasY);
+      ctx.stroke();
+    }
 
-    checkCheckpointHit(x, y, rect.width, rect.height);
+    lastPointRef.current = { x: canvasX, y: canvasY };
+    checkCheckpointHit(canvasX, canvasY, canvas.width, canvas.height);
   };
 
   // Handle pointer up
@@ -369,6 +412,7 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
         canvas.releasePointerCapture(e.pointerId);
       } catch {}
     }
+    lastPointRef.current = null;
     setIsDrawing(false);
 
     // Check if letter tracing meets goal threshold
@@ -384,7 +428,8 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
 
     currentLetter.checkpoints.forEach(cp => {
       const dist = Math.hypot(normX - cp.x, normY - cp.y);
-      if (dist < 12) {
+      // Generous 18% radius for young children and touchscreen precision
+      if (dist < 18) {
         setTracedCheckpoints(prev => {
           if (!prev.includes(cp.id)) {
             soundEngine.playPop();
@@ -403,8 +448,8 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
     const total = currentLetter.checkpoints.length;
     const covered = tracedCheckpoints.length;
 
-    // If kid hit at least 80% of guide points
-    if (covered >= Math.ceil(total * 0.8)) {
+    // Generous 70% threshold so toddlers and young kids don't get frustrated
+    if (covered >= Math.ceil(total * 0.7)) {
       setHasCompleted(true);
       soundEngine.playVictory();
       try {
@@ -426,7 +471,7 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
   const handleDoneCheck = () => {
     const total = currentLetter.checkpoints.length;
     const covered = tracedCheckpoints.length;
-    if (covered >= Math.ceil(total * 0.65)) {
+    if (covered >= Math.ceil(total * 0.6)) {
       setHasCompleted(true);
       soundEngine.playVictory();
       try {

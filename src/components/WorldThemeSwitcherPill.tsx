@@ -4,7 +4,11 @@ import { Palette, Check, Sparkles, ChevronDown } from 'lucide-react';
 import { useWorldTheme, WORLD_THEMES, WorldThemeId } from '../services/WorldThemeContext';
 import { soundEngine } from '../services/soundEngine';
 
-export const WorldThemeSwitcherPill: React.FC = () => {
+interface WorldThemeSwitcherPillProps {
+  compact?: boolean;
+}
+
+export const WorldThemeSwitcherPill: React.FC<WorldThemeSwitcherPillProps> = ({ compact = false }) => {
   const { activeThemeId, activeTheme, setTheme } = useWorldTheme();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,16 +26,20 @@ export const WorldThemeSwitcherPill: React.FC = () => {
           soundEngine.playPop();
           setIsOpen(!isOpen);
         }}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-50 active:scale-95 text-slate-800 text-xs font-fun font-bold shadow-md border-2 border-slate-200 transition cursor-pointer"
-        title="Switch World Theme Palette"
+        className={
+          compact
+            ? "h-9 px-2 sm:px-2.5 rounded-xl bg-white hover:bg-slate-50 active:scale-95 text-slate-800 text-xs font-fun font-bold border border-slate-200/80 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+            : "flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-50 active:scale-95 text-slate-800 text-xs font-fun font-bold shadow-md border-2 border-slate-200 transition cursor-pointer"
+        }
+        title={`World Theme: ${activeTheme.name}`}
       >
-        <span className="text-base">{activeTheme.icon}</span>
-        <span className="hidden sm:inline font-black text-slate-900">{activeTheme.name}</span>
+        <span className="text-sm sm:text-base">{activeTheme.icon}</span>
+        {!compact && <span className="hidden sm:inline font-black text-slate-900">{activeTheme.name}</span>}
         <span
-          className="w-3 h-3 rounded-full border border-white shadow-sm"
+          className="w-2.5 h-2.5 rounded-full border border-white shadow-2xs shrink-0"
           style={{ backgroundColor: activeTheme.themeColor }}
         />
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Theme Dropdown Drawer */}

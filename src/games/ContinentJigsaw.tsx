@@ -203,14 +203,14 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
     setPlacedContinents(updated);
     setSelectedPieceId(null);
     setScore(prev => prev + 100);
-    setLatestFact(`🌟 ${continent.name}: ${continent.funFact}`);
+    setLatestFact(`🌟 ${continent.name} ${continent.icon}: ${continent.funFact}`);
 
-    // Try speech pronunciation of continent
+    // Try speech pronunciation of continent and fact
     if ('speechSynthesis' in window && !soundEngine.getMuted()) {
       try {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(`${continent.name}!`);
-        utterance.rate = 0.95;
+        const utterance = new SpeechSynthesisUtterance(`${continent.name}! ${continent.funFact}`);
+        utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
       } catch {}
     }
@@ -253,8 +253,16 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   const handleSlotClick = (continent: ContinentPiece) => {
     if (placedContinents.includes(continent.id)) {
       // Re-read fun fact
-      setLatestFact(`🌟 ${continent.name}: ${continent.funFact}`);
+      setLatestFact(`🌟 ${continent.name} ${continent.icon}: ${continent.funFact}`);
       soundEngine.playPop();
+      if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(`${continent.name}! ${continent.funFact}`);
+          utterance.rate = 0.9;
+          window.speechSynthesis.speak(utterance);
+        } catch {}
+      }
       return;
     }
 
@@ -479,10 +487,30 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute bottom-2 left-4 right-4 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border-2 border-cyan-400 shadow-xl flex items-center gap-2 text-xs font-bold text-slate-900 z-30"
+            className="absolute bottom-2 left-4 right-4 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border-2 border-cyan-400 shadow-xl flex items-center justify-between gap-2 text-xs font-bold text-slate-900 z-30"
           >
-            <Info className="w-4 h-4 text-cyan-600 shrink-0" />
-            <span className="font-fun">{latestFact}</span>
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-cyan-600 shrink-0" />
+              <span className="font-fun">{latestFact}</span>
+            </div>
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+                  try {
+                    window.speechSynthesis.cancel();
+                    const cleanText = latestFact.replace(/[🌟🦅🦜🏰🦁🐼🦘🐧🐋⛵🐬🐻‍❄️🧊🔺🗼🕌🗽❄️🦎🧱:]/g, '');
+                    const utt = new SpeechSynthesisUtterance(cleanText);
+                    utt.rate = 0.9;
+                    window.speechSynthesis.speak(utt);
+                  } catch {}
+                }
+              }}
+              className="p-1.5 bg-cyan-100 hover:bg-cyan-200 rounded-xl text-cyan-800 shrink-0 active:scale-95 transition"
+              title="Hear continent fact again"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+            </button>
           </motion.div>
         )}
       </div>

@@ -16,6 +16,7 @@ interface WorldMapProps {
   onSelectWorld: (worldId: string) => void;
   onOpenDirectory: () => void;
   onOpenStickerBook: () => void;
+
 }
 
 export const WorldMap: React.FC<WorldMapProps> = ({
@@ -59,8 +60,12 @@ export const WorldMap: React.FC<WorldMapProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-black text-white font-fun drop-shadow-md">
-                WonderWorld Map! 🌟
+              <h1 className="text-2xl sm:text-3xl font-black text-white font-fun drop-shadow-md flex items-center gap-2 flex-wrap">
+                <span>Wonder World</span>
+                <span className="px-2 py-0.5 rounded-xl bg-amber-400 text-amber-950 text-xs font-fun font-black shadow-xs border border-amber-300">
+                  Kids ⭐
+                </span>
+                <span>Map!</span>
               </h1>
               <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-white/95 text-indigo-900 shadow-sm font-fun flex items-center gap-1 border border-white">
                 <Sparkles className="w-3 h-3 text-amber-500 fill-amber-400" />
@@ -74,6 +79,8 @@ export const WorldMap: React.FC<WorldMapProps> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5">
+
+
           {/* Sticker Book button */}
           <button
             onClick={() => {
@@ -156,6 +163,8 @@ export const WorldMap: React.FC<WorldMapProps> = ({
           );
         })}
       </div>
+
+
 
       {/* Bottom Summary Bar */}
       <div className="relative z-10 bg-white/95 backdrop-blur-md rounded-2xl px-5 py-3 border-2 border-white shadow-lg flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-slate-700">

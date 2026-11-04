@@ -28,6 +28,8 @@ import { ParentDashboard } from './components/ParentDashboard';
 import { GameDirectoryModal } from './components/GameDirectoryModal';
 import { StickerBookModal } from './components/StickerBookModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
+
+
 import { usePWA } from './hooks/usePWA';
 import { storageService } from './services/storageService';
 import { soundEngine } from './services/soundEngine';
@@ -60,6 +62,7 @@ export default function App() {
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [isStickerBookOpen, setIsStickerBookOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
 
   // PWA Offline and Install Hook
   const {
@@ -127,6 +130,7 @@ export default function App() {
         onOpenParentGate={() => setIsParentGateOpen(true)}
         onOpenDirectory={() => setIsDirectoryOpen(true)}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
+
         isMuted={isMuted}
         onToggleMute={toggleMute}
         childAvatar={activeProfile.avatar}
@@ -135,13 +139,14 @@ export default function App() {
         isOnline={isOnline}
         isStandalone={isStandalone}
       >
-      {/* View routing: World Map vs World Detail & Levels vs Active Mini-Game */}
+      {/* View routing: World Map vs World Detail & Levels vs Board Games Arena vs Active Mini-Game */}
       {currentView === 'world_map' && (
         <WorldMap
           activeProfileId={activeProfile.id}
           onSelectWorld={handleSelectWorld}
           onOpenDirectory={() => setIsDirectoryOpen(true)}
           onOpenStickerBook={() => setIsStickerBookOpen(true)}
+
         />
       )}
 
@@ -153,6 +158,8 @@ export default function App() {
           onLaunchGameLevel={(gameId, level) => handleLaunchGame(gameId, level)}
         />
       )}
+
+
 
       {currentView === 'game' && (
         <div className="w-full h-full">
@@ -297,6 +304,8 @@ export default function App() {
       isAndroid={isAndroid}
       isStandalone={isStandalone}
     />
+
+
     </WorldThemeProvider>
   );
 }

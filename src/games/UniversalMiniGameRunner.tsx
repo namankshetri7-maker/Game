@@ -103,9 +103,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<number[]>([]);
   const [sentenceWords, setSentenceWords] = useState<string[]>([]);
+  const [selectedWordTileIds, setSelectedWordTileIds] = useState<number[]>([]);
   const [unscrambledLetters, setUnscrambledLetters] = useState<string[]>([]);
+  const [spellingUsedIndices, setSpellingUsedIndices] = useState<number[]>([]);
   const [clinicStep, setClinicStep] = useState(0);
+  const [petExamHistory, setPetExamHistory] = useState<string[]>([]);
   const [camouflageFound, setCamouflageFound] = useState(false);
+  const [activeMagnifierItem, setActiveMagnifierItem] = useState<string | null>(null);
 
   // Reset or initialize question on level or game change
   useEffect(() => {
@@ -130,9 +134,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     setFlippedCards([]);
     setMatchedPairs([]);
     setSentenceWords([]);
+    setSelectedWordTileIds([]);
     setUnscrambledLetters([]);
+    setSpellingUsedIndices([]);
     setClinicStep(0);
+    setPetExamHistory([]);
     setCamouflageFound(false);
+    setActiveMagnifierItem(null);
   };
 
   const handleCorrect = (points = 100) => {
@@ -426,42 +434,107 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     // -----------------------------------------------------------------------
     // MATH 7: CLOCKWORK OWL
     // -----------------------------------------------------------------------
+    // MATH 7: CLOCKWORK OWL (Accurate SVG Analog Clock)
+    // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_clockwork_owl') {
-      const times = [
-        { time: '3:00', icon: '🕒' },
-        { time: '6:30', icon: '🕡' },
-        { time: '9:00', icon: '🕘' },
-        { time: '12:15', icon: '🕛' },
-        { time: '4:45', icon: '🕓' }
+      const clockLevels = [
+        { hour: 3, minute: 0, time: '3:00', options: ['3:00', '6:00', '12:00'], hint: 'Hour hand is on 3 and minute hand points straight up at 12!' },
+        { hour: 6, minute: 30, time: '6:30', options: ['6:30', '7:30', '6:00'], hint: 'Minute hand points down at 6 (30 mins), hour hand is past 6!' },
+        { hour: 9, minute: 15, time: '9:15', options: ['9:15', '9:45', '3:15'], hint: 'Minute hand points to 3 (quarter past 15 mins)!' },
+        { hour: 1, minute: 45, time: '1:45', options: ['1:45', '2:45', '1:15'], hint: 'Minute hand points to 9 (45 mins), hour hand is nearing 2!' },
+        { hour: 10, minute: 20, time: '10:20', options: ['10:20', '10:40', '4:50'], hint: 'Minute hand points to 4 (20 mins past 10)!' }
       ];
-      const targetTime = times[(currentLevel - 1) % times.length];
-      const options = stableShuffle([targetTime.time, '1:30', '8:00'], currentLevel * 11);
+      const targetClock = clockLevels[(currentLevel - 1) % clockLevels.length];
+      const hourAngle = (targetClock.hour % 12 + targetClock.minute / 60) * 30;
+      const minuteAngle = targetClock.minute * 6;
+      const shuffledOptions = stableShuffle(targetClock.options, currentLevel * 17);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🦉</span>
-          <div className="mb-3">
-            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
-              Professor Owl asks: What time is on the clock?
-            </h3>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-4xl animate-bounce">🦉</span>
+            <div className="text-left">
+              <span className="text-[10px] font-black uppercase text-amber-500 font-fun tracking-wider block">
+                Professor Owl's Academy
+              </span>
+              <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+                What time does the clock show?
+              </h3>
+            </div>
           </div>
 
-          <div className="w-28 h-28 rounded-full bg-white border-4 border-indigo-400 shadow-md flex items-center justify-center text-5xl mb-5">
-            {targetTime.icon}
+          {/* Accurate Analog SVG Clock Face */}
+          <div className="relative w-44 h-44 sm:w-48 sm:h-48 my-3 bg-white rounded-full border-4 border-indigo-400 shadow-xl flex items-center justify-center">
+            <svg className="w-full h-full p-2 select-none" viewBox="0 0 100 100">
+              {/* Outer dial ring */}
+              <circle cx="50" cy="50" r="46" fill="#F8FAFC" stroke="#6366F1" strokeWidth="3" />
+              
+              {/* Hour tick marks & Numbers */}
+              {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(num => {
+                const angleRad = (num * 30 - 90) * (Math.PI / 180);
+                const x = 50 + 34 * Math.cos(angleRad);
+                const y = 50 + 34 * Math.sin(angleRad);
+                return (
+                  <text
+                    key={num}
+                    x={x}
+                    y={y + 3}
+                    textAnchor="middle"
+                    className="text-[9px] font-black font-fun fill-slate-800 font-bold"
+                  >
+                    {num}
+                  </text>
+                );
+              })}
+
+              {/* Red Hour Hand */}
+              <line
+                x1="50"
+                y1="50"
+                x2="50"
+                y2="28"
+                stroke="#EF4444"
+                strokeWidth="4.5"
+                strokeLinecap="round"
+                transform={`rotate(${hourAngle} 50 50)`}
+              />
+
+              {/* Blue Minute Hand */}
+              <line
+                x1="50"
+                y1="50"
+                x2="50"
+                y2="18"
+                stroke="#3B82F6"
+                strokeWidth="3"
+                strokeLinecap="round"
+                transform={`rotate(${minuteAngle} 50 50)`}
+              />
+
+              {/* Gold Center Pin */}
+              <circle cx="50" cy="50" r="3.5" fill="#F59E0B" stroke="#B45309" strokeWidth="1" />
+            </svg>
+
+            {/* Hand Color Guide legend */}
+            <div className="absolute -bottom-2 flex items-center gap-2 bg-slate-900/90 text-[10px] text-white px-2.5 py-0.5 rounded-full border border-slate-700 shadow font-fun">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Hour</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Minute</span>
+            </div>
           </div>
 
-          <div className="flex gap-3">
-            {options.map((t, idx) => (
+          {/* Time Options */}
+          <div className="flex gap-2.5 sm:gap-3 flex-wrap justify-center mt-3">
+            {shuffledOptions.map((t, idx) => (
               <button
                 key={idx}
                 onClick={() => {
-                  if (t === targetTime.time) {
+                  if (t === targetClock.time) {
                     handleCorrect();
                   } else {
-                    handleIncorrect('Look at the hour and minute hands!');
+                    handleIncorrect(targetClock.hint);
                   }
                 }}
-                className="px-5 py-3 rounded-2xl bg-white border-2 border-indigo-200 hover:border-indigo-500 text-indigo-900 font-fun font-black text-xl shadow-sm active:scale-95 transition"
+                className="px-5 py-2.5 rounded-2xl bg-white border-2 border-indigo-300 hover:border-indigo-600 hover:bg-indigo-50 text-indigo-950 font-fun font-black text-lg sm:text-xl shadow-md active:scale-95 transition cursor-pointer"
               >
                 {t}
               </button>
@@ -804,45 +877,153 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     }
 
     // -----------------------------------------------------------------------
-    // PHONICS 17: GRAMMAR SAFARI (Nouns, Verbs, Adjectives)
+    // PHONICS 17: GRAMMAR SAFARI (Nouns, Verbs, Adjectives in Rich Story Context)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_grammar_safari') {
-      const words = [
-        { word: 'ELEPHANT 🐘', type: 'Noun' },
-        { word: 'RUN 🏃', type: 'Verb' },
-        { word: 'SUNNY ☀️', type: 'Adjective' },
-        { word: 'SWIM 🏊', type: 'Verb' },
-        { word: 'GIGANTIC 🦕', type: 'Adjective' }
+      const safariStories = [
+        {
+          targetWord: 'MONKEY',
+          type: 'Noun',
+          emoji: '🐒',
+          sentenceBefore: 'The playful',
+          sentenceAfter: 'swings happily through the tall jungle vines!',
+          question: 'What kind of word is "MONKEY"?',
+          explanation: 'A monkey is an animal friend! Animal and object names are Nouns.',
+          hint: 'Is it an animal/thing (Noun), an action (Verb), or a description (Adjective)?'
+        },
+        {
+          targetWord: 'SWIMS',
+          type: 'Verb',
+          emoji: '🏊',
+          sentenceBefore: 'A friendly river dolphin',
+          sentenceAfter: 'swiftly across the blue lagoon waters!',
+          question: 'What kind of word is "SWIMS"?',
+          explanation: '"Swims" is something an animal DOES! Action words are Verbs.',
+          hint: 'Think of an action you can do with your body!'
+        },
+        {
+          targetWord: 'GOLDEN',
+          type: 'Adjective',
+          emoji: '✨',
+          sentenceBefore: 'The brave lion wears a',
+          sentenceAfter: 'mane that shines brightly in the sun!',
+          question: 'What kind of word is "GOLDEN"?',
+          explanation: '"Golden" describes what the lion\'s mane looks like! Describing words are Adjectives.',
+          hint: 'Does it describe what something looks or feels like?'
+        },
+        {
+          targetWord: 'SPRINTS',
+          type: 'Verb',
+          emoji: '⚡',
+          sentenceBefore: 'The spotted cheetah',
+          sentenceAfter: 'faster than the wind across the savanna grass!',
+          question: 'What kind of word is "SPRINTS"?',
+          explanation: '"Sprints" means running super fast! That is an action, so it is a Verb.',
+          hint: 'Sprint is a fast movement! What do you call action words?'
+        },
+        {
+          targetWord: 'GIGANTIC',
+          type: 'Adjective',
+          emoji: '🦕',
+          sentenceBefore: 'Under the baobab tree stands a',
+          sentenceAfter: 'elephant waving its huge flapping ears!',
+          question: 'What kind of word is "GIGANTIC"?',
+          explanation: '"Gigantic" describes the huge size of the elephant! Size and look words are Adjectives.',
+          hint: 'It describes how big the elephant is!'
+        }
       ];
-      const curWord = words[(currentLevel - 1) % words.length];
+
+      const curStory = safariStories[(currentLevel - 1) % safariStories.length];
+
+      const speakSentence = () => {
+        soundEngine.playPop();
+        if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+          try {
+            window.speechSynthesis.cancel();
+            const text = `${curStory.sentenceBefore} ${curStory.targetWord} ${curStory.sentenceAfter}`;
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.rate = 0.9;
+            window.speechSynthesis.speak(utt);
+          } catch {}
+        }
+      };
+
+      const grammarOptions = [
+        {
+          type: 'Noun',
+          badge: '🦁 NOUN',
+          title: 'Person, Place, Thing',
+          desc: 'Names an animal, friend, or place',
+          bg: 'hover:bg-amber-50 border-amber-300 text-amber-950'
+        },
+        {
+          type: 'Verb',
+          badge: '⚡ VERB',
+          title: 'Action Word',
+          desc: 'Something you can jump, run, or do!',
+          bg: 'hover:bg-emerald-50 border-emerald-300 text-emerald-950'
+        },
+        {
+          type: 'Adjective',
+          badge: '🎨 ADJECTIVE',
+          title: 'Describing Word',
+          desc: 'Tells size, color, or feeling',
+          bg: 'hover:bg-purple-50 border-purple-300 text-purple-950'
+        }
+      ];
 
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🍃</span>
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Grammar Leaf: <span className="text-emerald-700 underline">{curWord.word}</span>
-          </h3>
-          <p className="text-xs text-slate-500 mb-4 font-semibold">What part of speech is this word?</p>
+        <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-xl mx-auto">
+          {/* Safari Header Banner */}
+          <div className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-100 text-emerald-900 rounded-full text-xs font-fun font-bold mb-3 shadow-sm">
+            <span>🌿 Safari Field Notes</span>
+            <button
+              onClick={speakSentence}
+              className="ml-1 p-1 bg-white hover:bg-emerald-50 rounded-full shadow-sm text-emerald-700 active:scale-95 transition"
+              title="Read sentence aloud"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-          <div className="flex flex-col gap-2.5 w-full max-w-xs">
-            {['Noun (Person, Place, Thing)', 'Verb (Action word)', 'Adjective (Describing word)'].map((choice, idx) => {
-              const baseName = choice.split(' ')[0];
-              return (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    if (baseName === curWord.type) {
-                      handleCorrect();
-                    } else {
-                      handleIncorrect(`Think about what ${curWord.word} does!`);
-                    }
-                  }}
-                  className="py-3 px-4 rounded-xl bg-white border-2 border-emerald-200 hover:border-emerald-500 font-fun font-bold text-slate-800 text-sm shadow-sm active:scale-95 transition"
-                >
-                  {choice}
-                </button>
-              );
-            })}
+          {/* Contextual Story Card */}
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border-2 border-emerald-300 rounded-2xl p-4 shadow-sm mb-3 w-full text-slate-800">
+            <span className="text-4xl mb-1 block">{curStory.emoji}</span>
+            <p className="text-sm sm:text-base font-medium leading-relaxed">
+              <span>{curStory.sentenceBefore} </span>
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-fun font-black shadow-sm inline-block scale-105">
+                {curStory.targetWord}
+              </span>
+              <span> {curStory.sentenceAfter}</span>
+            </p>
+          </div>
+
+          <h3 className="text-sm sm:text-base font-black font-fun text-slate-800 mb-1">
+            {curStory.question}
+          </h3>
+          <p className="text-xs text-slate-500 mb-3 font-semibold">
+            Tap the matching badge to log this word in your Safari Guide!
+          </p>
+
+          {/* Grammar Badge Options */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
+            {grammarOptions.map((opt) => (
+              <button
+                key={opt.type}
+                onClick={() => {
+                  if (opt.type === curStory.type) {
+                    handleCorrect();
+                  } else {
+                    handleIncorrect(curStory.hint);
+                  }
+                }}
+                className={`p-3 rounded-2xl bg-white border-2 shadow-sm transition active:scale-95 flex flex-col items-center text-center ${opt.bg}`}
+              >
+                <span className="font-fun font-black text-sm mb-0.5">{opt.badge}</span>
+                <span className="font-bold text-xs text-slate-700">{opt.title}</span>
+                <span className="text-[10px] text-slate-400 mt-1">{opt.desc}</span>
+              </button>
+            ))}
           </div>
         </div>
       );
@@ -891,133 +1072,344 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     }
 
     // -----------------------------------------------------------------------
-    // PHONICS 19: SENTENCE BUILDER EXPRESS
+    // PHONICS 19: SENTENCE BUILDER EXPRESS (Jumbled Words with Train Carriages)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_sentence_builder_express') {
-      const sentences = [
-        { words: ['The', 'lion', 'can', 'roar'], correct: 'The lion can roar' },
-        { words: ['Birds', 'fly', 'in', 'sky'], correct: 'Birds fly in sky' },
-        { words: ['I', 'love', 'sweet', 'apples'], correct: 'I love sweet apples' },
-        { words: ['Frogs', 'jump', 'very', 'high'], correct: 'Frogs jump very high' },
-        { words: ['Stars', 'shine', 'at', 'night'], correct: 'Stars shine at night' }
+      const trainPackages = [
+        {
+          id: 1,
+          icon: '🐶',
+          theme: 'Happy Puppy',
+          correctSequence: ['The', 'friendly', 'dog', 'wags', 'its', 'tail'],
+          jumbled: ['tail', 'friendly', 'wags', 'The', 'its', 'dog']
+        },
+        {
+          id: 2,
+          icon: '🐸',
+          theme: 'Pond Jumpers',
+          correctSequence: ['Green', 'frogs', 'hop', 'over', 'the', 'log'],
+          jumbled: ['hop', 'Green', 'the', 'frogs', 'log', 'over']
+        },
+        {
+          id: 3,
+          icon: '⭐',
+          theme: 'Starry Sky',
+          correctSequence: ['Bright', 'stars', 'twinkle', 'in', 'night', 'sky'],
+          jumbled: ['twinkle', 'sky', 'Bright', 'stars', 'night', 'in']
+        },
+        {
+          id: 4,
+          icon: '🐬',
+          theme: 'Ocean Waves',
+          correctSequence: ['Playful', 'dolphins', 'leap', 'through', 'high', 'waves'],
+          jumbled: ['waves', 'Playful', 'leap', 'through', 'dolphins', 'high']
+        },
+        {
+          id: 5,
+          icon: '🚀',
+          theme: 'Space Explorer',
+          correctSequence: ['Brave', 'explorers', 'zoom', 'to', 'the', 'moon'],
+          jumbled: ['moon', 'explorers', 'the', 'zoom', 'Brave', 'to']
+        }
       ];
-      const sentence = sentences[(currentLevel - 1) % sentences.length];
+
+      const currentSentence = trainPackages[(currentLevel - 1) % trainPackages.length];
+      const targetLength = currentSentence.correctSequence.length;
+
+      const speakSentence = () => {
+        soundEngine.playPop();
+        if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+          try {
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(currentSentence.correctSequence.join(' '));
+            utt.rate = 0.85;
+            window.speechSynthesis.speak(utt);
+          } catch {}
+        }
+      };
+
+      const handleAddWord = (word: string, tileId: number) => {
+        soundEngine.playPop();
+        const nextWords = [...sentenceWords, word];
+        const nextTileIds = [...selectedWordTileIds, tileId];
+        setSentenceWords(nextWords);
+        setSelectedWordTileIds(nextTileIds);
+
+        if (nextWords.length === targetLength) {
+          if (nextWords.join(' ') === currentSentence.correctSequence.join(' ')) {
+            handleCorrect();
+          } else {
+            handleIncorrect('Check the word sequence! Tap any carriage to unhitch it.');
+          }
+        }
+      };
+
+      const handleRemoveWord = (slotIdx: number) => {
+        soundEngine.playPop();
+        const nextWords = sentenceWords.filter((_, idx) => idx !== slotIdx);
+        const nextTileIds = selectedWordTileIds.filter((_, idx) => idx !== slotIdx);
+        setSentenceWords(nextWords);
+        setSelectedWordTileIds(nextTileIds);
+      };
 
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🧩</span>
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-2">
-            Assemble the Sentence Carriages!
-          </h3>
-
-          <div className="min-h-[50px] p-3 bg-indigo-50 border-2 border-indigo-200 rounded-2xl flex items-center justify-center gap-2 mb-4 w-full max-w-sm">
-            {sentenceWords.length === 0 ? (
-              <span className="text-xs text-indigo-400 font-bold">Tap word blocks below in order!</span>
-            ) : (
-              sentenceWords.map((w, idx) => (
-                <span key={idx} className="px-3 py-1 bg-white rounded-lg font-fun font-bold text-xs text-indigo-900 shadow-sm border border-indigo-200">
-                  {w}
-                </span>
-              ))
-            )}
+        <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-xl mx-auto">
+          {/* Top Train Header */}
+          <div className="flex items-center justify-between w-full mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🚂</span>
+              <span className="font-fun font-black text-sm text-indigo-900">
+                Sentence Express: {currentSentence.theme} {currentSentence.icon}
+              </span>
+            </div>
+            <button
+              onClick={speakSentence}
+              className="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 rounded-full text-xs font-fun font-bold flex items-center gap-1 active:scale-95 transition"
+              title="Hear sentence"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              <span>Hear Sentence</span>
+            </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 justify-center mb-4">
-            {sentence.words.map((w, idx) => (
-              <button
-                key={idx}
-                disabled={sentenceWords.includes(w)}
-                onClick={() => {
-                  soundEngine.playPop();
-                  const nextWords = [...sentenceWords, w];
-                  setSentenceWords(nextWords);
-                  if (nextWords.length === sentence.words.length) {
-                    if (nextWords.join(' ') === sentence.correct) {
-                      handleCorrect();
-                    } else {
-                      handleIncorrect('Reset and check word order!');
-                    }
-                  }
-                }}
-                className={`px-4 py-2 rounded-xl font-fun font-bold text-sm border-2 transition ${
-                  sentenceWords.includes(w)
-                    ? 'bg-slate-100 text-slate-400 border-slate-200'
-                    : 'bg-white text-slate-800 border-indigo-300 hover:border-indigo-600 shadow-sm active:scale-95'
-                }`}
-              >
-                {w}
-              </button>
-            ))}
+          <p className="text-xs text-slate-500 mb-3 font-semibold">
+            Tap the scrambled word blocks to hitch them to the train in order! Tap a carriage to remove it.
+          </p>
+
+          {/* Interactive Train Track & Carriages */}
+          <div className="w-full bg-slate-900/90 p-3 sm:p-4 rounded-3xl border-3 border-indigo-400 shadow-xl mb-4 overflow-x-auto">
+            {/* Railroad Track Visual */}
+            <div className="flex items-center gap-2 min-w-max pb-1">
+              {/* Locomotive Engine */}
+              <div className="bg-rose-500 text-white px-3 py-2.5 rounded-2xl font-fun font-black text-xs flex items-center gap-1.5 shadow-md shrink-0 border-2 border-rose-300">
+                <span className="text-xl">🚂</span>
+                <span>ENGINE</span>
+              </div>
+
+              {/* Connected Train Carriages */}
+              {Array.from({ length: targetLength }).map((_, slotIdx) => {
+                const filledWord = sentenceWords[slotIdx];
+                return (
+                  <div key={slotIdx} className="flex items-center shrink-0">
+                    <span className="text-indigo-400 text-xs px-0.5">🔗</span>
+                    {filledWord ? (
+                      <button
+                        onClick={() => handleRemoveWord(slotIdx)}
+                        className="px-3 py-2 bg-gradient-to-b from-indigo-50 to-indigo-100 hover:from-rose-50 hover:to-rose-100 text-indigo-950 hover:text-rose-900 border-2 border-indigo-300 hover:border-rose-400 rounded-xl font-fun font-black text-xs sm:text-sm shadow-md transition active:scale-90 flex items-center gap-1.5 group"
+                        title="Tap to unhitch word"
+                      >
+                        <span>{filledWord}</span>
+                        <span className="text-[10px] text-slate-400 group-hover:text-rose-600 font-bold">✕</span>
+                      </button>
+                    ) : (
+                      <div className="w-16 sm:w-20 h-10 rounded-xl border-2 border-dashed border-indigo-400/60 bg-indigo-950/40 flex items-center justify-center text-[10px] font-fun font-bold text-indigo-300">
+                        #{slotIdx + 1}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <button
-            onClick={() => setSentenceWords([])}
-            className="text-xs text-slate-500 font-bold underline hover:text-slate-700"
-          >
-            Clear / Reset
-          </button>
+          {/* Scrambled Word Tile Bank */}
+          <div className="w-full mb-3">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2 block font-fun">
+              📦 Scrambled Station Words
+            </span>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {currentSentence.jumbled.map((word, tileId) => {
+                const isUsed = selectedWordTileIds.includes(tileId);
+                return (
+                  <button
+                    key={tileId}
+                    disabled={isUsed}
+                    onClick={() => handleAddWord(word, tileId)}
+                    className={`px-4 py-2.5 rounded-2xl font-fun font-black text-sm border-2 transition shadow-sm active:scale-95 ${
+                      isUsed
+                        ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed scale-95'
+                        : 'bg-white hover:bg-indigo-50 text-indigo-950 border-indigo-300 hover:border-indigo-600 hover:shadow-md'
+                    }`}
+                  >
+                    {word}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Control Bar: Reset all words */}
+          {sentenceWords.length > 0 && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                setSentenceWords([]);
+                setSelectedWordTileIds([]);
+              }}
+              className="text-xs text-slate-500 hover:text-rose-600 font-fun font-bold underline flex items-center gap-1"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset All Carriages</span>
+            </button>
+          )}
         </div>
       );
     }
 
     // -----------------------------------------------------------------------
-    // PHONICS 20: SPELLING BEE MATCH
+    // PHONICS 20: SPELLING BEE MATCH (Honeycomb Letters with Repeat Audio)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_spelling_bee_match') {
       const words = [
-        { word: 'BEE', letters: ['E', 'B', 'E'], hint: 'Busy pollinator 🐝' },
-        { word: 'FROG', letters: ['G', 'R', 'F', 'O'], hint: 'Pond hopper 🐸' },
-        { word: 'STAR', letters: ['A', 'S', 'R', 'T'], hint: 'Night sky light ⭐' },
-        { word: 'BEAR', letters: ['R', 'E', 'B', 'A'], hint: 'Honey loving friend 🐻' },
-        { word: 'TIGER', letters: ['E', 'T', 'G', 'I', 'R'], hint: 'Striped jungle cat 🐯' }
+        { word: 'BEE', letters: ['E', 'B', 'E'], hint: 'Busy honey maker', emoji: '🐝' },
+        { word: 'FROG', letters: ['G', 'R', 'F', 'O'], hint: 'Pond jumping friend', emoji: '🐸' },
+        { word: 'STAR', letters: ['A', 'S', 'R', 'T'], hint: 'Twinkling night light', emoji: '⭐' },
+        { word: 'SUNNY', letters: ['N', 'S', 'U', 'Y', 'N'], hint: 'Warm bright morning', emoji: '☀️' },
+        { word: 'TIGER', letters: ['E', 'T', 'G', 'I', 'R'], hint: 'Striped jungle cat', emoji: '🐯' }
       ];
       const target = words[(currentLevel - 1) % words.length];
 
+      const speakTargetWord = () => {
+        soundEngine.playLetterTone(target.word[0]);
+        if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+          try {
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(`${target.word}! ${target.hint}`);
+            utt.rate = 0.85;
+            window.speechSynthesis.speak(utt);
+          } catch {}
+        }
+      };
+
+      const handleAddLetter = (letter: string, tileIdx: number) => {
+        soundEngine.playLetterTone(letter);
+        const nextLetters = [...unscrambledLetters, letter];
+        const nextIndices = [...spellingUsedIndices, tileIdx];
+        setUnscrambledLetters(nextLetters);
+        setSpellingUsedIndices(nextIndices);
+
+        if (nextLetters.length === target.word.length) {
+          if (nextLetters.join('') === target.word) {
+            handleCorrect();
+          } else {
+            handleIncorrect('Letters are out of order, try again! Tap backspace or any letter to remove it.');
+          }
+        }
+      };
+
+      const handleRemoveLetter = (slotIdx: number) => {
+        soundEngine.playPop();
+        const nextLetters = unscrambledLetters.filter((_, idx) => idx !== slotIdx);
+        const nextIndices = spellingUsedIndices.filter((_, idx) => idx !== slotIdx);
+        setUnscrambledLetters(nextLetters);
+        setSpellingUsedIndices(nextIndices);
+      };
+
+      const handleBackspace = () => {
+        if (unscrambledLetters.length === 0) return;
+        soundEngine.playPop();
+        setUnscrambledLetters(prev => prev.slice(0, -1));
+        setSpellingUsedIndices(prev => prev.slice(0, -1));
+      };
+
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🍯</span>
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Spell: {target.hint}
-          </h3>
-          <p className="text-xs text-slate-500 mb-3 font-semibold">Unscramble the honeycomb letters:</p>
-
-          <div className="h-14 px-4 bg-amber-50 border-2 border-amber-200 rounded-2xl flex items-center justify-center gap-2 mb-4 min-w-[200px]">
-            {unscrambledLetters.map((l, idx) => (
-              <span key={idx} className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center font-fun font-black text-xl text-amber-950 border border-amber-200">
-                {l}
-              </span>
-            ))}
+        <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-lg mx-auto">
+          {/* Top Honeycomb Header */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-3xl animate-bounce" style={{ animationDuration: '2s' }}>🐝</span>
+            <div>
+              <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+                Spelling Bee: {target.emoji} {target.hint}
+              </h3>
+            </div>
           </div>
 
-          <div className="flex gap-2 mb-3">
-            {target.letters.map((lettr, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  soundEngine.playPop();
-                  const next = [...unscrambledLetters, lettr];
-                  setUnscrambledLetters(next);
-                  if (next.length === target.word.length) {
-                    if (next.join('') === target.word) {
-                      handleCorrect();
-                    } else {
-                      handleIncorrect('Letters are out of order, try again!');
-                    }
-                  }
-                }}
-                className="w-12 h-12 rounded-xl bg-amber-400 hover:bg-amber-300 font-fun font-black text-2xl text-amber-950 shadow-sm border border-white active:scale-95 transition"
-              >
-                {lettr}
-              </button>
-            ))}
-          </div>
-
+          {/* Repeat Audio Button (Prominently requested by user) */}
           <button
-            onClick={() => setUnscrambledLetters([])}
-            className="text-xs text-slate-500 font-bold underline"
+            onClick={speakTargetWord}
+            className="mb-3 px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-fun font-black text-xs sm:text-sm rounded-full shadow-md flex items-center gap-2 active:scale-95 transition border-2 border-white"
+            title="Hear word pronunciation again"
           >
-            Reset Letters
+            <Volume2 className="w-4 h-4 text-amber-900" />
+            <span>🔊 Repeat Audio ("{target.word}")</span>
           </button>
+
+          {/* Honey Jar Slots where assembled letters sit */}
+          <div className="bg-amber-100/80 p-3 rounded-2xl border-2 border-amber-300 shadow-inner flex items-center justify-center gap-2 mb-4 min-w-[240px]">
+            {Array.from({ length: target.word.length }).map((_, slotIdx) => {
+              const letter = unscrambledLetters[slotIdx];
+              return letter ? (
+                <button
+                  key={slotIdx}
+                  onClick={() => handleRemoveLetter(slotIdx)}
+                  className="w-11 h-12 bg-white rounded-xl shadow-md border-2 border-amber-400 flex flex-col items-center justify-center font-fun font-black text-xl text-amber-950 hover:bg-rose-50 hover:border-rose-300 transition active:scale-95 group"
+                  title="Tap to remove letter"
+                >
+                  <span>{letter}</span>
+                  <span className="text-[9px] text-slate-400 group-hover:text-rose-500 font-bold -mt-1">✕</span>
+                </button>
+              ) : (
+                <div
+                  key={slotIdx}
+                  className="w-11 h-12 rounded-xl border-2 border-dashed border-amber-400/60 bg-amber-50/50 flex items-center justify-center text-xs font-fun font-bold text-amber-400"
+                >
+                  #{slotIdx + 1}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Honeycomb Letter Tiles */}
+          <div className="w-full mb-3">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2 block font-fun">
+              🍯 Tap Honeycomb Letters
+            </span>
+            <div className="flex flex-wrap gap-2.5 justify-center">
+              {target.letters.map((lettr, tileIdx) => {
+                const isUsed = spellingUsedIndices.includes(tileIdx);
+                return (
+                  <button
+                    key={tileIdx}
+                    disabled={isUsed}
+                    onClick={() => handleAddLetter(lettr, tileIdx)}
+                    className={`w-12 h-13 rounded-2xl font-fun font-black text-2xl shadow-md border-2 transition active:scale-90 flex items-center justify-center ${
+                      isUsed
+                        ? 'bg-amber-100/50 text-amber-300 border-amber-200 cursor-not-allowed scale-95'
+                        : 'bg-amber-400 hover:bg-amber-300 text-amber-950 border-amber-500 hover:scale-105'
+                    }`}
+                  >
+                    {lettr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action Row: Backspace & Reset */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackspace}
+              disabled={unscrambledLetters.length === 0}
+              className={`px-3 py-1.5 rounded-xl text-xs font-fun font-bold flex items-center gap-1 border transition ${
+                unscrambledLetters.length === 0
+                  ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed'
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-sm active:scale-95'
+              }`}
+            >
+              <span>⌫ Backspace</span>
+            </button>
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                setUnscrambledLetters([]);
+                setSpellingUsedIndices([]);
+              }}
+              disabled={unscrambledLetters.length === 0}
+              className="text-xs text-slate-500 hover:text-slate-800 font-fun font-bold underline"
+            >
+              Reset All
+            </button>
+          </div>
         </div>
       );
     }
@@ -1513,48 +1905,178 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     }
 
     // -----------------------------------------------------------------------
-    // SCIENCE 35: CAMOUFLAGE SEEK
+    // SCIENCE 35: CAMOUFLAGE SEEK (Rich Nature Biomes & Animal Hide-and-Seek)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_camouflage_seek') {
-      const critters = [
-        { name: 'Chameleon 🦎', bg: 'bg-emerald-200', deco: ['🍃', '🌿', '🌱', '🍃', '🦎', '🌿'] },
-        { name: 'Stick Bug 🦗', bg: 'bg-amber-200', deco: ['🪵', '🍂', '🪵', '🦗', '🪵', '🍂'] },
-        { name: 'Snowy Owl 🦉', bg: 'bg-slate-100', deco: ['❄️', '☁️', '❄️', '🦉', '❄️', '☁️'] },
-        { name: 'Desert Lizard 🦎', bg: 'bg-yellow-100', deco: ['🌵', '🏜️', '🌵', '🦎', '🏜️', '🌵'] },
-        { name: 'Octopus 🐙', bg: 'bg-cyan-200', deco: ['🪸', '🌊', '🪸', '🐙', '🌊', '🪸'] }
+      const camouflageBiomes = [
+        {
+          biome: 'Lush Rainforest Canopy',
+          targetName: 'Emerald Chameleon',
+          targetEmoji: '🦎',
+          scienceFact: 'Chameleons adjust their skin pigment cells (chromatophores) to blend with leaves and regulate body temperature!',
+          bgGradient: 'from-emerald-900 via-green-800 to-teal-950',
+          borderColor: 'border-emerald-400',
+          scenery: [
+            { id: 1, emoji: '🌿', label: 'Broad Fern Leaf' },
+            { id: 2, emoji: '🍃', label: 'Fluttering Leaf' },
+            { id: 3, emoji: '🌱', label: 'Tender Sprout' },
+            { id: 4, emoji: '🦎', label: 'Emerald Chameleon', isTarget: true },
+            { id: 5, emoji: '🪴', label: 'Mossy Branch' },
+            { id: 6, emoji: '🌿', label: 'Jungle Vine' },
+            { id: 7, emoji: '🍃', label: 'Canopy Foliage' },
+            { id: 8, emoji: '🌴', label: 'Palm Frond' },
+            { id: 9, emoji: '🌱', label: 'Bamboo Shoot' }
+          ]
+        },
+        {
+          biome: 'Polar Arctic Tundra',
+          targetName: 'Snowy Arctic Owl',
+          targetEmoji: '🦉',
+          scienceFact: 'Snowy owls have thick white plumage that blends seamlessly into polar snowdrifts, keeping them hidden from predators!',
+          bgGradient: 'from-slate-100 via-sky-100 to-indigo-100 text-slate-900',
+          borderColor: 'border-sky-300',
+          scenery: [
+            { id: 1, emoji: '❄️', label: 'Fluffy Snowdrift' },
+            { id: 2, emoji: '☁️', label: 'Arctic Mist' },
+            { id: 3, emoji: '🧊', label: 'Glacier Ice' },
+            { id: 4, emoji: '❄️', label: 'Frost Crystal' },
+            { id: 5, emoji: '🦉', label: 'Snowy Owl', isTarget: true },
+            { id: 6, emoji: '☁️', label: 'Snow Cloud' },
+            { id: 7, emoji: '🧊', label: 'Frozen Lake' },
+            { id: 8, emoji: '❄️', label: 'Snow Bank' },
+            { id: 9, emoji: '🏔️', label: 'Icy Ridge' }
+          ]
+        },
+        {
+          biome: 'Autumn Oak Woodland',
+          targetName: 'Walking Stick Bug',
+          targetEmoji: '🦗',
+          scienceFact: 'Stick insects mimic twigs and dry tree branches with remarkable detail, even rocking gently like leaves in the breeze!',
+          bgGradient: 'from-amber-950 via-stone-800 to-yellow-950',
+          borderColor: 'border-amber-400',
+          scenery: [
+            { id: 1, emoji: '🪵', label: 'Oak Tree Bark' },
+            { id: 2, emoji: '🍂', label: 'Dry Fallen Leaf' },
+            { id: 3, emoji: '🪵', label: 'Wood Knot' },
+            { id: 4, emoji: '🦗', label: 'Walking Stick Bug', isTarget: true },
+            { id: 5, emoji: '🍁', label: 'Maple Leaf' },
+            { id: 6, emoji: '🪵', label: 'Hollow Log' },
+            { id: 7, emoji: '🍂', label: 'Autumn Foliage' },
+            { id: 8, emoji: '🪵', label: 'Weathered Branch' },
+            { id: 9, emoji: '🌰', label: 'Acorn Nut' }
+          ]
+        },
+        {
+          biome: 'Tropical Coral Reef',
+          targetName: 'Mimic Octopus',
+          targetEmoji: '🐙',
+          scienceFact: 'The mimic octopus can shift both its skin color and texture in seconds to look like sea anemones, corals, or rocks!',
+          bgGradient: 'from-cyan-900 via-blue-900 to-indigo-950',
+          borderColor: 'border-cyan-400',
+          scenery: [
+            { id: 1, emoji: '🪸', label: 'Brain Coral' },
+            { id: 2, emoji: '🌊', label: 'Tidal Wave' },
+            { id: 3, emoji: '🪸', label: 'Sea Fan Coral' },
+            { id: 4, emoji: '🐚', label: 'Reef Shell' },
+            { id: 5, emoji: '🐙', label: 'Mimic Octopus', isTarget: true },
+            { id: 6, emoji: '🪸', label: 'Tube Sponge' },
+            { id: 7, emoji: '🌊', label: 'Ocean Current' },
+            { id: 8, emoji: '🫧', label: 'Coral Bubbles' },
+            { id: 9, emoji: '🪸', label: 'Anemone Bush' }
+          ]
+        },
+        {
+          biome: 'Sunlit Sandy Desert',
+          targetName: 'Horned Sand Gecko',
+          targetEmoji: '🦎',
+          scienceFact: 'Desert geckos have speckled tan scales that mimic desert sand grains, helping them hide in plain sight among the dunes!',
+          bgGradient: 'from-amber-600 via-yellow-600 to-orange-700',
+          borderColor: 'border-amber-300',
+          scenery: [
+            { id: 1, emoji: '🏜️', label: 'Desert Sand Dune' },
+            { id: 2, emoji: '🌵', label: 'Saguaro Cactus' },
+            { id: 3, emoji: '🪨', label: 'Desert Sandstone' },
+            { id: 4, emoji: '🏜️', label: 'Rippled Sand' },
+            { id: 5, emoji: '🦎', label: 'Horned Sand Gecko', isTarget: true },
+            { id: 6, emoji: '🌵', label: 'Prickly Pear' },
+            { id: 7, emoji: '🪨', label: 'Sunbaked Rock' },
+            { id: 8, emoji: '🏜️', label: 'Golden Dunes' },
+            { id: 9, emoji: '☀️', label: 'Desert Sun' }
+          ]
+        }
       ];
-      const cur = critters[(currentLevel - 1) % critters.length];
+
+      const curBiome = camouflageBiomes[(currentLevel - 1) % camouflageBiomes.length];
 
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🔍</span>
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Camouflage Seek: Find the {cur.name}!
-          </h3>
-          <p className="text-xs text-slate-500 mb-4 font-semibold">It blends right into its environment!</p>
+        <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-xl mx-auto">
+          {/* Biome Header */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🔍</span>
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+              Camouflage Seek: {curBiome.biome}
+            </h3>
+          </div>
 
-          <div className={`grid grid-cols-3 gap-3 p-4 rounded-3xl border-2 border-slate-300 ${cur.bg} max-w-xs shadow-inner`}>
-            {cur.deco.map((item, idx) => {
-              const isTarget = item === cur.name.split(' ')[1];
+          <div className="bg-amber-50 border border-amber-300 px-3.5 py-1.5 rounded-full text-xs font-fun font-bold text-amber-900 mb-3 shadow-sm flex items-center gap-2">
+            <span>Mission: Find the hidden <strong>{curBiome.targetName} {curBiome.targetEmoji}</strong>!</span>
+          </div>
+
+          <p className="text-[11px] text-slate-500 mb-3 font-semibold">
+            It blends into the scenery using natural camouflage! Tap items to inspect them with your magnifying lens.
+          </p>
+
+          {/* Scenic Illustrated Biome Grid */}
+          <div className={`grid grid-cols-3 gap-3 p-4 sm:p-5 rounded-3xl border-4 ${curBiome.borderColor} bg-gradient-to-b ${curBiome.bgGradient} shadow-2xl w-full max-w-md relative overflow-hidden`}>
+            {curBiome.scenery.map((item) => {
+              const isFound = camouflageFound && item.isTarget;
               return (
                 <button
-                  key={idx}
+                  key={item.id}
                   onClick={() => {
-                    if (isTarget) {
-                      soundEngine.playPop();
+                    soundEngine.playPop();
+                    setActiveMagnifierItem(item.label);
+                    if (item.isTarget) {
                       setCamouflageFound(true);
-                      handleCorrect();
+                      handleCorrect(150);
                     } else {
-                      handleIncorrect('Keep looking! That is just part of the scenery.');
+                      handleIncorrect(`That is just a ${item.label}! Look closely for the hidden ${curBiome.targetName}.`);
                     }
                   }}
-                  className="w-16 h-16 rounded-2xl bg-white/40 hover:bg-white/70 flex items-center justify-center text-3xl transition active:scale-90"
+                  className={`relative h-20 sm:h-22 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 active:scale-90 group ${
+                    isFound
+                      ? 'bg-amber-400 text-amber-950 scale-110 shadow-2xl ring-4 ring-white animate-bounce z-20'
+                      : 'bg-white/20 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white shadow-sm'
+                  }`}
+                  title={item.label}
                 >
-                  {item}
+                  <span className={`text-3xl sm:text-4xl transition-transform ${isFound ? 'scale-125' : 'group-hover:scale-110'}`}>
+                    {item.emoji}
+                  </span>
+                  <span className="text-[9px] font-fun font-bold mt-1 text-white/90 drop-shadow truncate max-w-[85px] px-1">
+                    {item.label}
+                  </span>
+                  {isFound && (
+                    <span className="absolute -top-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
+
+          {/* Active Nature Inspector Info */}
+          {activeMagnifierItem && (
+            <div className="mt-3 text-xs font-fun font-bold text-slate-700 bg-white/90 px-3 py-1 rounded-xl shadow-sm border border-slate-200">
+              🔍 Inspected: {activeMagnifierItem}
+            </div>
+          )}
+
+          {/* Educational Science Card */}
+          <p className="text-[11px] text-slate-500 mt-2 font-fun font-medium max-w-md">
+            💡 <em>{curBiome.scienceFact}</em>
+          </p>
         </div>
       );
     }
@@ -1645,43 +2167,95 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     }
 
     // -----------------------------------------------------------------------
-    // SCIENCE 37: BIRD BEAK & FOOD MATCH
+    // SCIENCE 37: BIRD BEAK & FOOD MATCH (Fixed Level 5 Blocker & Added Educational Cards)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_bird_beak_match') {
       const beaks = [
-        { bird: 'Pelican 🦤', beakType: 'Large pouch beak', food: 'Fish in the water 🐟' },
-        { bird: 'Hummingbird 🐦', beakType: 'Long slender straw', food: 'Flower nectar 🌸' },
-        { bird: 'Eagle 🦅', beakType: 'Sharp curved hook', food: 'Prey & meat 🥩' },
-        { bird: 'Woodpecker 🪵', beakType: 'Strong chisel beak', food: 'Tree bark insects 🐛' },
-        { bird: 'Sparrow 🌾', beakType: 'Short cone beak', food: 'Seeds & grains 🌾' }
+        {
+          bird: 'Pelican 🦤',
+          beakType: 'Deep Elastic Throat Pouch',
+          food: 'Fish in the water 🐟',
+          funFact: 'Pelican pouches can scoop up to 3 gallons of water to catch swimming fish!'
+        },
+        {
+          bird: 'Hummingbird 🐦',
+          beakType: 'Long Slender Straw-Like Beak',
+          food: 'Flower nectar 🌸',
+          funFact: 'Their needle-like beak probes deep into trumpet flowers to sip sweet nectar!'
+        },
+        {
+          bird: 'Golden Eagle 🦅',
+          beakType: 'Sharp Curved Tearing Hook',
+          food: 'Prey & meat 🥩',
+          funFact: 'The razor-sharp hook allows raptors to grip and tear prey efficiently in the wild!'
+        },
+        {
+          bird: 'Woodpecker 🪵',
+          beakType: 'Strong Shock-Absorbing Chisel',
+          food: 'Tree bark insects 🐛',
+          funFact: 'Woodpeckers peck tree trunks 20 times per second without getting dizzy to dig for grubs!'
+        },
+        {
+          bird: 'Song Sparrow 🌾',
+          beakType: 'Short Sturdy Cone Beak',
+          food: 'Seeds & grains 🌾',
+          funFact: 'Their short, strong triangular cone beak can crack open tough seed shells with ease!'
+        }
       ];
       const cur = beaks[(currentLevel - 1) % beaks.length];
 
-      return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-4xl mb-1">🦜</span>
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Bird Adaptation: {cur.bird}
-          </h3>
-          <p className="text-xs text-slate-500 mb-1 font-semibold">Beak: {cur.beakType}</p>
-          <p className="text-xs text-indigo-600 mb-4 font-bold">What is this beak specially shaped to eat?</p>
+      // Dynamically guaranteed options containing cur.food + 3 distinct distractors
+      const allDietOptions = [
+        'Fish in the water 🐟',
+        'Flower nectar 🌸',
+        'Prey & meat 🥩',
+        'Tree bark insects 🐛',
+        'Seeds & grains 🌾'
+      ];
+      const otherFoods = allDietOptions.filter(f => f !== cur.food);
+      const guaranteedOptions = stableShuffle([cur.food, ...otherFoods], currentLevel * 19);
 
-          <div className="flex flex-col gap-2 w-full max-w-xs">
-            {['Fish in the water 🐟', 'Flower nectar 🌸', 'Prey & meat 🥩', 'Tree bark insects 🐛'].map((food, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (food === cur.food) {
-                    handleCorrect();
-                  } else {
-                    handleIncorrect('Look at the shape of the beak!');
-                  }
-                }}
-                className="py-3 px-4 rounded-xl bg-white border-2 border-slate-200 hover:border-indigo-500 font-fun font-bold text-slate-800 text-xs shadow-sm active:scale-95 transition"
-              >
-                {food}
-              </button>
-            ))}
+      return (
+        <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-lg mx-auto">
+          {/* Bird Header & Avatar */}
+          <div className="bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50 p-4 rounded-3xl border-2 border-indigo-200 shadow-sm w-full mb-3 flex flex-col items-center">
+            <span className="text-5xl mb-1 animate-pulse">{cur.bird.split(' ')[1]}</span>
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+              Adaptation: {cur.bird.split(' ')[0]}
+            </h3>
+            <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mt-1">
+              Beak Type: {cur.beakType}
+            </span>
+            <p className="text-[11px] text-slate-500 mt-2 font-medium">
+              💡 <em>{cur.funFact}</em>
+            </p>
+          </div>
+
+          <p className="text-xs sm:text-sm text-indigo-950 font-fun font-bold mb-3">
+            What is this beak specially adapted to eat?
+          </p>
+
+          {/* Guaranteed Options Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+            {guaranteedOptions.map((food, idx) => {
+              const isMatch = food === cur.food;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (isMatch) {
+                      soundEngine.playPop();
+                      handleCorrect(120);
+                    } else {
+                      handleIncorrect(`Examine the ${cur.beakType}! What food does that shape match best?`);
+                    }
+                  }}
+                  className="py-3 px-4 rounded-2xl bg-white border-2 border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 font-fun font-black text-slate-800 text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center justify-center gap-2"
+                >
+                  <span>{food}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       );
@@ -1785,40 +2359,159 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     }
 
     // -----------------------------------------------------------------------
-    // SCIENCE 40: PET CARE CLINIC
+    // SCIENCE 40: PET CARE CLINIC (Interactive Vet Examination & Medical Tools)
     // -----------------------------------------------------------------------
     if (gameMeta.id === 'game_pet_care_clinic') {
-      const steps = [
-        { task: 'Check Puppy Temperature 🌡️', icon: '🌡️', hint: 'Take friendly vitals!' },
-        { task: 'Clean & Bandage Little Paw 🩹', icon: '🩹', hint: 'Wrap with care!' },
-        { task: 'Provide Fresh Cool Water 🥛', icon: '🥛', hint: 'Hydration time!' },
-        { task: 'Feed Nutritious Kibble 🥣', icon: '🥣', hint: 'Healthy energy food!' },
-        { task: 'Gentle Fur Brush & Petting 🪮', icon: '🪮', hint: 'Happy and healthy puppy!' }
+      const clinicPatients = [
+        {
+          name: 'Barnaby the Puppy',
+          emoji: '🐶',
+          issue: 'Barnaby stepped on a garden thorn and has a tender paw!',
+          tasks: [
+            { tool: 'stethoscope', name: 'Stethoscope 🩺', prompt: 'Listen to healthy heartbeat' },
+            { tool: 'bandage', name: 'Magic Bandage 🩹', prompt: 'Clean & wrap sore paw' },
+            { tool: 'food', name: 'Kibble & Water 🥣', prompt: 'Nutritious recovery bowl' }
+          ]
+        },
+        {
+          name: 'Whiskers the Kitten',
+          emoji: '🐱',
+          issue: 'Whiskers has a warm forehead and feels very sleepy.',
+          tasks: [
+            { tool: 'thermometer', name: 'Thermometer 🌡️', prompt: 'Check gentle temperature' },
+            { tool: 'brush', name: 'Soft Fur Brush 🪮', prompt: 'Comfort with gentle grooming' },
+            { tool: 'food', name: 'Kitten Milk Bowl 🥣', prompt: 'Serve warm nourishing milk' }
+          ]
+        },
+        {
+          name: 'Pip the Bunny',
+          emoji: '🐰',
+          issue: 'Pip ran through clover fields and has tickly messy fur!',
+          tasks: [
+            { tool: 'stethoscope', name: 'Stethoscope 🩺', prompt: 'Check rapid bunny pulse' },
+            { tool: 'brush', name: 'Soft Fur Brush 🪮', prompt: 'Comb soft lop ears' },
+            { tool: 'food', name: 'Crisp Carrot Snack 🥕', prompt: 'Feed crunchy carrot treat' }
+          ]
+        },
+        {
+          name: 'Kiwi the Parrot',
+          emoji: '🦜',
+          issue: 'Kiwi ruffled feathers in a gust of wind and needs care.',
+          tasks: [
+            { tool: 'bandage', name: 'Feather Balm 🩹', prompt: 'Soothe wing feathers' },
+            { tool: 'brush', name: 'Soft Feather Brush 🪮', prompt: 'Groom colorful plumage' },
+            { tool: 'food', name: 'Sweet Mango Slice 🥭', prompt: 'Reward with fresh tropical fruit' }
+          ]
+        },
+        {
+          name: 'Toby the Pond Turtle',
+          emoji: '🐢',
+          issue: 'Toby\'s shell has moss from the pond and needs a spa checkup!',
+          tasks: [
+            { tool: 'thermometer', name: 'Water Temp Check 🌡️', prompt: 'Measure comfortable basking warmth' },
+            { tool: 'brush', name: 'Shell Sponge & Brush 🪮', prompt: 'Polish smooth shell clean' },
+            { tool: 'food', name: 'Crisp Water Greens 🥬', prompt: 'Feed delicious leafy salad' }
+          ]
+        }
       ];
-      const curStep = steps[clinicStep % steps.length];
+
+      const patient = clinicPatients[(currentLevel - 1) % clinicPatients.length];
+      const currentTaskIndex = clinicStep;
+      const targetTask = patient.tasks[currentTaskIndex] || patient.tasks[0];
+      const isRecovered = clinicStep >= patient.tasks.length;
+
+      const availableTools = [
+        { id: 'stethoscope', name: 'Stethoscope', icon: '🩺', desc: 'Heart Check' },
+        { id: 'bandage', name: 'Bandage', icon: '🩹', desc: 'Heal Scrapes' },
+        { id: 'thermometer', name: 'Thermometer', icon: '🌡️', desc: 'Check Temp' },
+        { id: 'brush', name: 'Soft Brush', icon: '🪮', desc: 'Groom & Soothe' },
+        { id: 'food', name: 'Healthy Treat', icon: '🥣', desc: 'Food & Water' }
+      ];
+
+      const handleApplyTool = (toolId: string) => {
+        if (toolId === targetTask.tool) {
+          soundEngine.playPop();
+          const nextStep = clinicStep + 1;
+          setClinicStep(nextStep);
+          setPetExamHistory(prev => [...prev, targetTask.name]);
+
+          if (nextStep >= patient.tasks.length) {
+            handleCorrect(150);
+          }
+        } else {
+          handleIncorrect(`Try using the ${targetTask.name.split(' ')[0]} to ${targetTask.prompt.toLowerCase()}!`);
+        }
+      };
+
+      const healthPercent = Math.min(100, Math.round(((clinicStep) / patient.tasks.length) * 100));
 
       return (
-        <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">🐶</span>
-          <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Pet Care Step {clinicStep + 1} of 3: {curStep.task}
-          </h3>
-          <p className="text-xs text-slate-500 mb-4 font-semibold">{curStep.hint}</p>
+        <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-lg mx-auto">
+          {/* Clinic Header */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-3xl">🏥</span>
+            <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
+              Pet Clinic: {patient.name} {patient.emoji}
+            </h3>
+          </div>
 
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              const nextStep = clinicStep + 1;
-              setClinicStep(nextStep);
-              if (nextStep >= 3) {
-                handleCorrect();
-              }
-            }}
-            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-fun font-black text-lg shadow-md active:scale-95 transition flex items-center gap-2"
-          >
-            <span className="text-2xl">{curStep.icon}</span>
-            <span>Apply Care Action</span>
-          </button>
+          {/* Patient Card & Health Bar */}
+          <div className="bg-gradient-to-r from-teal-50 via-emerald-50 to-green-50 p-4 rounded-3xl border-2 border-emerald-300 shadow-sm w-full mb-3 flex flex-col items-center">
+            <span className={`text-5xl mb-1 transition-transform ${isRecovered ? 'scale-125 animate-bounce' : 'scale-100'}`}>
+              {patient.emoji}
+            </span>
+            <p className="text-xs font-bold text-slate-700 mb-2">
+              {isRecovered ? '🎉 Fully healed and purring with happiness!' : patient.issue}
+            </p>
+
+            {/* Health Meter */}
+            <div className="w-full max-w-xs bg-slate-200 rounded-full h-3.5 p-0.5 shadow-inner mb-1">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(25, healthPercent)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between w-full max-w-xs text-[10px] font-black uppercase text-slate-400 font-fun">
+              <span>Care Step {Math.min(clinicStep + 1, patient.tasks.length)} of {patient.tasks.length}</span>
+              <span>{healthPercent}% Healthy</span>
+            </div>
+          </div>
+
+          {!isRecovered && (
+            <div className="bg-amber-100 text-amber-950 px-3.5 py-1.5 rounded-2xl text-xs font-fun font-black mb-3 border border-amber-300 shadow-sm flex items-center gap-1.5">
+              <span>👉 Current Care Goal:</span>
+              <span className="underline">{targetTask.prompt}</span>
+            </div>
+          )}
+
+          {/* Interactive Medical Tools Tray */}
+          <div className="w-full">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2 block font-fun">
+              🧰 Tap Veterinary Tool to Apply
+            </span>
+            <div className="grid grid-cols-5 gap-2 w-full">
+              {availableTools.map((t) => {
+                const isGoal = !isRecovered && t.id === targetTask.tool;
+                return (
+                  <button
+                    key={t.id}
+                    disabled={isRecovered}
+                    onClick={() => handleApplyTool(t.id)}
+                    className={`p-2 rounded-2xl flex flex-col items-center justify-center transition-all active:scale-90 border-2 shadow-sm ${
+                      isGoal
+                        ? 'bg-emerald-100 border-emerald-500 ring-2 ring-emerald-300 scale-105'
+                        : 'bg-white hover:bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <span className="text-2xl sm:text-3xl mb-0.5">{t.icon}</span>
+                    <span className="text-[9px] font-fun font-black text-slate-800 leading-tight">
+                      {t.name.split(' ')[0]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       );
     }

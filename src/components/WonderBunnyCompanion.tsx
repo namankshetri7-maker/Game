@@ -17,6 +17,7 @@ const MESSAGES_BY_VIEW: Record<string, string[]> = {
     "Collect stars across all 5 magical worlds! ⭐",
     "Tap the Parent Gate top-right anytime for progress reports! 🛡️"
   ],
+
   world_detail: [
     "Pick Level 1 for a guided start, or try Level 5 for Champion stars! 👑",
     "Each level earns you stickers for your Sticker Book! 📕✨",
