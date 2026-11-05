@@ -121,10 +121,10 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       badgePadding: 'px-1.5 py-0.5 text-[9px]'
     },
     header: {
-      icon: 'w-12 h-12 sm:w-14 sm:h-14 md:w-15 md:h-15',
-      text: 'text-xl sm:text-2xl md:text-[26px]',
-      subText: 'text-[10px] sm:text-[11px]',
-      badgePadding: 'px-2 py-0.5 text-[9px] sm:text-[11px]'
+      icon: 'w-9 h-9 sm:w-11 sm:h-11 md:w-13 md:h-13',
+      text: 'text-sm sm:text-xl md:text-2xl',
+      subText: 'text-[9px] sm:text-[11px]',
+      badgePadding: 'px-1.5 py-0.5 text-[9px] sm:text-[11px]'
     },
     md: {
       icon: 'w-12 h-12 sm:w-14 sm:h-14',
@@ -197,7 +197,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {/* Brand Title Text: Joyfully Designed Letterforms Matched to Active Theme */}
       {showText && (
         <div className="flex flex-col justify-center leading-none">
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {/* Word 1: Wonder */}
             <div className={`${sizeConfig.text} leading-none`}>
               {renderPlayfulLetters('Wonder', palette.wonderGradient, 0)}
@@ -208,18 +208,18 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
               {renderPlayfulLetters('World', palette.worldGradient, 1)}
             </div>
 
-            {/* Word 3: Kids Badge (3D Candy Pill Styled to Theme) */}
+            {/* Word 3: Kids Badge */}
             <span
-              className={`inline-flex items-center gap-1 font-fun font-black ${sizeConfig.badgePadding} rounded-xl shadow-xs tracking-wider uppercase border ${palette.kidsBg} ${palette.kidsText} ${palette.kidsBorder} ring-2 ${palette.kidsRing} transform hover:rotate-3 active:scale-95 transition-all duration-300 drop-shadow-xs`}
+              className={`hidden sm:inline-flex items-center gap-1 font-fun font-black ${sizeConfig.badgePadding} rounded-xl shadow-xs tracking-wider uppercase border ${palette.kidsBg} ${palette.kidsText} ${palette.kidsBorder} ring-2 ${palette.kidsRing} transform hover:rotate-3 active:scale-95 transition-all duration-300 drop-shadow-xs`}
             >
-              <span>Kids</span>
+              <span>Kids Learning</span>
               <span className="text-[10px] sm:text-xs leading-none">{palette.starIcon}</span>
             </span>
           </div>
 
           {/* Subtitle: Theme-specific subject & offline indicator */}
           <span className={`${sizeConfig.subText} hidden sm:flex font-black ${palette.subtitleColor} tracking-wider font-fun uppercase items-center gap-1.5 mt-1 transition-colors duration-500`}>
-            <span>{palette.subtitleText}</span>
+            <span>Wonder World Kids Learning • 100% Offline</span>
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${palette.subtitleDot} animate-pulse`} />
           </span>
         </div>

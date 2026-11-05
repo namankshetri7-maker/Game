@@ -8,7 +8,7 @@
  * - Safe COPPA controls (zero ads, zero tracking, local data wipe)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   X,
@@ -28,11 +28,17 @@ import {
   KeyRound,
   AlertTriangle,
   Smartphone,
-  WifiOff
+  WifiOff,
+  Download,
+  Upload,
+  FileText,
+  ShieldAlert,
+  Info
 } from 'lucide-react';
 import { ChildProfile, SubjectArea } from '../types/game';
 import { storageService, INITIAL_STICKERS } from '../services/storageService';
 import { soundEngine } from '../services/soundEngine';
+import { parentSecurityService } from '../services/parentSecurityService';
 
 interface ParentDashboardProps {
   isOpen: boolean;
@@ -49,23 +55,39 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'profiles' | 'stickers' | 'settings'>('analytics');
   const [profiles, setProfiles] = useState<ChildProfile[]>(() => storageService.getProfiles());
-  const [activeProfileId, setActiveProfileId] = useState<string>(() => storageService.getActiveProfileId());
+  const [activeProfileId, setActiveProfileId] = useState<string>(() => storageService.getActiveProfileId() || '');
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [newChildName, setNewChildName] = useState('');
   const [newChildAge, setNewChildAge] = useState(5);
   const [newChildAvatar, setNewChildAvatar] = useState('🦁');
   const [newChildLimit, setNewChildLimit] = useState(45);
   const [parentSettings, setParentSettings] = useState(() => storageService.getParentSettings());
-  const [pinInput, setPinInput] = useState(() => storageService.getParentSettings().parentPin || '1234');
-  const [pinStatusMessage, setPinStatusMessage] = useState('');
+  
+  // Secure PIN change state
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmNewPinInput, setConfirmNewPinInput] = useState('');
+  const [pinStatusMessage, setPinStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
+
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
-  const currentStats = storageService.getAggregatedStats(activeProfileId);
-  const currentProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
-  const unlockedStickers = storageService.getUnlockedStickers(activeProfileId);
+  const currentStats = storageService.getAggregatedStats(activeProfileId || '');
+  const currentProfile: ChildProfile = (activeProfileId ? profiles.find(p => p.id === activeProfileId) : undefined) || profiles[0] || {
+    id: 'placeholder',
+    name: 'Explorer',
+    age: 5,
+    ageGroup: '5-7',
+    avatar: '🦁',
+    createdAt: Date.now(),
+    dailyTimeLimitMinutes: 45,
+    todayPlayTimeSeconds: 0,
+    totalPlayTimeSeconds: 0
+  };
+  const unlockedStickers = activeProfileId ? storageService.getUnlockedStickers(activeProfileId) : [];
 
   const handleSelectProfile = (id: string) => {
     soundEngine.playPop();
@@ -74,18 +96,75 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     onProfileSwitched();
   };
 
-  const handleSavePin = (e: React.FormEvent) => {
+  const handleSavePin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^\d{4}$/.test(pinInput)) {
-      setPinStatusMessage('PIN must be exactly 4 digits');
+    if (!/^\d{4}$/.test(newPinInput)) {
+      setPinStatusMessage({ text: 'New PIN must be exactly 4 digits.', isError: true });
+      soundEngine.playOops();
       return;
     }
-    const updated = { ...parentSettings, parentPin: pinInput };
-    storageService.saveParentSettings(updated);
-    setParentSettings(updated);
+    if (newPinInput !== confirmNewPinInput) {
+      setPinStatusMessage({ text: 'PIN confirmation does not match.', isError: true });
+      soundEngine.playOops();
+      return;
+    }
+
+    let res: { success: boolean; error?: string };
+    if (parentSecurityService.isPinConfigured()) {
+      res = await parentSecurityService.changePin(currentPinInput, newPinInput, confirmNewPinInput);
+    } else {
+      res = await parentSecurityService.setupPin(newPinInput, confirmNewPinInput);
+    }
+
+    if (!res.success) {
+      setPinStatusMessage({ text: res.error || 'Failed to update PIN', isError: true });
+      soundEngine.playOops();
+    } else {
+      soundEngine.playSnap();
+      setPinStatusMessage({ text: 'Parent PIN securely updated!', isError: false });
+      setCurrentPinInput('');
+      setNewPinInput('');
+      setConfirmNewPinInput('');
+      setTimeout(() => setPinStatusMessage(null), 3500);
+    }
+  };
+
+  const handleExportData = () => {
     soundEngine.playSnap();
-    setPinStatusMessage('PIN updated successfully!');
-    setTimeout(() => setPinStatusMessage(''), 3000);
+    const dataStr = storageService.exportAllData();
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `WonderWorldKids_FamilyBackup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNoticeMessage('Family progress successfully exported to JSON backup file!');
+  };
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const res = storageService.importAllData(content);
+      if (res.success) {
+        soundEngine.playVictory();
+        const updated = storageService.getProfiles();
+        setProfiles(updated);
+        setActiveProfileId(storageService.getActiveProfileId() || '');
+        setNoticeMessage('Family progress successfully restored!');
+        onProfileSwitched();
+      } else {
+        soundEngine.playOops();
+        setNoticeMessage(res.error || 'Import failed. Please check JSON format.');
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleCreateChild = (e: React.FormEvent) => {
@@ -121,7 +200,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     storageService.deleteProfile(id);
     const updated = storageService.getProfiles();
     setProfiles(updated);
-    setActiveProfileId(storageService.getActiveProfileId());
+    setActiveProfileId(storageService.getActiveProfileId() || '');
     onProfileSwitched();
   };
 
@@ -591,37 +670,118 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <KeyRound className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-800">Parent Gate Security PIN</h3>
-                    <p className="text-xs text-slate-500">Configure your 4-digit code for instant parental access.</p>
+                    <h3 className="text-base font-bold text-slate-800">Change Parent Security PIN</h3>
+                    <p className="text-xs text-slate-500">Requires entering your current PIN before setting a new code.</p>
                   </div>
                 </div>
 
-                <form onSubmit={handleSavePin} className="flex flex-wrap items-center gap-3 pt-1">
-                  <div className="w-36">
-                    <input
-                      type="text"
-                      maxLength={4}
-                      value={pinInput}
-                      onChange={e => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        setPinInput(val);
-                      }}
-                      placeholder="1234"
-                      className="w-full px-3 py-2 text-center text-lg font-mono font-bold tracking-widest border-2 border-indigo-200 focus:border-indigo-500 rounded-xl outline-none"
-                    />
+                <form onSubmit={handleSavePin} className="space-y-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        Current PIN
+                      </label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={currentPinInput}
+                        onChange={e => setCurrentPinInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••"
+                        className="w-full px-3 py-2 text-center text-base font-mono font-bold tracking-widest border-2 border-slate-200 focus:border-indigo-500 rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        New 4-Digit PIN
+                      </label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={newPinInput}
+                        onChange={e => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••"
+                        className="w-full px-3 py-2 text-center text-base font-mono font-bold tracking-widest border-2 border-indigo-200 focus:border-indigo-500 rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        Confirm New PIN
+                      </label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={confirmNewPinInput}
+                        onChange={e => setConfirmNewPinInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••"
+                        className="w-full px-3 py-2 text-center text-base font-mono font-bold tracking-widest border-2 border-indigo-200 focus:border-indigo-500 rounded-xl outline-none"
+                      />
+                    </div>
                   </div>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold font-fun shadow-sm transition"
-                  >
-                    Save PIN
-                  </button>
-                  {pinStatusMessage && (
-                    <span className="text-xs font-bold text-emerald-600">
-                      {pinStatusMessage}
-                    </span>
-                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold font-fun shadow-sm transition cursor-pointer"
+                    >
+                      Update Security PIN
+                    </button>
+                    {pinStatusMessage && (
+                      <span className={`text-xs font-bold ${pinStatusMessage.isError ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {pinStatusMessage.text}
+                      </span>
+                    )}
+                  </div>
                 </form>
+              </div>
+
+              {/* Family Data Backup & Transfer (JSON Export/Import) */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">Family Progress Backup & Transfer</h3>
+                    <p className="text-xs text-slate-500">Safely export or restore profiles, stars, and stickers across your family devices.</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleExportData}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-300 rounded-xl text-xs font-bold font-fun transition active:scale-95 cursor-pointer shadow-2xs"
+                  >
+                    <Download className="w-4 h-4 text-emerald-700" />
+                    <span>Export Backup (.JSON)</span>
+                  </button>
+
+                  <label className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border-2 border-indigo-300 rounded-xl text-xs font-bold font-fun transition active:scale-95 cursor-pointer shadow-2xs">
+                    <Upload className="w-4 h-4 text-indigo-700" />
+                    <span>Import Backup (.JSON)</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportData}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Security Architecture & Client-Side Limitations Notice */}
+              <div className="bg-amber-50/70 p-4 rounded-2xl border-2 border-amber-200 text-amber-950 space-y-2">
+                <div className="flex items-center gap-2 font-fun font-bold text-xs text-amber-900">
+                  <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Important Notice on Client-Side Parental Controls</span>
+                </div>
+                <p className="text-[11px] text-amber-800/90 leading-relaxed font-body">
+                  This parental gate uses salted cryptographic derivation and progressive verification throttling to prevent young children (ages 3–10) from accidentally resetting game data or modifying time limits. Because Wonder World Kids runs 100% offline without mandatory cloud servers, files and localStorage are stored directly on this device. Tech-savvy users with browser developer tools or root file system access can inspect local browser storage. For complete device-level screen locks, we recommend pairing this with your operating system's built-in parental restrictions (Apple Screen Time, Google Family Link, or Windows Family Safety).
+                </p>
               </div>
 
               {/* Safety & Compliance */}

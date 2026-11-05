@@ -34,7 +34,17 @@ export const StickerBookModal: React.FC<StickerBookModalProps> = ({
   if (!isOpen) return null;
 
   const unlocked = storageService.getUnlockedStickers(activeProfileId);
-  const profile = storageService.getActiveProfile();
+  const profile = storageService.getActiveProfile() || {
+    id: activeProfileId,
+    name: 'Explorer',
+    age: 5,
+    ageGroup: '5-7' as const,
+    avatar: '🦁',
+    createdAt: Date.now(),
+    dailyTimeLimitMinutes: 45,
+    todayPlayTimeSeconds: 0,
+    totalPlayTimeSeconds: 0
+  };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!selectedSticker) return;

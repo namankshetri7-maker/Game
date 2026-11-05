@@ -124,7 +124,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.85, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-          className="relative w-full max-w-md bg-white rounded-3xl p-5 sm:p-7 shadow-2xl border-4 border-amber-300 text-center z-10 overflow-hidden"
+          className="relative w-full max-w-md max-h-[92vh] overflow-y-auto bg-white rounded-3xl p-4 sm:p-7 shadow-2xl border-4 border-amber-300 text-center z-10"
         >
           {/* Header Badge */}
           <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full text-amber-950 font-black font-fun text-sm sm:text-base shadow-sm -mt-3 mb-3 border-2 border-white">

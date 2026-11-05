@@ -187,6 +187,11 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       timeSpent,
       true
     );
+
+    const stickers = storageService.getUnlockedStickers(activeProfileId);
+    if (stickers.length > 0) {
+      setEarnedSticker(stickers[stickers.length - 1]);
+    }
   };
 
   const handleNextLevel = () => {
@@ -2710,10 +2715,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                 soundEngine.playPop();
                 onBackToWorld();
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-fun font-bold text-xs sm:text-sm shadow-md border-2 border-white/80 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-amber-200 to-amber-300 hover:from-amber-100 hover:to-amber-200 text-amber-950 font-fun font-black text-xs sm:text-sm shadow-xs border-2 border-amber-400 border-b-3 border-b-amber-600 transition active:translate-y-0.5 active:border-b-1 cursor-pointer"
               title="Return to Island Levels"
             >
-              <ArrowLeft className="w-4 h-4 text-indigo-600 stroke-[2.5]" />
+              <ArrowLeft className="w-4 h-4 text-amber-900 stroke-[2.5]" />
               <span>Levels</span>
             </button>
           )}
@@ -2723,7 +2728,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
               soundEngine.playPop();
               onHome();
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-fun font-bold text-xs sm:text-sm shadow-md border-2 border-white/80 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white to-slate-100 hover:bg-white text-indigo-950 font-fun font-black text-xs sm:text-sm shadow-xs border-2 border-white/90 border-b-3 border-b-slate-300 transition active:translate-y-0.5 active:border-b-1 cursor-pointer"
             title="Return to World Map"
           >
             <Home className="w-4 h-4 text-indigo-600" />
@@ -2731,7 +2736,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="text-xl sm:text-2xl">{gameMeta.icon}</span>
+            <span className="text-xl sm:text-2xl animate-bounce" style={{ animationDuration: '3s' }}>{gameMeta.icon}</span>
             <div>
               <h2 className="text-sm sm:text-lg font-black text-white font-fun drop-shadow">
                 {gameMeta.title}
@@ -2745,8 +2750,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
         {/* Top Right Controls: Score & Pause */}
         <div className="flex items-center gap-2">
-          <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-sm border border-white">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+          <div className="bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-xs border-2 border-amber-300 border-b-3 border-b-amber-400">
+            <Star className="w-4 h-4 fill-amber-400 text-amber-500 animate-pulse" />
             <span className="text-xs sm:text-sm font-black text-slate-800 font-fun">{score} pts</span>
           </div>
 
@@ -2755,7 +2760,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
               soundEngine.playPop();
               setIsPauseOpen(true);
             }}
-            className="p-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 shadow-md border-2 border-white/80 active:scale-95 transition"
+            className="p-2 rounded-xl bg-gradient-to-b from-white to-slate-100 text-slate-700 shadow-xs border-2 border-white/90 border-b-3 border-b-slate-300 active:translate-y-0.5 active:border-b-1 transition cursor-pointer"
             title="Pause Game"
           >
             <Pause className="w-4 h-4" />

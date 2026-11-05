@@ -172,7 +172,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   return (
     <div className="relative w-full h-full min-h-[440px] sm:min-h-[500px] bg-gradient-to-b from-rose-500 via-pink-400 to-amber-500 rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-rose-300 shadow-2xl">
       {/* Top Header */}
-      <div className="flex items-center justify-between z-10">
+      <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {onBackToWorld && (
             <button

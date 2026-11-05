@@ -284,7 +284,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   return (
     <div className="relative w-full h-full min-h-[440px] sm:min-h-[500px] bg-gradient-to-b from-blue-900 via-sky-800 to-indigo-950 rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-cyan-400 shadow-2xl">
       {/* Top Status Bar */}
-      <div className="flex items-center justify-between z-10">
+      <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {onBackToWorld && (
             <button
@@ -586,6 +586,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
             setCurrentLevel(prev => prev + 1);
             setGameState('PLAYING');
             setScore(prev => prev + 100);
+            setMistakes(0);
           } else {
             onNextGame();
           }

@@ -73,7 +73,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
       </div>
 
       {/* Top Bright Kid-Friendly App Header Bar - Perfectly Aligned for iPhone, Android, iPad, Tablet, Mac & Windows */}
-      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b-2 border-indigo-100/90 z-30 shadow-xs transition-all">
+      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b-2 border-indigo-100/90 z-50 shadow-xs transition-all">
         <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-3">
           
           {/* Left Zone: Brand Logo + Child Explorer Badge + Navigation */}

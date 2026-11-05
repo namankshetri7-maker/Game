@@ -1,0 +1,23 @@
+# Wonder World Kids Learning
+> Official Web & PWA Educational Gaming Suite for Children Aged 3–8.
+Website: https://wonderworldkidslearning.space
+
+## Overview
+Wonder World Kids Learning is a 100% offline-compatible, browser-installable PWA educational gaming suite designed for young children (ages 3–8). It features 45 interactive mini-games across 5 learning worlds: Math & Numbers, Reading & Words, Science & Discovery, Logic & Puzzles, and Creative Arts.
+
+## Key Features & Safety Principles
+- 100% Ad-Free & Offline Capable: Runs locally in any modern browser via Service Worker and Progressive Web App technology. No active internet connection needed after installation.
+- COPPA & GDPR-K Conscious Design: Zero tracking analytics, zero external user data collection, zero third-party ads or hidden microtransactions.
+- Parent Control Gate: Math-challenge parental PIN protection before accessing billing, settings, or external web links.
+- Single One-Time Payment: $9.00 USD lifetime access with no recurring subscriptions or micro-purchases.
+- Interactive Free Demo: Sample games playable directly on the website without registration.
+
+## Target Audience & Geographic Support
+- Target Age: 3 to 8 years old.
+- Supported Regions: United States, United Kingdom, Germany, France, Australia, Singapore, United Arab Emirates (Dubai/Middle East), Europe, and Africa.
+- Supported Platforms: Android (PWA), iOS / iPadOS (Add to Home Screen), Desktop Chrome/Edge/Safari/Firefox (PWA & Offline Launcher).
+
+## Legal & Operational Transparency
+- All game progress is stored locally in the user's browser (localStorage / IndexedDB).
+- Payment processing is handled via secure client-side PayPal Checkout verification.
+- Offline desktop launchers and zip packages provide offline web server execution for home or classroom desktop environments.

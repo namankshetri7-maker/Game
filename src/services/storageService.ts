@@ -24,33 +24,7 @@ export const INITIAL_STICKERS: Sticker[] = [
   { id: 'stk_golden_crown', name: 'Wonder Champion', worldId: 'world_math', icon: '👑', rarity: 'legendary', description: 'Reached 20 total stars across worlds!' }
 ];
 
-export const DEFAULT_PROFILES: ChildProfile[] = [
-  {
-    id: 'child_1',
-    name: 'Leo',
-    age: 4,
-    ageGroup: '3-4',
-    avatar: '🦁',
-    createdAt: Date.now() - 86400000 * 3,
-    dailyTimeLimitMinutes: 40,
-    todayPlayTimeSeconds: 720,
-    totalPlayTimeSeconds: 3600
-  },
-  {
-    id: 'child_2',
-    name: 'Mia',
-    age: 6,
-    ageGroup: '5-7',
-    avatar: '🦊',
-    createdAt: Date.now() - 86400000 * 5,
-    dailyTimeLimitMinutes: 50,
-    todayPlayTimeSeconds: 1240,
-    totalPlayTimeSeconds: 7200
-  }
-];
-
 export interface ParentSettings {
-  parentPin: string; // default '1234'
   soundVolume: number;
   musicEnabled: boolean;
   voicePromptsEnabled: boolean;
@@ -58,7 +32,6 @@ export interface ParentSettings {
 }
 
 export const DEFAULT_PARENT_SETTINGS: ParentSettings = {
-  parentPin: '1234',
   soundVolume: 0.8,
   musicEnabled: true,
   voicePromptsEnabled: true,
@@ -67,18 +40,67 @@ export const DEFAULT_PARENT_SETTINGS: ParentSettings = {
 
 class StorageService {
   /**
-   * Get all child profiles (max 4)
+   * Check if onboarding has been completed (at least one profile exists)
+   */
+  public hasCompletedOnboarding(): boolean {
+    const profiles = this.getProfiles();
+    return profiles.length > 0;
+  }
+
+  /**
+   * Get all child profiles (max 4). Returns default starter profiles on clean install.
    */
   public getProfiles(): ChildProfile[] {
     try {
       const raw = localStorage.getItem(PROFILES_KEY);
       if (!raw) {
-        this.saveProfiles(DEFAULT_PROFILES);
-        return DEFAULT_PROFILES;
+        // Initialize with default starter profiles for immediate frictionless play
+        const defaultProfiles: ChildProfile[] = [
+          {
+            id: 'child_leo',
+            name: 'Leo',
+            age: 5,
+            ageGroup: '5-7',
+            avatar: '🦁',
+            createdAt: Date.now(),
+            dailyTimeLimitMinutes: 45,
+            todayPlayTimeSeconds: 0,
+            totalPlayTimeSeconds: 0
+          },
+          {
+            id: 'child_mia',
+            name: 'Mia',
+            age: 7,
+            ageGroup: '5-7',
+            avatar: '🐰',
+            createdAt: Date.now(),
+            dailyTimeLimitMinutes: 60,
+            todayPlayTimeSeconds: 0,
+            totalPlayTimeSeconds: 0
+          }
+        ];
+        this.saveProfiles(defaultProfiles);
+        return defaultProfiles;
       }
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return [
+          {
+            id: 'child_leo',
+            name: 'Leo',
+            age: 5,
+            ageGroup: '5-7',
+            avatar: '🦁',
+            createdAt: Date.now(),
+            dailyTimeLimitMinutes: 45,
+            todayPlayTimeSeconds: 0,
+            totalPlayTimeSeconds: 0
+          }
+        ];
+      }
+      return parsed;
     } catch {
-      return DEFAULT_PROFILES;
+      return [];
     }
   }
 
@@ -90,16 +112,19 @@ class StorageService {
     }
   }
 
-  public getActiveProfileId(): string {
+  public getActiveProfileId(): string | null {
     try {
       const active = localStorage.getItem(ACTIVE_PROFILE_KEY);
       if (active) return active;
       const profiles = this.getProfiles();
-      const defaultId = profiles[0]?.id || 'child_1';
-      this.setActiveProfileId(defaultId);
-      return defaultId;
+      if (profiles.length > 0) {
+        const id = profiles[0].id;
+        this.setActiveProfileId(id);
+        return id;
+      }
+      return null;
     } catch {
-      return 'child_1';
+      return null;
     }
   }
 
@@ -115,7 +140,19 @@ class StorageService {
     const profiles = this.getProfiles();
     const activeId = this.getActiveProfileId();
     const match = profiles.find(p => p.id === activeId);
-    return match || profiles[0] || DEFAULT_PROFILES[0];
+    if (match) return match;
+    if (profiles.length > 0) return profiles[0];
+    return {
+      id: 'child_leo',
+      name: 'Leo',
+      age: 5,
+      ageGroup: '5-7',
+      avatar: '🦁',
+      createdAt: Date.now(),
+      dailyTimeLimitMinutes: 45,
+      todayPlayTimeSeconds: 0,
+      totalPlayTimeSeconds: 0
+    };
   }
 
   public updateProfile(updated: ChildProfile): void {
@@ -135,25 +172,34 @@ class StorageService {
 
     const newProfile: ChildProfile = {
       ...profile,
-      id: `child_${Date.now()}`,
+      id: `child_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       createdAt: Date.now(),
       todayPlayTimeSeconds: 0,
       totalPlayTimeSeconds: 0
     };
     profiles.push(newProfile);
     this.saveProfiles(profiles);
+    this.setActiveProfileId(newProfile.id);
     return newProfile;
   }
 
   public deleteProfile(profileId: string): void {
     let profiles = this.getProfiles();
     profiles = profiles.filter(p => p.id !== profileId);
-    if (profiles.length === 0) {
-      profiles = DEFAULT_PROFILES;
-    }
     this.saveProfiles(profiles);
+    
+    // Clean up profile specific progress and stickers
+    try {
+      localStorage.removeItem(`${PROGRESS_KEY_PREFIX}${profileId}`);
+      localStorage.removeItem(`${STICKERS_KEY_PREFIX}${profileId}`);
+    } catch {}
+
     if (this.getActiveProfileId() === profileId) {
-      this.setActiveProfileId(profiles[0].id);
+      if (profiles.length > 0) {
+        this.setActiveProfileId(profiles[0].id);
+      } else {
+        localStorage.removeItem(ACTIVE_PROFILE_KEY);
+      }
     }
   }
 
@@ -226,7 +272,7 @@ class StorageService {
 
     // Add session play time to active child
     const profile = this.getActiveProfile();
-    if (profile.id === profileId) {
+    if (profile && profile.id === profileId) {
       profile.todayPlayTimeSeconds += timeSpentSeconds;
       profile.totalPlayTimeSeconds += timeSpentSeconds;
       this.updateProfile(profile);
@@ -246,7 +292,7 @@ class StorageService {
       const key = `${STICKERS_KEY_PREFIX}${profileId}`;
       const raw = localStorage.getItem(key);
       if (!raw) {
-        // Unlock first 2 stickers by default
+        // Unlock first 2 stickers by default for new player
         const initial = INITIAL_STICKERS.slice(0, 2).map(s => ({ ...s, unlockedAt: Date.now() }));
         this.saveUnlockedStickers(profileId, initial);
         return initial;
@@ -298,7 +344,7 @@ class StorageService {
   }
 
   /**
-   * Parent Settings & Analytics
+   * Parent Settings
    */
   public getParentSettings(): ParentSettings {
     try {
@@ -322,8 +368,19 @@ class StorageService {
    * Calculate aggregated progress metrics for parent dashboard
    */
   public getAggregatedStats(profileId: string) {
+    const foundProfile = this.getProfiles().find(p => p.id === profileId);
+    const profile: ChildProfile = foundProfile || {
+      id: profileId || 'guest',
+      name: 'Explorer',
+      age: 5,
+      ageGroup: '5-7',
+      avatar: '🦁',
+      createdAt: Date.now(),
+      dailyTimeLimitMinutes: 45,
+      todayPlayTimeSeconds: 0,
+      totalPlayTimeSeconds: 0
+    };
     const progressList = this.getProgressList(profileId);
-    const profile = this.getProfiles().find(p => p.id === profileId) || DEFAULT_PROFILES[0];
     const unlockedStickers = this.getUnlockedStickers(profileId);
 
     const totalStars = progressList.reduce((acc, curr) => acc + curr.stars, 0);
@@ -359,8 +416,8 @@ class StorageService {
       accuracyPercent,
       unlockedStickersCount: unlockedStickers.length,
       totalStickersCount: INITIAL_STICKERS.length,
-      todayPlayTimeMinutes: Math.round(profile.todayPlayTimeSeconds / 60),
-      totalPlayTimeMinutes: Math.round(profile.totalPlayTimeSeconds / 60),
+      todayPlayTimeMinutes: profile ? Math.round(profile.todayPlayTimeSeconds / 60) : 0,
+      totalPlayTimeMinutes: profile ? Math.round(profile.totalPlayTimeSeconds / 60) : 0,
       subjectStats
     };
   }
@@ -371,6 +428,97 @@ class StorageService {
       localStorage.removeItem(`${STICKERS_KEY_PREFIX}${profileId}`);
     } catch (e) {
       console.warn('LocalStorage save failed:', e);
+    }
+  }
+
+  /**
+   * Export all family data into a clean JSON string for local backup
+   */
+  public exportAllData(): string {
+    const profiles = this.getProfiles();
+    const progressMap: Record<string, GameProgress[]> = {};
+    const stickersMap: Record<string, Sticker[]> = {};
+
+    profiles.forEach(p => {
+      progressMap[p.id] = this.getProgressList(p.id);
+      stickersMap[p.id] = this.getUnlockedStickers(p.id);
+    });
+
+    const backup = {
+      app: 'WonderWorldKids',
+      schemaVersion: 2,
+      exportedAt: new Date().toISOString(),
+      profiles,
+      activeProfileId: this.getActiveProfileId(),
+      progressMap,
+      stickersMap,
+      parentSettings: this.getParentSettings()
+    };
+
+    return JSON.stringify(backup, null, 2);
+  }
+
+  /**
+   * Import family data from a JSON backup string with validation
+   */
+  public importAllData(jsonStr: string): { success: boolean; error?: string } {
+    try {
+      const data = JSON.parse(jsonStr);
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: 'Invalid JSON file format.' };
+      }
+      if (!Array.isArray(data.profiles)) {
+        return { success: false, error: 'Backup does not contain valid child profiles.' };
+      }
+
+      this.saveProfiles(data.profiles);
+      if (data.activeProfileId) {
+        this.setActiveProfileId(data.activeProfileId);
+      } else if (data.profiles.length > 0) {
+        this.setActiveProfileId(data.profiles[0].id);
+      }
+
+      if (data.progressMap && typeof data.progressMap === 'object') {
+        Object.keys(data.progressMap).forEach(profileId => {
+          try {
+            localStorage.setItem(`${PROGRESS_KEY_PREFIX}${profileId}`, JSON.stringify(data.progressMap[profileId]));
+          } catch {}
+        });
+      }
+
+      if (data.stickersMap && typeof data.stickersMap === 'object') {
+        Object.keys(data.stickersMap).forEach(profileId => {
+          try {
+            localStorage.setItem(`${STICKERS_KEY_PREFIX}${profileId}`, JSON.stringify(data.stickersMap[profileId]));
+          } catch {}
+        });
+      }
+
+      if (data.parentSettings) {
+        this.saveParentSettings(data.parentSettings);
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      return { success: false, error: `Import failed: ${(err as Error)?.message || 'Invalid data'}` };
+    }
+  }
+
+  /**
+   * Factory reset all local storage data
+   */
+  public factoryReset(): void {
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('wonder_world_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {
+      console.warn('Factory reset error:', e);
     }
   }
 }

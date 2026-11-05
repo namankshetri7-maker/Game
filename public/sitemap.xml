@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Homepage Landing -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en-us" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="en-gb" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="de-de" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="fr-fr" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="en-au" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="en-sg" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="en-ae" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="en-za" href="https://wonderworldkidslearning.space/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://wonderworldkidslearning.space/" />
+  </url>
+
+  <!-- Explore Worlds Catalog -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#worlds</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en-us" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="en-gb" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="de-de" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="fr-fr" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="en-au" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="en-sg" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="en-ae" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="en-za" href="https://wonderworldkidslearning.space/#worlds" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://wonderworldkidslearning.space/#worlds" />
+  </url>
+
+  <!-- Individual World Detail Pages -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#world_math</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://wonderworldkidslearning.space/#world_phonics</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://wonderworldkidslearning.space/#world_geography</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://wonderworldkidslearning.space/#world_science</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://wonderworldkidslearning.space/#world_logic</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Interactive Demo Simulator -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#demo</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Pricing ($9 USD Lifetime License) -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#pricing</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Offline PWA & Desktop Installation Instructions -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#downloads</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Parent Portal & COPPA Compliance Disclosures -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#parents</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- About Us & Educational Mission -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#about</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Privacy Policy & GDPR-K Compliance -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#privacy</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Contact & Family Support -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/#contact</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+</urlset>

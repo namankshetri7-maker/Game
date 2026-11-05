@@ -8,30 +8,35 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Home, Star, Play, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Home, Star, Play, Sparkles, Lock, CheckCircle2 } from 'lucide-react';
 import { WORLDS, MINI_GAMES_MATRIX } from '../data/gameMatrix';
 import { soundEngine } from '../services/soundEngine';
 import { storageService } from '../services/storageService';
+import { isGameAllowedInDemo, isLevelAllowedInDemo } from '../data/demoConfig';
 
 interface WorldDetailViewProps {
   worldId: string;
   activeProfileId: string;
   onBackToMap: () => void;
   onLaunchGameLevel: (gameId: string, levelNumber: number) => void;
+  isDemoMode?: boolean;
+  onShowDemoLimit?: () => void;
 }
 
 export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
   worldId,
   activeProfileId,
   onBackToMap,
-  onLaunchGameLevel
+  onLaunchGameLevel,
+  isDemoMode = false,
+  onShowDemoLimit
 }) => {
   const world = WORLDS.find(w => w.id === worldId) || WORLDS[0];
   const gamesInWorld = MINI_GAMES_MATRIX.filter(g => g.worldId === worldId);
 
   // Selected game inside this world
   const [selectedGameId, setSelectedGameId] = useState<string>(() => {
-    const firstPlayable = gamesInWorld.find(g => g.playable);
+    const firstPlayable = gamesInWorld.find(g => isDemoMode ? isGameAllowedInDemo(g.id) : g.playable);
     return firstPlayable?.id || gamesInWorld[0]?.id || 'game_dino_addition';
   });
 
@@ -49,6 +54,8 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
     { level: 5, title: 'Level 5: Wonder Champion', subtitle: 'Ultimate level for star trophy', badge: '👑 Champion' }
   ];
 
+  const isSelectedGameDemoAllowed = !isDemoMode || isGameAllowedInDemo(selectedGame.id);
+
   return (
     <div className={`relative w-full h-full min-h-[500px] bg-gradient-to-b ${world.bgGradient} rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden select-none border-4 border-white shadow-2xl font-body`}>
       {/* Top Header Bar with Home Button */}
@@ -60,7 +67,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               soundEngine.playPop();
               onBackToMap();
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-fun font-bold text-xs sm:text-sm shadow-md border-2 border-white/80 transition"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-slate-100 active:scale-95 text-slate-800 font-fun font-bold text-xs sm:text-sm shadow-md border-2 border-white/80 transition cursor-pointer"
             title="Return to World Map"
           >
             <Home className="w-4 h-4 text-indigo-600" />
@@ -92,24 +99,39 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 my-2 sm:my-3 flex-1 overflow-y-auto">
         {/* Left Column: Unique Games in this World */}
         <div className="bg-white/95 rounded-2xl p-3 sm:p-4 border-2 border-white shadow-lg flex flex-col">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-fun mb-2">
-            Games in this World ({gamesInWorld.length})
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-fun">
+              Games ({gamesInWorld.length})
+            </h3>
+            {isDemoMode && (
+              <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300">
+                2 Demo Free / World
+              </span>
+            )}
+          </div>
 
           <div className="space-y-2 overflow-y-auto flex-1 pr-1 max-h-[300px]">
             {gamesInWorld.map(g => {
               const isSelected = g.id === selectedGameId;
+              const isAllowed = !isDemoMode || isGameAllowedInDemo(g.id);
+
               return (
                 <button
                   key={g.id}
                   onClick={() => {
                     soundEngine.playPop();
-                    setSelectedGameId(g.id);
+                    if (isDemoMode && !isAllowed) {
+                      onShowDemoLimit?.();
+                    } else {
+                      setSelectedGameId(g.id);
+                    }
                   }}
-                  className={`w-full p-2.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2 ${
+                  className={`w-full p-2.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2 cursor-pointer ${
                     isSelected
                       ? 'bg-indigo-50 border-indigo-500 shadow-sm'
-                      : 'bg-white border-slate-200 hover:border-slate-300'
+                      : isAllowed
+                      ? 'bg-white border-slate-200 hover:border-slate-300'
+                      : 'bg-slate-100/90 border-slate-300 text-slate-400 opacity-90'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -119,9 +141,16 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                       <span className="text-[10px] text-slate-500 block">{g.ageRecommendation}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
-                    Ready
-                  </span>
+                  
+                  {isAllowed ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 shrink-0">
+                      Demo Free
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200 shrink-0 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> $9
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -147,12 +176,29 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               <button
                 onClick={() => {
                   soundEngine.playPop();
-                  onLaunchGameLevel(selectedGame.id, 1);
+                  if (isDemoMode && !isSelectedGameDemoAllowed) {
+                    onShowDemoLimit?.();
+                  } else {
+                    onLaunchGameLevel(selectedGame.id, 1);
+                  }
                 }}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-fun font-bold text-xs shadow-md flex items-center gap-1.5 transition active:scale-95"
+                className={`px-4 py-2 rounded-xl font-fun font-bold text-xs shadow-md flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
+                  isSelectedGameDemoAllowed
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 text-white'
+                    : 'bg-amber-400 hover:bg-amber-300 text-amber-950 border border-amber-500'
+                }`}
               >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Play Level 1</span>
+                {isSelectedGameDemoAllowed ? (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Play Level 1</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Unlock ($9)</span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -167,6 +213,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                   { bg: 'from-pink-50 to-rose-100', border: 'border-pink-300 hover:border-pink-500', numBg: 'bg-rose-600', text: 'text-rose-950' }
                 ];
                 const theme = LEVEL_COLORS[(lvl.level - 1) % LEVEL_COLORS.length];
+                const isLevelUnlockedInDemo = !isDemoMode || (isSelectedGameDemoAllowed && isLevelAllowedInDemo(lvl.level));
 
                 return (
                   <motion.div
@@ -175,13 +222,19 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       soundEngine.playPop();
-                      onLaunchGameLevel(selectedGame.id, lvl.level);
+                      if (isDemoMode && !isLevelUnlockedInDemo) {
+                        onShowDemoLimit?.();
+                      } else {
+                        onLaunchGameLevel(selectedGame.id, lvl.level);
+                      }
                     }}
-                    className={`p-3 rounded-2xl border-3 text-center transition cursor-pointer flex flex-col justify-between bg-gradient-to-b ${theme.bg} ${theme.border} shadow-md group`}
+                    className={`p-3 rounded-2xl border-3 text-center transition cursor-pointer flex flex-col justify-between bg-gradient-to-b ${theme.bg} ${theme.border} shadow-md group ${
+                      !isLevelUnlockedInDemo ? 'opacity-75 grayscale-20' : ''
+                    }`}
                   >
                     <div>
                       <div className={`w-10 h-10 rounded-2xl ${theme.numBg} text-white font-black font-fun text-base flex items-center justify-center mx-auto mb-1.5 shadow-md border-2 border-white group-hover:scale-110 transition`}>
-                        {lvl.level}
+                        {isLevelUnlockedInDemo ? lvl.level : <Lock className="w-4 h-4" />}
                       </div>
                       <span className={`text-[11px] font-black uppercase tracking-wider block font-fun ${theme.text}`}>
                         {lvl.badge}
@@ -192,8 +245,12 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                       <div className="flex justify-center text-amber-500 text-xs drop-shadow-sm">
                         ⭐⭐⭐
                       </div>
-                      <span className="text-[10px] font-black text-indigo-900 font-fun block mt-0.5 uppercase bg-white/80 py-0.5 rounded-lg border border-white">
-                        Play
+                      <span className={`text-[10px] font-black font-fun block mt-0.5 uppercase py-0.5 rounded-lg border ${
+                        isLevelUnlockedInDemo
+                          ? 'bg-white/80 text-indigo-900 border-white'
+                          : 'bg-amber-400 text-amber-950 border-amber-500'
+                      }`}>
+                        {isLevelUnlockedInDemo ? 'Play' : 'Unlock'}
                       </span>
                     </div>
                   </motion.div>
@@ -206,7 +263,9 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
           <div className="p-3 bg-amber-50/90 rounded-2xl border-2 border-amber-200 text-xs text-amber-950 font-bold font-body flex items-center gap-2 shadow-sm">
             <Sparkles className="w-4 h-4 text-amber-600 shrink-0 fill-amber-400" />
             <span>
-              Adaptive Level Engine automatically matches child age ({stats.profile.age} yrs) with guided hints, custom counters, and offline sound!
+              {isDemoMode
+                ? 'Free Demo Mode: 2 games per world are playable for Levels 1 & 2. Unlock all 45 games for $9!'
+                : `Adaptive Level Engine automatically matches child age (${stats.profile.age} yrs) with guided hints, custom counters, and offline sound!`}
             </span>
           </div>
         </div>
@@ -214,3 +273,4 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
     </div>
   );
 };
+

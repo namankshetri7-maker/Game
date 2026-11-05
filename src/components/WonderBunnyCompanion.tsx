@@ -47,13 +47,26 @@ export const WonderBunnyCompanion: React.FC<WonderBunnyCompanionProps> = ({
   // Rotate message periodically or when view changes
   useEffect(() => {
     setMessageIndex(0);
+    // On world_detail or game view, show hint for 3.5s then auto-collapse so it never covers up buttons
+    if (currentView === 'world_detail' || currentView === 'game') {
+      const timer = setTimeout(() => {
+        setIsOpen(false);
+      }, 3500);
+      return () => clearTimeout(timer);
+    } else {
+      setIsOpen(true);
+    }
   }, [currentView, gameTitle]);
 
   const handleBunnyClick = () => {
     soundEngine.playPop();
     setIsHopping(true);
     setShowHeart(true);
-    setMessageIndex(prev => prev + 1);
+    if (!isOpen) {
+      setIsOpen(true);
+    } else {
+      setMessageIndex(prev => prev + 1);
+    }
 
     // Play a friendly synthesized pitch sequence
     soundEngine.playStar(1);

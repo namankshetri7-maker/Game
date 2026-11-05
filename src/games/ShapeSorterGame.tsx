@@ -3,7 +3,7 @@
  * Geometry & 2D/3D Shape Sorting with an animated choo-choo train.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Pause,
@@ -103,6 +103,17 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
 
   // Train track horizontal scroll reference
   const trackScrollRef = useRef<HTMLDivElement>(null);
+
+  // Cleanly reset level state whenever currentLevel changes (Level 1 -> Level 2 -> Level 3, etc.)
+  useEffect(() => {
+    setPlacedShapeIds([]);
+    setSelectedShapeId(null);
+    setIsDeparting(false);
+    setStatusMessage(null);
+    if (trackScrollRef.current) {
+      trackScrollRef.current.scrollLeft = 0;
+    }
+  }, [currentLevel]);
 
   const scrollTrack = (direction: 'left' | 'right') => {
     soundEngine.playPop();
@@ -325,11 +336,11 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           {/* Horizontally Scrollable Train Stage */}
           <div
             ref={trackScrollRef}
-            className="relative w-full py-3 bg-gradient-to-r from-sky-100 via-indigo-50 to-pink-100 rounded-2xl border-2 border-indigo-200 shadow-inner px-4 overflow-x-auto scrollbar-thin scrollbar-thumb-indigo-300"
+            className="relative w-full py-3 bg-gradient-to-r from-sky-100 via-indigo-50 to-pink-100 rounded-2xl border-2 border-indigo-200 shadow-inner px-4 overflow-x-auto scrollbar-thin scrollbar-thumb-indigo-300 flex-none min-h-[160px]"
           >
             {/* Animated Train Moving Container */}
             <motion.div
-              animate={isDeparting ? { x: [0, 50, 900], opacity: [1, 1, 0] } : { x: 0 }}
+              animate={isDeparting ? { x: [0, 50, 900], opacity: [1, 1, 0] } : { x: 0, opacity: 1 }}
               transition={{ duration: 1.5, ease: 'easeInOut' }}
               className="flex items-end justify-start sm:justify-center gap-2 sm:gap-3 py-2 min-w-max mx-auto"
             >
