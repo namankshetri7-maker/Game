@@ -20,6 +20,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       links: [
         { label: 'Wonder World Story', route: 'about' },
         { label: 'Support', route: 'contact' },
+        { label: 'FAQ', route: 'faq' },
         { label: 'Download App', route: 'downloads' }
       ]
     },

@@ -77,7 +77,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
         <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-3">
           
           {/* Left Zone: Brand Logo + Child Explorer Badge + Navigation */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink min-w-0">
             {/* Clickable Brand Logo & Name */}
             <button
               onClick={() => {
@@ -85,7 +85,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                 setIsMobileMenuOpen(false);
                 onNavigateHome?.();
               }}
-              className="flex items-center cursor-pointer group text-left shrink-0 active:scale-95 transition"
+              className="flex items-center cursor-pointer group text-left shrink transition active:scale-95"
               title="Return to WonderWorld Home Map"
             >
               <BrandLogo size="header" showText={true} />
@@ -202,14 +202,14 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
           </div>
 
           {/* Right Zone for Mobile Phones & Small Tablets (< lg) - Compact Sound, Parents & Fold Menu Button */}
-          <div className="flex lg:hidden items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
+          <div className="flex lg:hidden items-center gap-0.5 sm:gap-1.5 shrink-0 ml-auto">
             {/* Quick Sound Toggle on Mobile */}
             <button
               onClick={() => {
                 soundEngine.playPop();
                 onToggleMute();
               }}
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center transition active:scale-95 ${
+              className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center transition active:scale-95 ${
                 isMuted
                   ? 'bg-rose-50 border-rose-200 text-rose-600'
                   : 'bg-emerald-50 border-emerald-200 text-emerald-600'
@@ -217,7 +217,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
               title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
               aria-label="Toggle Sound"
             >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              {isMuted ? <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             </button>
 
             {/* Quick Parent Control on Mobile */}
@@ -226,12 +226,12 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                 soundEngine.playPop();
                 onOpenParentGate();
               }}
-              className="h-8 sm:h-9 px-2 rounded-xl bg-slate-900 text-amber-300 border border-slate-700 shadow-xs flex items-center gap-1 text-xs font-fun font-bold active:scale-95"
+              className="h-7 sm:h-9 px-1.5 sm:px-2 rounded-xl bg-slate-900 text-amber-300 border border-slate-700 shadow-xs flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-fun font-bold active:scale-95"
               title="Open Parent Control"
               aria-label="Parent Control"
             >
-              <Shield className="w-3.5 h-3.5 fill-amber-400/20 text-amber-400" />
-              <span className="text-[11px] hidden sm:inline">Parents</span>
+              <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400/20 text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Parents</span>
             </button>
 
             {/* Mobile & Tablet Fold Toggle Button */}
@@ -240,7 +240,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                 soundEngine.playPop();
                 setIsMobileMenuOpen(!isMobileMenuOpen);
               }}
-              className={`h-8 sm:h-9 px-2.5 rounded-xl border font-fun font-black text-xs flex items-center gap-1 transition active:scale-95 ${
+              className={`h-7 sm:h-9 px-2 rounded-xl border font-fun font-black text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 transition active:scale-95 ${
                 isMobileMenuOpen
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
                   : 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300 shadow-xs'
@@ -251,14 +251,13 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
             >
               {isMobileMenuOpen ? (
                 <>
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>Close</span>
                 </>
               ) : (
                 <>
-                  <Menu className="w-3.5 h-3.5" />
+                  <Menu className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>Menu</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </>
               )}
             </button>

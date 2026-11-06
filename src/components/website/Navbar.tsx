@@ -27,8 +27,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
   ];
 
   return (
-    <header className="sticky top-0 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 z-50 px-4 sm:px-8 py-3 font-body shadow-xl transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+    <header className="sticky top-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 z-[100] px-3 sm:px-6 py-2.5 sm:py-3 font-body shadow-xl transition-all relative">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 relative">
         
         {/* Brand Logo */}
         <button
@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
             setIsMobileMenuOpen(false);
             onNavigate('home');
           }}
-          className="flex items-center cursor-pointer group text-left shrink-0 active:scale-95 transition"
+          className="flex items-center cursor-pointer group text-left shrink min-w-0 active:scale-95 transition"
           title="Wonder World Kids Learning Home"
         >
           <BrandLogo size="header" showText={true} />
@@ -66,19 +66,19 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
           })}
         </nav>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Action Buttons & Hamburger Menu Container with proper flex shrinking and positioning context */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 relative z-10">
           <button
             onClick={() => {
               soundEngine.playPop();
               setIsMobileMenuOpen(false);
               onNavigate('demo');
             }}
-            className="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-fun font-black text-xs shadow-lg border-2 border-emerald-400/40 transition active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-fun font-black text-xs shadow-lg border sm:border-2 border-emerald-400/40 transition active:scale-95 cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0"
           >
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
             <span className="hidden sm:inline">Try Free Demo</span>
-            <span className="sm:hidden">Demo</span>
+            <span className="sm:hidden text-[11px]">Demo</span>
           </button>
 
           <button
@@ -87,10 +87,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
               setIsMobileMenuOpen(false);
               onNavigate('pricing');
             }}
-            className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow-lg transition active:scale-95 cursor-pointer border-2 border-white flex items-center gap-1.5"
+            className="px-2.5 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow-lg transition active:scale-95 cursor-pointer border sm:border-2 border-white flex items-center gap-1 sm:gap-1.5 shrink-0"
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Unlock ($9)</span>
+            <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Unlock ($9)</span>
+            <span className="sm:hidden text-[11px]">$9</span>
           </button>
 
           {/* Mobile Hamburger Menu Button */}
@@ -99,17 +100,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
               soundEngine.playPop();
               setIsMobileMenuOpen(!isMobileMenuOpen);
             }}
-            className="lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95 cursor-pointer"
+            className="lg:hidden p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95 cursor-pointer shrink-0 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-400/50"
             aria-label="Toggle Menu"
+            aria-expanded={isMobileMenuOpen}
           >
-            {isMobileMenuOpen ? <X className="w-5 h-5 text-amber-400" /> : <Menu className="w-5 h-5 text-slate-300" />}
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Menu className="w-5 h-5 text-slate-200" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Accordion Menu */}
+      {/* Mobile Accordion Menu with High Z-Index, clear background and overflow protection */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden pt-3 pb-2 mt-3 border-t border-slate-800 flex flex-col gap-1.5 font-fun animate-fadeIn">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-slate-950/98 backdrop-blur-2xl border-b border-slate-800 shadow-2xl px-4 py-3 z-[110] flex flex-col gap-1.5 font-fun animate-fadeIn">
           {navItems.map((item) => {
             const isActive = currentRoute === item.route;
             return (
@@ -120,10 +126,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
                   setIsMobileMenuOpen(false);
                   onNavigate(item.route);
                 }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center justify-between cursor-pointer ${
                   isActive
                     ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
-                    : 'text-slate-300 hover:bg-slate-900'
+                    : 'text-slate-300 hover:bg-slate-900 active:bg-slate-800'
                 }`}
               >
                 <span>{item.label}</span>
