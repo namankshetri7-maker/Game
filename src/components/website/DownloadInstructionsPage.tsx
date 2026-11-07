@@ -51,45 +51,45 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
               <h3 className="text-base font-bold font-fun text-white">Android Phone & Tablet (Chrome / Edge)</h3>
             </div>
             <ol className="space-y-2 text-xs text-slate-300 list-decimal list-inside leading-relaxed">
-              <li>Open <strong className="text-white">Chrome</strong> and navigate to our web app URL.</li>
+              <li>Open <strong className="text-white">Chrome</strong> and navigate to <strong className="text-indigo-400">wonderworldkidslearning.space</strong>.</li>
               <li>Tap the menu button (<strong className="text-white">⋮</strong>) in the top right corner.</li>
               <li>Select <strong className="text-white">Install app</strong> or <strong className="text-white">Add to Home screen</strong>.</li>
               <li>Enjoy 100% offline access right from your app launcher!</li>
             </ol>
           </div>
-
+  
           <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
             <div className="flex items-center gap-2.5 mb-4">
               <Smartphone className="w-6 h-6 text-purple-400" />
               <h3 className="text-base font-bold font-fun text-white">iPhone & iPad (Safari iOS)</h3>
             </div>
             <ol className="space-y-2 text-xs text-slate-300 list-decimal list-inside leading-relaxed">
-              <li>Open <strong className="text-white">Safari</strong> and visit our game URL.</li>
+              <li>Open <strong className="text-white">Safari</strong> and visit <strong className="text-indigo-400">wonderworldkidslearning.space</strong>.</li>
               <li>Tap the <strong className="text-white">Share</strong> button at the bottom of your screen.</li>
               <li>Scroll down and tap <strong className="text-white">Add to Home Screen</strong>.</li>
               <li>Confirm to add Wonder World to your home screen.</li>
             </ol>
           </div>
-
+  
           <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
             <div className="flex items-center gap-2.5 mb-4">
               <Laptop className="w-6 h-6 text-amber-400" />
               <h3 className="text-base font-bold font-fun text-white">Windows PC (Chrome / Edge)</h3>
             </div>
             <ol className="space-y-2 text-xs text-slate-300 list-decimal list-inside leading-relaxed">
-              <li>Open our URL in Chrome or Microsoft Edge.</li>
+              <li>Open <strong className="text-indigo-400">wonderworldkidslearning.space</strong> in Chrome or Edge.</li>
               <li>Click the <strong className="text-white">Install icon</strong> (monitor with down arrow) in the right side of the address bar.</li>
               <li>Click <strong className="text-white">Install</strong> to run Wonder World as a dedicated desktop app window.</li>
             </ol>
           </div>
-
+  
           <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
             <div className="flex items-center gap-2.5 mb-4">
               <Laptop className="w-6 h-6 text-sky-400" />
               <h3 className="text-base font-bold font-fun text-white">macOS (Chrome / Safari)</h3>
             </div>
             <ol className="space-y-2 text-xs text-slate-300 list-decimal list-inside leading-relaxed">
-              <li>Open our web URL in Chrome or Safari.</li>
+              <li>Open <strong className="text-indigo-400">wonderworldkidslearning.space</strong> in Chrome or Safari.</li>
               <li>In Chrome, click the install icon in the address bar. In Safari, choose <strong className="text-white">File &gt; Add to Dock</strong>.</li>
               <li>Launch instantly from your Mac Dock offline!</li>
             </ol>

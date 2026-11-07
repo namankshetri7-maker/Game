@@ -57,6 +57,7 @@ interface UniversalMiniGameRunnerProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 // Stable deterministic shuffle helper to prevent option jumping during gameplay
@@ -76,7 +77,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   const gameMeta = MINI_GAMES_MATRIX.find(g => g.id === gameId) || MINI_GAMES_MATRIX[0];
   const worldMeta = WORLDS.find(w => w.id === gameMeta.worldId) || WORLDS[0];
@@ -2709,7 +2711,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       {/* Top Header Bar with 1-Tap Home Button */}
       <div className="relative z-10 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -2723,17 +2725,19 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
             </button>
           )}
 
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white to-slate-100 hover:bg-white text-indigo-950 font-fun font-black text-xs sm:text-sm shadow-xs border-2 border-white/90 border-b-3 border-b-slate-300 transition active:translate-y-0.5 active:border-b-1 cursor-pointer"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-indigo-600" />
-            <span className="hidden sm:inline">World Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white to-slate-100 hover:bg-white text-indigo-950 font-fun font-black text-xs sm:text-sm shadow-xs border-2 border-white/90 border-b-3 border-b-slate-300 transition active:translate-y-0.5 active:border-b-1 cursor-pointer"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-indigo-600" />
+              <span className="hidden sm:inline">World Map</span>
+            </button>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-xl sm:text-2xl animate-bounce" style={{ animationDuration: '3s' }}>{gameMeta.icon}</span>

@@ -25,6 +25,7 @@ interface DinoAdditionGameProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 interface AdditionProblem {
@@ -42,7 +43,8 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   // Game & Level state
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
@@ -263,7 +265,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
       {/* Top Header / Status Bar */}
       <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -278,17 +280,19 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           )}
 
           {/* Direct Home Map Button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-emerald-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-emerald-300 active:scale-95 transition flex items-center gap-1.5"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-emerald-700" />
-            <span className="hidden sm:inline">Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-emerald-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-emerald-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-emerald-700" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          )}
 
           <button
             onClick={() => {

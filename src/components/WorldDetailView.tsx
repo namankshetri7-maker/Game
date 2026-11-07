@@ -142,14 +142,16 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                     </div>
                   </div>
                   
-                  {isAllowed ? (
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 shrink-0">
-                      Demo Free
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200 shrink-0 flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> $9
-                    </span>
+                  {isDemoMode && (
+                    isAllowed ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 shrink-0">
+                        Demo Free
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200 shrink-0 flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> $9
+                      </span>
+                    )
                   )}
                 </button>
               );

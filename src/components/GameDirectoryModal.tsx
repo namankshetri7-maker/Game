@@ -6,21 +6,25 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, Search } from 'lucide-react';
+import { X, Play, Search, Sparkles } from 'lucide-react';
 import { MINI_GAMES_MATRIX, WORLDS } from '../data/gameMatrix';
 import { SubjectArea } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
+
+import { isGameAllowedInDemo } from '../data/demoConfig';
 
 interface GameDirectoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLaunchGame: (gameId: string) => void;
+  isDemoMode: boolean;
 }
 
 export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
   isOpen,
   onClose,
-  onLaunchGame
+  onLaunchGame,
+  isDemoMode
 }) => {
   const [selectedSubject, setSelectedSubject] = useState<SubjectArea | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,9 +123,21 @@ export const GameDirectoryModal: React.FC<GameDirectoryModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-slate-400 font-fun">#{game.number}</span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      ▶ Ready
-                    </span>
+                    {isDemoMode ? (
+                      isGameAllowedInDemo(game.id) ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Demo Free
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          Premium Lock
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Premium
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 mb-2">

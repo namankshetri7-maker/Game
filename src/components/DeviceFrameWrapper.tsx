@@ -41,6 +41,7 @@ interface DeviceFrameWrapperProps {
   childAge: number;
   isOnline: boolean;
   isStandalone: boolean;
+  isDemoMode?: boolean;
 }
 
 export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
@@ -58,7 +59,8 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
   childAge,
   onOpenInstallModal,
   isOnline,
-  isStandalone
+  isStandalone,
+  isDemoMode = false
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -103,7 +105,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
             {/* Contextual Navigation Buttons */}
             {currentView === 'game' && (
               <div className="flex items-center gap-1 shrink-0 ml-0.5 sm:ml-1">
-                {onNavigateWorld && (
+                {!isDemoMode && onNavigateWorld && (
                   <button
                     onClick={() => {
                       soundEngine.playPop();
@@ -116,17 +118,23 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                     <span className="hidden sm:inline">Levels</span>
                   </button>
                 )}
+                
                 {onNavigateHome && (
                   <button
                     onClick={() => {
                       soundEngine.playPop();
                       onNavigateHome();
                     }}
-                    className="h-8 sm:h-9 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-fun font-bold text-xs shadow-xs border border-white transition flex items-center gap-1 cursor-pointer"
-                    title="Return to World Map"
+                    className={`h-8 sm:h-9 px-2.5 rounded-xl active:scale-95 font-fun font-bold text-xs shadow-xs border transition flex items-center gap-1 cursor-pointer ${
+                      isDemoMode 
+                        ? 'bg-amber-400 hover:bg-amber-300 text-amber-950 border-amber-500' 
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white border-white'
+                    }`}
+                    title={isDemoMode ? "Return to Website" : "Return to World Map"}
                   >
-                    <span>🗺️</span>
-                    <span className="hidden sm:inline">Map</span>
+                    {isDemoMode ? <ArrowLeft className="w-3.5 h-3.5" /> : <span>🗺️</span>}
+                    <span className="hidden sm:inline">{isDemoMode ? 'Back to Site' : 'Map'}</span>
+                    {isDemoMode && <span className="sm:hidden">Back</span>}
                   </button>
                 )}
               </div>
@@ -138,11 +146,15 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                   soundEngine.playPop();
                   onNavigateHome();
                 }}
-                className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-fun font-bold text-xs shadow-xs border border-white transition flex items-center gap-1 shrink-0 ml-0.5 sm:ml-1 cursor-pointer"
-                title="Return to World Map"
+                className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl active:scale-95 font-fun font-bold text-xs shadow-xs border transition flex items-center gap-1 shrink-0 ml-0.5 sm:ml-1 cursor-pointer ${
+                  isDemoMode 
+                    ? 'bg-amber-400 hover:bg-amber-300 text-amber-950 border-amber-500' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white border-white'
+                }`}
+                title={isDemoMode ? "Return to Website" : "Return to World Map"}
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">World Map</span>
+                <span className="hidden sm:inline">{isDemoMode ? 'Back to Website' : 'World Map'}</span>
                 <span className="sm:hidden">Map</span>
               </button>
             )}

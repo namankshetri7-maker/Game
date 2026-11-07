@@ -76,7 +76,17 @@ export type AppRoute =
   | 'game';
 
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>('home');
+  const [route, setRoute] = useState<AppRoute>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isDirect = params.get('purchased') === 'true' || params.get('mode') === 'game';
+    const wasAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
+    
+    if (isDirect || wasAppOnly) {
+      if (isDirect) localStorage.setItem('wwk_view_preference', 'app_only');
+      return 'world_map';
+    }
+    return 'home';
+  });
   const [selectedWorldId, setSelectedWorldId] = useState<string>('world_math');
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
@@ -112,8 +122,55 @@ export default function App() {
   // Sound state
   const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
 
+  /**
+   * DIRECT ACCESS & LICENSE UNLOCKING
+   * Detects URL parameters like ?purchased=true or ?mode=game
+   * Used for direct sales links (Etsy/Gumroad) to bypass the landing page and unlock the game.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isPurchasedLink = params.get('purchased') === 'true';
+    const directGameMode = params.get('mode') === 'game';
+
+    if (isPurchasedLink) {
+      // 1. Instant Unlock
+      localStorage.setItem('wwk_purchased', 'true');
+      localStorage.setItem('wwk_view_preference', 'app_only');
+      localStorage.setItem('wwk_license', `SALE-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
+      setIsDemoMode(false);
+      
+      // 2. Direct entry to the world map
+      setRoute('world_map');
+      
+      // 3. Clean up URL (silent redirect)
+      window.history.replaceState({}, '', window.location.pathname);
+      soundEngine.playVictory();
+    } else if (directGameMode) {
+      // Direct entry to the interactive game environment (Demo or Full)
+      localStorage.setItem('wwk_view_preference', 'app_only');
+      setRoute('world_map');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   const refreshActiveProfile = () => {
     setActiveProfile(storageService.getActiveProfile());
+  };
+
+  /**
+   * NUCLEAR RESET: Strictly clears all internal play state.
+   * Called when exiting a demo or returning to the website home to ensure
+   * no accidental entry or state-leak into the premium game suite.
+   */
+  const resetAppPlayState = () => {
+    setActiveGameId('game_dino_addition');
+    setSelectedGameLevel(1);
+    setSelectedWorldId('world_math');
+    setIsDemoLimitOpen(false);
+    setIsDirectoryOpen(false);
+    setIsStickerBookOpen(false);
+    setIsParentGateOpen(false);
+    setIsParentDashboardOpen(false);
   };
 
   // Helper to launch game app (evaluates purchase status)
@@ -185,6 +242,36 @@ export default function App() {
     setIsMuted(nextMuted);
   };
 
+  // Centralized Navigation Guard
+  const handleNavigation = (targetRoute: AppRoute, worldId?: string) => {
+    const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
+    
+    // In demo mode, any attempt to go "back" or "home" from within the app must lead to the website home.
+    // If target is world_map or world_detail_game and NOT paid, it's effectively a "back to app entry" action.
+    // However, the user specifically wants "Back" to go to the Website Home.
+    
+    if (worldId) setSelectedWorldId(worldId);
+    setRoute(targetRoute);
+  };
+
+  const handleBackToWebsite = () => {
+    resetAppPlayState();
+    setRoute('home');
+  };
+
+  const handleBackAction = (isHomeAction: boolean = false) => {
+    const isAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
+
+    // If in demo mode (unpaid) AND NOT in app-only mode, exit to website.
+    // BUT if they are in app-only mode (via direct link), they stay in the app hub even in demo.
+    if (isDemoMode && !isAppOnly) {
+      handleBackToWebsite();
+    } else {
+      // Stay within the internal game suite (Map or Detail view)
+      setRoute(isHomeAction ? 'world_map' : 'world_detail_game');
+    }
+  };
+
   // Helper to determine if we are inside the interactive game app or website
   const isInGameApp = ['world_map', 'world_detail_game', 'game'].includes(route);
 
@@ -192,14 +279,14 @@ export default function App() {
   useEffect(() => {
     const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
     
-    // Safety check: if user reaches game routes without having paid, enforce demo mode.
-    if (!hasPaid && isInGameApp && !isDemoMode) {
-      setIsDemoMode(true);
+    // Strictly keep isDemoMode state in sync with license status
+    if (isDemoMode === hasPaid) {
+      setIsDemoMode(!hasPaid);
     }
     
-    // Note: Redirections for 'back' actions are handled via explicit callbacks
-    // to 'home' instead of 'world_map' within the demo flow.
-  }, [route, isDemoMode, isInGameApp]);
+    // Safety redirect: If someone somehow lands on a game route while having paid=false and it's NOT a demo action,
+    // (This is a fallback, but the explicit back buttons are the primary fix).
+  }, [route, isInGameApp, isDemoMode]);
 
   return (
     <WorldThemeProvider>
@@ -207,32 +294,17 @@ export default function App() {
 
       {isDemoMode && isInGameApp && (
         <DemoHeaderBar
-          onReturnToWebsite={() => {
-            setRoute('home');
-          }}
-          onUnlockFull={() => {
-            setRoute('pricing');
-          }}
+          onReturnToWebsite={handleBackToWebsite}
+          onUnlockFull={() => setRoute('pricing')}
+          isAppOnly={localStorage.getItem('wwk_view_preference') === 'app_only'}
         />
       )}
 
       {isInGameApp ? (
         <DeviceFrameWrapper
           currentView={route === 'world_map' ? 'world_map' : route === 'world_detail_game' ? 'world_detail' : 'game'}
-          onNavigateHome={() => {
-            if (isDemoMode) {
-              setRoute('home'); // Force exit to Website Home in demo
-            } else {
-              setRoute('world_map');
-            }
-          }}
-          onNavigateWorld={() => {
-            if (isDemoMode) {
-              setRoute('home'); // Force exit to Website Home in demo
-            } else {
-              setRoute('world_detail_game');
-            }
-          }}
+          onNavigateHome={() => handleBackAction(true)}
+          onNavigateWorld={() => handleBackAction(false)}
           onOpenParentGate={() => setIsParentGateOpen(true)}
           onOpenDirectory={() => {
             if (isDemoMode) {
@@ -249,6 +321,7 @@ export default function App() {
           childAge={activeProfile.age}
           isOnline={isOnline}
           isStandalone={isStandalone}
+          isDemoMode={isDemoMode}
         >
           {route === 'world_map' && (
             <WorldMap
@@ -258,18 +331,20 @@ export default function App() {
                 setRoute('world_detail_game');
               }}
               onOpenDirectory={() => {
-                if (isDemoMode) {
+                const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
+                if (!hasPaid) {
                   setIsDemoLimitOpen(true);
-                  return;
+                } else {
+                  setIsDirectoryOpen(true);
                 }
-                setIsDirectoryOpen(true);
               }}
               onOpenStickerBook={() => {
-                if (isDemoMode) {
+                const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
+                if (!hasPaid) {
                   setIsDemoLimitOpen(true);
-                  return;
+                } else {
+                  setIsStickerBookOpen(true);
                 }
-                setIsStickerBookOpen(true);
               }}
             />
           )}
@@ -278,7 +353,7 @@ export default function App() {
             <WorldDetailView
               worldId={selectedWorldId}
               activeProfileId={activeProfile.id}
-              onBackToMap={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
+              onBackToMap={() => handleBackAction(true)}
               onLaunchGameLevel={(gameId, level) => handleLaunchGame(gameId, level)}
               isDemoMode={isDemoMode}
               onShowDemoLimit={() => setIsDemoLimitOpen(true)}
@@ -293,9 +368,10 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -305,8 +381,8 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
                 />
               )}
@@ -317,8 +393,8 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
                 />
               )}
@@ -329,8 +405,8 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
                 />
               )}
@@ -341,8 +417,8 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
                 />
               )}
@@ -353,8 +429,8 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
                 />
               )}
@@ -365,8 +441,8 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
                 />
               )}
@@ -386,9 +462,10 @@ export default function App() {
                   ageGroup={activeProfile.ageGroup}
                   activeProfileId={activeProfile.id}
                   initialLevel={selectedGameLevel}
-                  onHome={() => isDemoMode ? setRoute('home') : setRoute('world_map')}
-                  onBackToWorld={() => isDemoMode ? setRoute('home') : setRoute('world_detail_game')}
+                  onHome={() => handleBackAction(true)}
+                  onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
             </div>
@@ -435,7 +512,10 @@ export default function App() {
               <FreeDemoPage
                 onEnterGame={() => handleEnterGameApp('world_map')}
                 onLaunchDemoGame={(gameId) => handleLaunchDemoMode(gameId)}
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  if (r === 'home') handleBackToWebsite();
+                  else setRoute(r as AppRoute);
+                }}
               />
             )}
             {route === 'pricing' && (
@@ -448,30 +528,43 @@ export default function App() {
             )}
             {route === 'success' && (
               <PurchaseSuccessPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  resetAppPlayState();
+                  setRoute(r as AppRoute);
+                }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
             )}
             {route === 'my_games' && (
               <MyPurchasedGamesPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  resetAppPlayState();
+                  setRoute(r as AppRoute);
+                }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
             )}
             {route === 'downloads' && (
               <DownloadInstructionsPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  resetAppPlayState();
+                  setRoute(r as AppRoute);
+                }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
             )}
             {route === 'parents' && (
               <ParentInfoPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  resetAppPlayState();
+                  setRoute(r as AppRoute);
+                }}
               />
             )}
             {route === 'about' && (
               <HomePage
                 onNavigate={(r, wId) => {
+                  resetAppPlayState();
                   if (wId) setSelectedWorldId(wId);
                   setRoute(r as AppRoute);
                 }}
@@ -479,16 +572,25 @@ export default function App() {
               />
             )}
             {route === 'faq' && (
-              <FAQPage onNavigate={(r) => setRoute(r as AppRoute)} />
+              <FAQPage onNavigate={(r) => {
+                resetAppPlayState();
+                setRoute(r as AppRoute);
+              }} />
             )}
             {route === 'privacy' && (
               <PrivacyPolicyPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  resetAppPlayState();
+                  setRoute(r as AppRoute);
+                }}
               />
             )}
             {route === 'contact' && (
               <ContactSupportPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => {
+                  resetAppPlayState();
+                  setRoute(r as AppRoute);
+                }}
               />
             )}
           </main>
@@ -532,6 +634,7 @@ export default function App() {
         isOpen={isDirectoryOpen}
         onClose={() => setIsDirectoryOpen(false)}
         onLaunchGame={handleLaunchGame}
+        isDemoMode={isDemoMode}
       />
 
       <StickerBookModal
