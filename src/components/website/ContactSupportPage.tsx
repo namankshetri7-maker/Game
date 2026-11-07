@@ -22,7 +22,7 @@ export const ContactSupportPage: React.FC<ContactSupportPageProps> = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-body py-12 px-4 sm:px-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         
         <div className="text-center mb-12">
           <span className="text-xs font-black uppercase tracking-wider text-amber-400 font-fun">Get in Touch</span>
@@ -94,18 +94,25 @@ export const ContactSupportPage: React.FC<ContactSupportPageProps> = () => {
           </form>
         )}
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 text-center">
-            <Mail className="w-8 h-8 text-amber-400 mx-auto mb-3" />
-            <h3 className="text-sm font-bold font-fun text-white mb-1">Direct Email</h3>
-            <p className="text-xs text-amber-300 font-bold">wonderworldkidslearning@gmail.com</p>
+        {/* Email & Response Time Cards */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center">
+            <Mail className="w-7 h-7 text-amber-400 mx-auto mb-2" />
+            <h3 className="text-sm font-bold font-fun text-white mb-1">Direct Support Email</h3>
+            <a 
+              href="mailto:wonderworldkidslearning@gmail.com"
+              className="text-xs text-amber-300 font-bold hover:underline"
+            >
+              wonderworldkidslearning@gmail.com
+            </a>
           </div>
-          <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 text-center">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+          <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center">
+            <CheckCircle2 className="w-7 h-7 text-emerald-400 mx-auto mb-2" />
             <h3 className="text-sm font-bold font-fun text-white mb-1">Response Time</h3>
             <p className="text-xs text-slate-400">Within 24 hours (Mon - Fri)</p>
           </div>
         </div>
+
       </div>
     </div>
   );

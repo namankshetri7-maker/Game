@@ -10,9 +10,7 @@ import {
   Sparkles,
   Compass,
   Shield,
-  CheckCircle2,
   ChevronRight,
-  Heart,
   Lock,
   Globe
 } from 'lucide-react';

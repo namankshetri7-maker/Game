@@ -56,6 +56,8 @@ const ThemeSyncEffect: React.FC<{ worldId: string }> = ({ worldId }) => {
 import { ALLOWED_DEMO_GAMES, isGameAllowedInDemo, isLevelAllowedInDemo } from './data/demoConfig';
 import { DemoLimitModal } from './components/DemoLimitModal';
 import { DemoHeaderBar } from './components/DemoHeaderBar';
+import { LicenseVerificationModal } from './components/LicenseVerificationModal';
+import { licenseService } from './services/licenseService';
 
 export type AppRoute =
   | 'home'
@@ -78,11 +80,22 @@ export type AppRoute =
 export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => {
     const params = new URLSearchParams(window.location.search);
-    const isDirect = params.get('purchased') === 'true' || params.get('mode') === 'game';
+    const hash = window.location.hash.toLowerCase();
+    const isPurchased = params.get('purchased') === 'true' || params.get('game') === 'full' || hash.includes('purchased') || hash.includes('full');
+    const isDirectGame = isPurchased || params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
     const wasAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
     
-    if (isDirect || wasAppOnly) {
-      if (isDirect) localStorage.setItem('wwk_view_preference', 'app_only');
+    if (isPurchased) {
+      localStorage.setItem('wwk_purchased', 'true');
+      localStorage.setItem('wwk_view_preference', 'app_only');
+      if (!localStorage.getItem('wwk_license')) {
+        localStorage.setItem('wwk_license', `SALE-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
+      }
+      return 'world_map';
+    }
+
+    if (isDirectGame || wasAppOnly) {
+      if (isDirectGame) localStorage.setItem('wwk_view_preference', 'app_only');
       return 'world_map';
     }
     return 'home';
@@ -91,8 +104,12 @@ export default function App() {
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
   
-  // Check local purchase state on startup
+  // Check local purchase state on startup - immediately unlocked if purchased URL param is provided
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.toLowerCase();
+    const isPurchasedUrl = params.get('purchased') === 'true' || params.get('game') === 'full' || hash.includes('purchased') || hash.includes('full');
+    if (isPurchasedUrl) return false;
     return localStorage.getItem('wwk_purchased') !== 'true';
   });
   const [isDemoLimitOpen, setIsDemoLimitOpen] = useState<boolean>(false);
@@ -106,6 +123,7 @@ export default function App() {
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [isStickerBookOpen, setIsStickerBookOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
 
   // PWA Offline and Install Hook
   const {
@@ -124,32 +142,46 @@ export default function App() {
 
   /**
    * DIRECT ACCESS & LICENSE UNLOCKING
-   * Detects URL parameters like ?purchased=true or ?mode=game
+   * Detects URL parameters like ?license=XXXX or ?purchased=true or ?mode=game or #game
    * Used for direct sales links (Etsy/Gumroad) to bypass the landing page and unlock the game.
    */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const isPurchasedLink = params.get('purchased') === 'true';
-    const directGameMode = params.get('mode') === 'game';
+    const hash = window.location.hash.toLowerCase();
+    const licenseParam = params.get('license');
+    const isPurchasedLink = params.get('purchased') === 'true' || params.get('game') === 'full' || hash.includes('purchased') || hash.includes('full');
+    const directGameMode = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
+
+    // 1. Auto-verify Gumroad License Key from URL if provided (?license=XXXXX)
+    if (licenseParam) {
+      licenseService.verifyGumroadLicense(licenseParam).then((res) => {
+        if (res.success) {
+          setIsDemoMode(false);
+          setRoute('world_map');
+          soundEngine.playVictory();
+        } else {
+          setIsLicenseModalOpen(true);
+        }
+      });
+      return;
+    }
 
     if (isPurchasedLink) {
-      // 1. Instant Unlock
+      // 2. Instant Permanent Unlock
       localStorage.setItem('wwk_purchased', 'true');
       localStorage.setItem('wwk_view_preference', 'app_only');
-      localStorage.setItem('wwk_license', `SALE-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
+      if (!localStorage.getItem('wwk_license')) {
+        localStorage.setItem('wwk_license', `SALE-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
+      }
       setIsDemoMode(false);
       
-      // 2. Direct entry to the world map
+      // Direct entry to the world map
       setRoute('world_map');
-      
-      // 3. Clean up URL (silent redirect)
-      window.history.replaceState({}, '', window.location.pathname);
       soundEngine.playVictory();
     } else if (directGameMode) {
-      // Direct entry to the interactive game environment (Demo or Full)
+      // Direct entry to the interactive game environment
       localStorage.setItem('wwk_view_preference', 'app_only');
       setRoute('world_map');
-      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
@@ -296,6 +328,7 @@ export default function App() {
         <DemoHeaderBar
           onReturnToWebsite={handleBackToWebsite}
           onUnlockFull={() => setRoute('pricing')}
+          onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
           isAppOnly={localStorage.getItem('wwk_view_preference') === 'app_only'}
         />
       )}
@@ -524,6 +557,7 @@ export default function App() {
                 onUnlockSuccess={() => {
                   setIsDemoMode(false);
                 }}
+                onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
               />
             )}
             {route === 'success' && (
@@ -628,6 +662,8 @@ export default function App() {
         onClose={() => setIsParentDashboardOpen(false)}
         onProfileSwitched={refreshActiveProfile}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        onNativeInstall={promptInstall}
+        canNativeInstall={canInstallPrompt}
       />
 
       <GameDirectoryModal
@@ -654,6 +690,16 @@ export default function App() {
         isIOS={isIOS}
         isAndroid={isAndroid}
         isStandalone={isStandalone}
+      />
+
+      <LicenseVerificationModal
+        isOpen={isLicenseModalOpen}
+        onClose={() => setIsLicenseModalOpen(false)}
+        onSuccess={() => {
+          setIsLicenseModalOpen(false);
+          setIsDemoMode(false);
+          setRoute('world_map');
+        }}
       />
     </WorldThemeProvider>
   );

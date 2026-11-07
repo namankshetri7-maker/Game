@@ -18,12 +18,16 @@ import {
   Download,
   Menu,
   X,
-  Laptop
+  Laptop,
+  Youtube,
+  Instagram,
+  Facebook
 } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
 import { BrandLogo } from './BrandLogo';
 import { WonderBunnyCompanion } from './WonderBunnyCompanion';
 import { WorldThemeSwitcherPill } from './WorldThemeSwitcherPill';
+import { SOCIAL_LINKS } from '../data/socialLinks';
 
 interface DeviceFrameWrapperProps {
   children: React.ReactNode;
@@ -355,6 +359,35 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       <span>100% Offline</span>
                     </span>
+                  </div>
+                </div>
+
+                {/* 5. Follow Us / Social Channels */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-indigo-100">
+                  <span className="text-[11px] font-black uppercase text-slate-500 font-fun">Follow Us:</span>
+                  <div className="flex items-center gap-1.5">
+                    {SOCIAL_LINKS.map((s) => {
+                      const Icon = s.id === 'youtube' ? Youtube : s.id === 'instagram' ? Instagram : Facebook;
+                      const theme = 
+                        s.id === 'youtube'
+                          ? 'text-red-600 bg-red-50 border-red-200 hover:bg-red-500 hover:text-white'
+                          : s.id === 'instagram'
+                          ? 'text-pink-600 bg-pink-50 border-pink-200 hover:bg-pink-500 hover:text-white'
+                          : 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-600 hover:text-white';
+                      return (
+                        <a
+                          key={s.id}
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => soundEngine.playPop()}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-xl border text-[11px] font-fun font-bold transition active:scale-95 ${theme}`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>{s.label}</span>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

@@ -92,7 +92,34 @@ app.post('/api/record-purchase', (req, res) => {
   });
 });
 
-// 4. Admin Analytics Stats Endpoint
+// 4. Gumroad License Verification Proxy
+app.post('/api/verify-license', async (req, res) => {
+  const { license_key, product_permalink = 'wvpisb' } = req.body;
+  if (!license_key) {
+    return res.status(400).json({ success: false, message: 'License key is required.' });
+  }
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append('product_permalink', product_permalink);
+    formData.append('license_key', license_key);
+    formData.append('increment_uses_count', 'false');
+
+    const gumroadRes = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString()
+    });
+
+    const data = await gumroadRes.json();
+    res.status(gumroadRes.status).json(data);
+  } catch (err: any) {
+    console.error('Error verifying Gumroad license on server:', err);
+    res.status(500).json({ success: false, message: 'Failed to contact Gumroad license server.' });
+  }
+});
+
+// 5. Admin Analytics Stats Endpoint
 app.get('/api/admin/stats', (req, res) => {
   const stats = loadStats();
   res.json({

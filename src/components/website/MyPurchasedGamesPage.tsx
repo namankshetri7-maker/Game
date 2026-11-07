@@ -5,7 +5,8 @@
 
 import React, { useState } from 'react';
 import { soundEngine } from '../../services/soundEngine';
-import { CheckCircle2, Search, Play, Download, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, Search, Play, Download, ShoppingBag, Loader2, KeyRound } from 'lucide-react';
+import { licenseService } from '../../services/licenseService';
 
 interface MyPurchasedGamesPageProps {
   onNavigate: (route: string) => void;
@@ -14,19 +15,36 @@ interface MyPurchasedGamesPageProps {
 
 export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNavigate, onEnterGame }) => {
   const [licenseInput, setLicenseInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchVerified, setSearchVerified] = useState<boolean | null>(null);
 
-  const isPurchased = localStorage.getItem('wwk_purchased') === 'true';
-  const licenseKey = localStorage.getItem('wwk_license') || 'WWK-LIFETIME-PASS';
+  const stored = licenseService.getStoredLicense();
+  const isPurchased = stored.isUnlocked;
+  const licenseKey = stored.licenseKey || 'WWK-LIFETIME-PASS';
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!licenseInput.trim() || isLoading) return;
+
     soundEngine.playPop();
-    if (licenseInput.trim().toUpperCase().startsWith('WWK') || isPurchased) {
-      setSearchVerified(true);
-      localStorage.setItem('wwk_purchased', 'true');
-    } else {
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await licenseService.verifyGumroadLicense(licenseInput);
+      if (res.success) {
+        setSearchVerified(true);
+        soundEngine.playVictory();
+      } else {
+        setSearchVerified(false);
+        setErrorMessage(res.message || 'License key not recognized for Wonder World Kids.');
+      }
+    } catch {
       setSearchVerified(false);
+      setErrorMessage('Could not connect to Gumroad license verification server.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,27 +104,48 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
           <div className="bg-slate-800 rounded-3xl border border-slate-700 p-8 shadow-xl mb-8">
             <h2 className="text-lg font-bold font-fun text-white mb-2">Retrieve Your Purchase</h2>
             <p className="text-xs text-slate-400 mb-6">
-              If you purchased Wonder World Kids on this browser, your license is saved automatically. Otherwise, enter your email or license key below:
+              If you purchased Wonder World Kids on Gumroad, enter the unique license key from your receipt below to permanently unlock this device:
             </p>
 
             <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                placeholder="Enter License Key (e.g. WWK-XXXX)"
+                placeholder="Enter Gumroad License Key (e.g. 8F7A2B1C-4D5E6F-7G8H9I)"
                 value={licenseInput}
+                disabled={isLoading}
                 onChange={e => setLicenseInput(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-400"
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-400 font-mono uppercase tracking-wider"
               />
               <button
                 type="submit"
-                className="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-md transition cursor-pointer"
+                disabled={isLoading || !licenseInput.trim()}
+                className="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-amber-950 font-fun font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
               >
-                Verify License
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4" />
+                    <span>Verify License</span>
+                  </>
+                )}
               </button>
             </form>
 
             {searchVerified === false && (
-              <p className="text-xs text-rose-400 mt-3 font-semibold">License key not recognized. Want to purchase? <button onClick={() => onNavigate('pricing')} className="underline">Get lifetime access for $9</button></p>
+              <div className="mt-4 p-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-300">
+                <p className="font-bold mb-1">Verification Unsuccessful</p>
+                <p>{errorMessage || 'License key not recognized for Wonder World Kids.'}</p>
+                <div className="mt-2 text-[11px] text-slate-400">
+                  Don't have a license key yet?{' '}
+                  <button onClick={() => onNavigate('pricing')} className="text-amber-400 underline font-bold">
+                    Buy Lifetime Access for $9
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}

@@ -2,11 +2,11 @@
  * Wonder World Kids Learning Website Header / Navigation Bar
  * Clean, responsive, translucent glass design for parents and kids.
  */
-
 import React, { useState } from 'react';
 import { BrandLogo } from '../BrandLogo';
 import { soundEngine } from '../../services/soundEngine';
-import { Play, ShoppingBag, Menu, X, Shield, Sparkles } from 'lucide-react';
+import { Play, ShoppingBag, Menu, X, Sparkles, Youtube, Instagram, Facebook } from 'lucide-react';
+import { SOCIAL_LINKS } from '../../data/socialLinks';
 
 interface NavbarProps {
   currentRoute: string;
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
                   soundEngine.playPop();
                   onNavigate(item.route);
                 }}
-                className={`px-4 py-2.5 rounded-2xl transition cursor-pointer active:scale-95 ${
+                className={`px-3.5 py-2.5 rounded-2xl transition cursor-pointer active:scale-95 ${
                   isActive
                     ? 'bg-amber-400/15 text-amber-300 border border-amber-400/40'
                     : 'hover:text-white hover:bg-slate-800/60 text-slate-300'
@@ -66,8 +66,36 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
           })}
         </nav>
 
-        {/* Action Buttons & Hamburger Menu Container with proper flex shrinking and positioning context */}
+        {/* Action Buttons & Hamburger Menu Container */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 relative z-10">
+          
+          {/* Desktop Social Quick Links */}
+          <div className="hidden xl:flex items-center gap-1.5 pr-2 border-r border-slate-800">
+            {SOCIAL_LINKS.map((s) => {
+              const Icon = s.id === 'youtube' ? Youtube : s.id === 'instagram' ? Instagram : Facebook;
+              const hoverStyle = 
+                s.id === 'youtube' 
+                  ? 'hover:text-red-500 hover:bg-red-500/10' 
+                  : s.id === 'instagram' 
+                  ? 'hover:text-pink-400 hover:bg-pink-500/10' 
+                  : 'hover:text-blue-400 hover:bg-blue-500/10';
+              return (
+                <a
+                  key={s.id}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => soundEngine.playPop()}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 border border-slate-800 transition active:scale-95 ${hoverStyle}`}
+                  title={`${s.label}: ${s.handle}`}
+                  aria-label={s.label}
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              );
+            })}
+          </div>
+
           <button
             onClick={() => {
               soundEngine.playPop();
@@ -137,6 +165,33 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
               </button>
             );
           })}
+
+          {/* Mobile Social Links Bar in Menu */}
+          <div className="pt-3 mt-2 border-t border-slate-800/80 flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-fun">
+              Follow Us:
+            </span>
+            <div className="flex items-center gap-2">
+              {SOCIAL_LINKS.map((s) => {
+                const Icon = s.id === 'youtube' ? Youtube : s.id === 'instagram' ? Instagram : Facebook;
+                const activeColor = 
+                  s.id === 'youtube' ? 'text-red-400 bg-red-500/10 hover:bg-red-500 hover:text-white' : s.id === 'instagram' ? 'text-pink-400 bg-pink-500/10 hover:bg-pink-500 hover:text-white' : 'text-blue-400 bg-blue-500/10 hover:bg-blue-500 hover:text-white';
+                return (
+                  <a
+                    key={s.id}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => soundEngine.playPop()}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs font-bold active:scale-95 transition ${activeColor}`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="text-[11px]">{s.label}</span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </header>

@@ -1,7 +1,3 @@
-/**
- * Wonder World Kids Website - Parent Information Page
- */
-
 import React from 'react';
 import { soundEngine } from '../../services/soundEngine';
 import { Shield, Lock, CheckCircle2 } from 'lucide-react';
@@ -53,10 +49,9 @@ export const ParentInfoPage: React.FC<ParentInfoPageProps> = ({ onNavigate }) =>
               <span>Ad-Free Environment</span>
             </div>
             <p>
-              We provide a focused, distraction-free environment with no ads or external links to maintain a pure learning experience.
+              We provide a focused, distraction-free environment with no ads or external tracking inside the children's gameplay to maintain a pure learning experience.
             </p>
           </div>
-
         </div>
       </div>
     </div>

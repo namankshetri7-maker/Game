@@ -5,14 +5,15 @@
 
 import React, { useState } from 'react';
 import { soundEngine } from '../../services/soundEngine';
-import { Shield, CheckCircle2, Lock, Download, Sparkles, ArrowRight } from 'lucide-react';
+import { Shield, CheckCircle2, Lock, Download, Sparkles, ArrowRight, KeyRound } from 'lucide-react';
 
 interface PricingPageProps {
   onNavigate: (route: string) => void;
   onUnlockSuccess: () => void;
+  onOpenLicenseModal?: () => void;
 }
 
-export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSuccess }) => {
+export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSuccess, onOpenLicenseModal }) => {
   const GUMROAD_LINK = 'https://namank3.gumroad.com/l/wvpisb?_gl=1*ikkar4*_ga*ODc0MjIxOC4xNzkzMTY5MzA5*_ga_6LJN6D94N6*czE3OTQwMTk2MDYkbzExJGcxJHQxNzk0MDE5NjI1JGo0MSRsMCRoMA..';
 
   const handleGumroadCheckout = () => {
@@ -51,7 +52,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSu
 
             <div className="pt-4 border-t border-slate-700 flex items-center gap-2 text-xs text-slate-400">
               <Lock className="w-4 h-4 text-amber-400" />
-              <span>Secure 256-bit SSL encryption powered by PayPal Sandbox & Stripe architecture.</span>
+              <span>Secure 256-bit SSL encryption powered by Gumroad & Stripe architecture.</span>
             </div>
           </div>
 
@@ -59,7 +60,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSu
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">One-Time Payment</div>
               <div className="text-5xl font-black font-fun text-amber-300 mb-2">$9 <span className="text-lg text-slate-400">USD</span></div>
-              <div className="text-[11px] text-emerald-400 font-bold mb-6">✓ Instant Digital Delivery</div>
+              <div className="text-[11px] text-emerald-400 font-bold mb-6">✓ Instant Digital Delivery & License Key</div>
             </div>
 
             <div className="space-y-3">
@@ -71,12 +72,16 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSu
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <button
-                onClick={handleGumroadCheckout}
-                className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-fun font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                <span>Gumroad Secure Checkout</span>
-              </button>
+              <div className="pt-3 border-t border-slate-800 text-center">
+                <p className="text-xs text-slate-400 mb-2 font-medium">Already bought on Gumroad or Etsy?</p>
+                <button
+                  onClick={() => onOpenLicenseModal ? onOpenLicenseModal() : onNavigate('my_games')}
+                  className="w-full py-2.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 text-xs font-fun font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Enter License Key to Unlock</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

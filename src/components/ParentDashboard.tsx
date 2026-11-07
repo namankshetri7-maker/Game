@@ -39,19 +39,24 @@ import { ChildProfile, SubjectArea } from '../types/game';
 import { storageService, INITIAL_STICKERS } from '../services/storageService';
 import { soundEngine } from '../services/soundEngine';
 import { parentSecurityService } from '../services/parentSecurityService';
+import { OfflineSetupGuideModal } from './OfflineSetupGuideModal';
 
 interface ParentDashboardProps {
   isOpen: boolean;
   onClose: () => void;
   onProfileSwitched: () => void;
   onOpenInstallModal?: () => void;
+  onNativeInstall?: () => void;
+  canNativeInstall?: boolean;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   isOpen,
   onClose,
   onProfileSwitched,
-  onOpenInstallModal
+  onOpenInstallModal,
+  onNativeInstall,
+  canNativeInstall = false
 }) => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'profiles' | 'stickers' | 'settings'>('analytics');
   const [profiles, setProfiles] = useState<ChildProfile[]>(() => storageService.getProfiles());
@@ -62,6 +67,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [newChildAvatar, setNewChildAvatar] = useState('🦁');
   const [newChildLimit, setNewChildLimit] = useState(45);
   const [parentSettings, setParentSettings] = useState(() => storageService.getParentSettings());
+  const [showOfflineGuide, setShowOfflineGuide] = useState(false);
   
   // Secure PIN change state
   const [currentPinInput, setCurrentPinInput] = useState('');
@@ -261,18 +267,34 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             </div>
           </div>
 
-          {/* Close X Button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onClose();
-            }}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-95 shrink-0"
-            title="Close Parent Control"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Action & Close Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                setShowOfflineGuide(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-fun font-bold text-xs border border-emerald-400/50 shadow-sm transition active:scale-95 cursor-pointer"
+              title="Add to Home Screen Guide for iOS & Android"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">Offline Setup Guide</span>
+              <span className="sm:hidden">Setup</span>
+            </button>
+
+            {/* Close X Button */}
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onClose();
+              }}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-95 shrink-0 cursor-pointer"
+              title="Close Parent Control"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Profile Quick-Switch Tabs */}
@@ -357,6 +379,38 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         <div className="p-6 overflow-y-auto flex-1 bg-slate-50 font-body">
           {activeTab === 'analytics' && (
             <div className="space-y-6">
+              {/* Offline Setup Guide Banner Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border-2 border-emerald-400/80 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-xl shrink-0">
+                    📲
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-fun font-black text-sm text-white">Setup 100% Offline Mode</h4>
+                      <span className="text-[10px] bg-emerald-500 text-white font-black px-1.5 py-0.5 rounded uppercase font-fun">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Add Wonder World to your iPad, iPhone, or Android home screen for zero-data flights, road trips & full-screen play.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEngine.playPop();
+                    setShowOfflineGuide(true);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-amber-950 font-fun font-black text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0 border border-white"
+                >
+                  <Smartphone className="w-3.5 h-3.5 text-amber-950" />
+                  <span>Offline Setup Guide</span>
+                </button>
+              </div>
+
               {/* Top Summary Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -811,18 +865,31 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       <p className="text-xs text-slate-500">Service Worker caching & synthesized audio enabled for iOS & Android.</p>
                     </div>
                   </div>
-                  {onOpenInstallModal && (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         soundEngine.playPop();
-                        onOpenInstallModal();
+                        setShowOfflineGuide(true);
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-fun font-bold text-xs border border-indigo-200 transition"
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-fun font-bold text-xs shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
                     >
-                      View Install Guide
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>Offline Setup Guide</span>
                     </button>
-                  )}
+                    {onOpenInstallModal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundEngine.playPop();
+                          onOpenInstallModal();
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-fun font-bold text-xs border border-slate-300 transition"
+                      >
+                        PWA Status
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
@@ -899,6 +966,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           </button>
         </div>
       </motion.div>
+
+      {/* Offline Setup Guide Overlay for Parents */}
+      <OfflineSetupGuideModal
+        isOpen={showOfflineGuide}
+        onClose={() => setShowOfflineGuide(false)}
+        onNativeInstall={onNativeInstall}
+        canNativeInstall={canNativeInstall}
+      />
     </div>
   );
 };
