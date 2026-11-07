@@ -40,10 +40,22 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onNavigate }) => {
             </div>
           ))}
         </div>
+
+        <div className="mt-12 bg-indigo-50 border border-indigo-100 rounded-3xl p-8 text-center">
+          <h2 className="text-xl font-black font-fun text-indigo-900 mb-2">Still have questions?</h2>
+          <p className="text-indigo-700 font-medium mb-4">Our parent support team is ready to help!</p>
+          <a 
+            href="mailto:wonderworldkidslearning@gmail.com"
+            className="text-indigo-600 font-black text-lg underline hover:text-indigo-800 transition-colors"
+          >
+            wonderworldkidslearning@gmail.com
+          </a>
+        </div>
+
         <div className="mt-12 text-center">
             <button 
               onClick={() => onNavigate('home')}
-              className="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold cursor-pointer"
+              className="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold cursor-pointer hover:bg-indigo-700 shadow-md active:scale-95 transition"
             >
               Back to Home
             </button>

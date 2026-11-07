@@ -33,7 +33,7 @@ export const PrivacyPolicyPage: React.FC<PrivacyPolicyPageProps> = () => {
 
         <h2 className="text-lg font-bold font-fun text-white pt-4">4. Contact Us</h2>
         <p>
-          If you have any questions regarding our privacy practices, please contact us at <span className="text-amber-300 font-bold">privacy@wonderworldkidslearning.space</span>.
+          If you have any questions regarding our privacy practices, please contact us at <span className="text-amber-300 font-bold">wonderworldkidslearning@gmail.com</span>.
         </p>
       </div>
     </div>

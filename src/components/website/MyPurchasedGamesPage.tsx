@@ -112,7 +112,7 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
         )}
 
         <div className="text-center text-xs text-slate-400">
-          Didn't receive your confirmation email? Contact our support team at <span className="text-amber-300 font-bold">support@wonderworldkidslearning.space</span>
+          Didn't receive your confirmation email? Contact our support team at <span className="text-amber-300 font-bold">wonderworldkidslearning@gmail.com</span>
         </div>
       </div>
     </div>

@@ -19,8 +19,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       icon: HelpCircle,
       links: [
         { label: 'Wonder World Story', route: 'about' },
-        { label: 'Support', route: 'contact' },
         { label: 'FAQ', route: 'faq' },
+        { label: 'Support Email', route: 'contact' },
         { label: 'Download App', route: 'downloads' }
       ]
     },

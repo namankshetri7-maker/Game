@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { soundEngine } from '../../services/soundEngine';
-import { Shield, CheckCircle2, Lock, Download, Sparkles } from 'lucide-react';
+import { Shield, CheckCircle2, Lock, Download, Sparkles, ArrowRight } from 'lucide-react';
 
 interface PricingPageProps {
   onNavigate: (route: string) => void;
@@ -13,19 +13,11 @@ interface PricingPageProps {
 }
 
 export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSuccess }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [promoCode, setPromoCode] = useState('');
+  const GUMROAD_LINK = 'https://namank3.gumroad.com/l/wvpisb?_gl=1*ikkar4*_ga*ODc0MjIxOC4xNzkzMTY5MzA5*_ga_6LJN6D94N6*czE3OTQwMTk2MDYkbzExJGcxJHQxNzk0MDE5NjI1JGo0MSRsMCRoMA..';
 
-  const handlePayPalCheckout = () => {
-    soundEngine.playVictory();
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      localStorage.setItem('wwk_purchased', 'true');
-      localStorage.setItem('wwk_license', `WWK-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`);
-      onUnlockSuccess();
-      onNavigate('success');
-    }, 1800);
+  const handleGumroadCheckout = () => {
+    soundEngine.playPop();
+    window.open(GUMROAD_LINK, '_blank');
   };
 
   return (
@@ -72,25 +64,18 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSu
 
             <div className="space-y-3">
               <button
-                onClick={handlePayPalCheckout}
-                disabled={isProcessing}
-                className="w-full py-4 rounded-xl bg-[#0070BA] hover:bg-[#005ea6] text-white font-fun font-black text-sm shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer disabled:opacity-50"
+                onClick={handleGumroadCheckout}
+                className="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-fun font-black text-sm shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
               >
-                {isProcessing ? (
-                  <span>Processing Secure Checkout...</span>
-                ) : (
-                  <>
-                    <span>Pay with PayPal ($9.00)</span>
-                  </>
-                )}
+                <span>Buy Lifetime License ($9.00)</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
 
               <button
-                onClick={handlePayPalCheckout}
-                disabled={isProcessing}
-                className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-md transition cursor-pointer"
+                onClick={handleGumroadCheckout}
+                className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-fun font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
               >
-                Credit / Debit Card (Fast Checkout)
+                <span>Gumroad Secure Checkout</span>
               </button>
             </div>
           </div>

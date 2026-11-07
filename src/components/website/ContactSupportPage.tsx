@@ -65,7 +65,7 @@ export const ContactSupportPage: React.FC<ContactSupportPageProps> = () => {
               <input
                 type="email"
                 required
-                placeholder="parent@example.com"
+                placeholder="wonderworldkidslearning@gmail.com"
                 value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-400"
@@ -93,6 +93,19 @@ export const ContactSupportPage: React.FC<ContactSupportPageProps> = () => {
             </button>
           </form>
         )}
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 text-center">
+            <Mail className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+            <h3 className="text-sm font-bold font-fun text-white mb-1">Direct Email</h3>
+            <p className="text-xs text-amber-300 font-bold">wonderworldkidslearning@gmail.com</p>
+          </div>
+          <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 text-center">
+            <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+            <h3 className="text-sm font-bold font-fun text-white mb-1">Response Time</h3>
+            <p className="text-xs text-slate-400">Within 24 hours (Mon - Fri)</p>
+          </div>
+        </div>
       </div>
     </div>
   );
