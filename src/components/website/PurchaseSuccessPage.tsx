@@ -15,14 +15,9 @@ interface PurchaseSuccessPageProps {
 export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({ onNavigate, onEnterGame }) => {
   const licenseKey = localStorage.getItem('wwk_license') || 'WWK-LIFETIME-PASS';
 
-  const handleDownloadZip = () => {
+  const handleInstallApp = () => {
     soundEngine.playVictory();
-    const link = document.createElement('a');
-    link.href = '/WonderWorldKids_Offline_Package.zip';
-    link.download = 'WonderWorldKids_Offline_Package.zip';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    onNavigate('downloads');
   };
 
   return (
@@ -50,18 +45,18 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({ onNavi
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => { soundEngine.playPop(); onEnterGame(); }}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-emerald-400"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-emerald-400 transition"
           >
             <Play className="w-4 h-4 fill-current" />
             <span>Launch Full Game Now</span>
           </button>
 
           <button
-            onClick={handleDownloadZip}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-amber-500"
+            onClick={handleInstallApp}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-amber-500 transition"
           >
             <Download className="w-4 h-4" />
-            <span>Download Offline ZIP (19 MB)</span>
+            <span>Install Offline App</span>
           </button>
         </div>
 

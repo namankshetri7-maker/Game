@@ -41,3 +41,6 @@ export const SOCIAL_LINKS: SocialLink[] = [
     brandColor: '#1877F2'
   }
 ];
+
+export const SUPPORT_EMAIL = 'wonderworldkidslearning@gmail.com';
+

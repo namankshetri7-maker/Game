@@ -213,33 +213,6 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
                 Click the install icon in your address bar (right side of URL) to run Wonder World as a dedicated desktop window.
               </p>
             </div>
-
-            {/* Offline ZIP Bundle Download Card */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 shadow-sm">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">📦</span>
-                  <div>
-                    <h4 className="text-xs font-black font-fun text-amber-950">
-                      Offline Package (ZIP)
-                    </h4>
-                    <p className="text-[11px] text-amber-800 font-medium">
-                      Self-contained offline files for PC, Mac, USB, or local server.
-                    </p>
-                  </div>
-                </div>
-
-                <a
-                  href="/WonderWorldKids_Offline_Package.zip"
-                  download="WonderWorldKids_Offline_Package.zip"
-                  onClick={() => soundEngine.playStar()}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-105 active:scale-95 text-white font-fun font-bold text-xs shadow-md flex items-center gap-1.5 transition border border-white"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download ZIP (19 MB)</span>
-                </a>
-              </div>
-            </div>
           </div>
 
           {/* Footer Close Button */}

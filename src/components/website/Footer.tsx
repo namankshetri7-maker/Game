@@ -63,6 +63,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <p className="text-xs text-slate-400 leading-relaxed font-body max-w-sm">
             Wonder World Kids Learning is a 100% offline educational game suite. No ads, no data storage, simple one-time payment of $9.
           </p>
+          <div className="text-xs text-slate-300">
+            <span className="text-slate-400">Support: </span>
+            <a href="mailto:wonderworldkidslearning@gmail.com" className="text-amber-400 hover:underline font-bold">
+              wonderworldkidslearning@gmail.com
+            </a>
+          </div>
 
           {/* Social Media Channels */}
           <div className="pt-2">

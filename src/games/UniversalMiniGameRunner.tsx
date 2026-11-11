@@ -197,6 +197,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   };
 
   const handleNextLevel = () => {
+    if (isDemoMode && currentLevel >= 2) {
+      onNextGame();
+      return;
+    }
     if (currentLevel < 5) {
       const nextLvl = (currentLevel + 1) as 1 | 2 | 3 | 4 | 5;
       setCurrentLevel(nextLvl);
@@ -2796,23 +2800,33 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       <div className="relative z-10 flex items-center justify-between text-xs text-white font-fun font-bold">
         <div className="flex items-center gap-1">
           <span>Levels:</span>
-          {[1, 2, 3, 4, 5].map(lvl => (
-            <button
-              key={lvl}
-              onClick={() => {
-                soundEngine.playPop();
-                setCurrentLevel(lvl as 1 | 2 | 3 | 4 | 5);
-                resetGameState(lvl as 1 | 2 | 3 | 4 | 5);
-              }}
-              className={`w-6 h-6 rounded-lg text-xs font-bold transition ${
-                currentLevel === lvl
-                  ? 'bg-white text-indigo-700 shadow'
-                  : 'bg-white/30 text-white hover:bg-white/50'
-              }`}
-            >
-              {lvl}
-            </button>
-          ))}
+          {[1, 2, 3, 4, 5].map((lvl) => {
+            const isLockedInDemo = isDemoMode && lvl > 2;
+            return (
+              <button
+                key={lvl}
+                onClick={() => {
+                  if (isLockedInDemo) {
+                    onNextGame();
+                    return;
+                  }
+                  soundEngine.playPop();
+                  setCurrentLevel(lvl as 1 | 2 | 3 | 4 | 5);
+                  resetGameState(lvl as 1 | 2 | 3 | 4 | 5);
+                }}
+                className={`w-6 h-6 rounded-lg text-xs font-bold transition flex items-center justify-center ${
+                  currentLevel === lvl
+                    ? 'bg-white text-indigo-700 shadow'
+                    : isLockedInDemo
+                    ? 'bg-black/30 text-white/50 hover:bg-black/40'
+                    : 'bg-white/30 text-white hover:bg-white/50'
+                }`}
+                title={isLockedInDemo ? 'Locked in preview demo - Unlock all 5 levels' : `Level ${lvl}`}
+              >
+                {isLockedInDemo ? '🔒' : lvl}
+              </button>
+            );
+          })}
         </div>
 
         <div className="text-[11px] text-white/90">

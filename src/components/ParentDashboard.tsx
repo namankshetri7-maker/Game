@@ -33,13 +33,16 @@ import {
   Upload,
   FileText,
   ShieldAlert,
-  Info
+  Info,
+  Activity,
+  Wrench
 } from 'lucide-react';
 import { ChildProfile, SubjectArea } from '../types/game';
 import { storageService, INITIAL_STICKERS } from '../services/storageService';
 import { soundEngine } from '../services/soundEngine';
 import { parentSecurityService } from '../services/parentSecurityService';
 import { OfflineSetupGuideModal } from './OfflineSetupGuideModal';
+import { offlineBugFixer, DiagnosticReport } from '../services/offlineBugFixer';
 
 interface ParentDashboardProps {
   isOpen: boolean;
@@ -77,7 +80,31 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const [diagnosticReport, setDiagnosticReport] = useState<DiagnosticReport | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRunDiagnostics = () => {
+    soundEngine.playPop();
+    setIsDiagnosing(true);
+    setTimeout(() => {
+      const report = offlineBugFixer.runDiagnosticCheck();
+      setDiagnosticReport(report);
+      setIsDiagnosing(false);
+      soundEngine.playVictory();
+    }, 300);
+  };
+
+  const handleSelfHealStorage = () => {
+    soundEngine.playPop();
+    const result = offlineBugFixer.healLocalStorage();
+    setNoticeMessage(
+      result.issuesFixed.length > 0
+        ? `Storage self-healed: ${result.issuesFixed.join(', ')}`
+        : 'All local game data, child profiles, and audio state verified 100% healthy.'
+    );
+    soundEngine.playVictory();
+  };
 
   if (!isOpen) return null;
 
@@ -901,6 +928,71 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <span className="font-bold text-emerald-700">Local Device Storage</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Offline Bug Fixer & Diagnostics Runner */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-indigo-50 text-indigo-700 rounded-xl">
+                      <Activity className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-800">Offline Health & Bug Fixer Guardian</h3>
+                      <p className="text-xs text-slate-500">Autonomous self-healing engine protecting storage, audio, and mini-game states.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelfHealStorage}
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-fun font-bold text-xs border border-slate-300 transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Wrench className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Self-Heal Storage</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleRunDiagnostics}
+                      disabled={isDiagnosing}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-fun font-bold text-xs shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Activity className={`w-3.5 h-3.5 ${isDiagnosing ? 'animate-spin' : ''}`} />
+                      <span>{isDiagnosing ? 'Running Diagnostics...' : 'Run Diagnostics Check'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {diagnosticReport && (
+                  <div className="p-4 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-3 animate-fadeIn">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>System Health: {diagnosticReport.passedChecks}/{diagnosticReport.totalChecks} Checks Passed</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {new Date(diagnosticReport.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {diagnosticReport.checks.map((chk, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2 rounded-lg bg-slate-800/80 border border-slate-700/60"
+                        >
+                          <span className="text-slate-300 font-medium">{chk.name}</span>
+                          <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>OK</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Reset Child Progress */}

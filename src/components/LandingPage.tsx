@@ -4,7 +4,7 @@
  * 
  * Features:
  * - Professional EdTech SaaS Hero with Value Proposition
- * - Direct download buttons for the Offline ZIP package (/WonderWorldKids_Offline_Package.zip)
+ * - 1-Click Offline App Installation (PWA)
  * - "Play Instant Web Game" CTA
  * - 45 Mini-Game Curriculum & 5 Thematic Worlds Showcase
  * - Parent Security, COPPA Compliance & Offline Guarantee
@@ -40,14 +40,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenParentGate,
   onOpenInstallModal
 }) => {
-  const handleDownloadZip = () => {
+  const handleInstallOffline = () => {
     soundEngine.playVictory();
-    const link = document.createElement('a');
-    link.href = '/WonderWorldKids_Offline_Package.zip';
-    link.download = 'WonderWorldKids_Offline_Package.zip';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    onOpenInstallModal();
   };
 
   return (
@@ -115,11 +110,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </button>
 
           <button
-            onClick={handleDownloadZip}
+            onClick={handleInstallOffline}
             className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:brightness-105 active:scale-95 text-amber-950 font-fun font-black text-base sm:text-lg shadow-xl flex items-center justify-center gap-2.5 transition border-2 border-amber-300 cursor-pointer"
           >
             <Download className="w-5 h-5 text-amber-950" />
-            <span>Download Offline ZIP ($9)</span>
+            <span>Install Offline App</span>
           </button>
         </div>
 
@@ -199,24 +194,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Windows, Mac, Android & iOS Ready</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black font-fun text-white mb-3">
-              Get the Complete Offline Package for $9 USD
+              Play 100% Offline Across All Your Devices
             </h2>
             <p className="text-sm text-indigo-200 leading-relaxed mb-4">
-              Download the standalone ZIP package. Includes one-click launchers for Windows (`.bat`) and Mac (`.command`), local WOFF2 fonts, zero network dependencies, and full lifetime access.
+              Install the full progressive web application directly to your home screen or desktop. Includes all 45 mini-games, high quality sound effects, zero network dependencies, and full lifetime family access.
             </p>
             <div className="flex items-center gap-4 text-xs font-bold text-emerald-400">
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Instant ZIP download</span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> No Wi-Fi required after install</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> 1-Tap Home Screen install</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Zero Wi-Fi required to play</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
             <button
-              onClick={handleDownloadZip}
+              onClick={handleInstallOffline}
               className="px-8 py-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-2 border-amber-500"
             >
               <Download className="w-5 h-5 text-amber-950" />
-              <span>Download ZIP (19 MB)</span>
+              <span>Install Offline App</span>
             </button>
             <button
               onClick={() => {

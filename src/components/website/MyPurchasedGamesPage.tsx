@@ -48,14 +48,9 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
     }
   };
 
-  const handleDownloadZip = () => {
+  const handleInstallOffline = () => {
     soundEngine.playVictory();
-    const link = document.createElement('a');
-    link.href = '/WonderWorldKids_Offline_Package.zip';
-    link.download = 'WonderWorldKids_Offline_Package.zip';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    onNavigate('downloads');
   };
 
   return (
@@ -68,7 +63,7 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
             My Purchased Games
           </h1>
           <p className="text-sm text-slate-300">
-            Verify your lifetime license or retrieve offline download packages.
+            Verify your lifetime license or install the game for 100% offline access.
           </p>
         </div>
 
@@ -85,18 +80,18 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => { soundEngine.playPop(); onEnterGame(); }}
-                className="p-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="p-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer transition active:scale-95"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Launch Web Game</span>
               </button>
 
               <button
-                onClick={handleDownloadZip}
-                className="p-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                onClick={handleInstallOffline}
+                className="p-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer transition active:scale-95"
               >
                 <Download className="w-4 h-4" />
-                <span>Download Offline ZIP</span>
+                <span>Install Offline App</span>
               </button>
             </div>
           </div>

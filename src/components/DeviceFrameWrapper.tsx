@@ -168,17 +168,17 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
           <div className="hidden lg:flex items-center gap-2 shrink-0 ml-auto">
 
 
-            {/* 2. Offline Guide & Download Files Button */}
+            {/* 2. Offline Guide & Install App Button */}
             <button
               onClick={() => {
                 soundEngine.playPop();
                 onOpenInstallModal();
               }}
               className="h-9 xl:h-10 flex items-center gap-1.5 px-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 hover:bg-amber-100 text-amber-950 text-xs font-fun font-black shadow-xs border-2 border-amber-300/80 transition active:scale-95 cursor-pointer shrink-0"
-              title="Download 100% Offline Package (.ZIP) & View Device Setup Guides"
+              title="Install 100% Offline App & View Device Setup Guides"
             >
               <Download className="w-3.5 h-3.5 text-amber-600" />
-              <span>Offline Guide & Files</span>
+              <span>Offline Setup Guide</span>
               {isStandalone && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
             </button>
 
@@ -306,8 +306,8 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                     </div>
                     <div>
                       <div className="font-fun font-black text-sm text-amber-950 flex items-center gap-1.5">
-                        <span>Offline Guide & Download ZIP</span>
-                        <span className="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md uppercase font-black">19 MB</span>
+                        <span>Offline Setup Guide & Install</span>
+                        <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-md uppercase font-black">Offline</span>
                       </div>
                       <p className="text-[11px] text-amber-800 font-semibold font-body leading-tight mt-0.5">
                         Installation steps for iPhone, iPad, Android, Mac & Windows PC

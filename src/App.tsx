@@ -81,18 +81,18 @@ export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash.toLowerCase();
-    const isPurchased = params.get('purchased') === 'true' || params.get('game') === 'full' || hash.includes('purchased') || hash.includes('full');
-    const isDirectGame = isPurchased || params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
-    const wasAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
-    
-    if (isPurchased) {
-      localStorage.setItem('wwk_purchased', 'true');
-      localStorage.setItem('wwk_view_preference', 'app_only');
-      if (!localStorage.getItem('wwk_license')) {
-        localStorage.setItem('wwk_license', `SALE-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
-      }
-      return 'world_map';
+    const pageParam = params.get('page') || params.get('mode');
+
+    if (pageParam === 'my_games' || hash.includes('my_games')) {
+      return 'my_games';
     }
+
+    if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) {
+      return 'downloads';
+    }
+
+    const isDirectGame = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
+    const wasAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
 
     if (isDirectGame || wasAppOnly) {
       if (isDirectGame) localStorage.setItem('wwk_view_preference', 'app_only');
@@ -104,14 +104,8 @@ export default function App() {
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
   
-  // Check local purchase state on startup - immediately unlocked if purchased URL param is provided
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const hash = window.location.hash.toLowerCase();
-    const isPurchasedUrl = params.get('purchased') === 'true' || params.get('game') === 'full' || hash.includes('purchased') || hash.includes('full');
-    if (isPurchasedUrl) return false;
-    return localStorage.getItem('wwk_purchased') !== 'true';
-  });
+  // Purchase state: Unlocked ONLY with verified Gumroad license key
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => !licenseService.isUnlocked());
   const [isDemoLimitOpen, setIsDemoLimitOpen] = useState<boolean>(false);
 
   // Active child profile state
@@ -149,8 +143,24 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash.toLowerCase();
     const licenseParam = params.get('license');
-    const isPurchasedLink = params.get('purchased') === 'true' || params.get('game') === 'full' || hash.includes('purchased') || hash.includes('full');
     const directGameMode = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
+    const pageParam = params.get('page') || params.get('mode');
+    const wantsUnlockModal = 
+      pageParam === 'activate' || 
+      params.get('unlock') === 'true' || 
+      (params.has('license') && !licenseParam) ||
+      hash.includes('activate') || 
+      hash.includes('unlock');
+
+    if (wantsUnlockModal) {
+      setIsLicenseModalOpen(true);
+      return;
+    }
+
+    if (pageParam === 'my_games' || hash.includes('my_games')) {
+      setRoute('my_games');
+      return;
+    }
 
     // 1. Auto-verify Gumroad License Key from URL if provided (?license=XXXXX)
     if (licenseParam) {
@@ -166,20 +176,8 @@ export default function App() {
       return;
     }
 
-    if (isPurchasedLink) {
-      // 2. Instant Permanent Unlock
-      localStorage.setItem('wwk_purchased', 'true');
-      localStorage.setItem('wwk_view_preference', 'app_only');
-      if (!localStorage.getItem('wwk_license')) {
-        localStorage.setItem('wwk_license', `SALE-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
-      }
-      setIsDemoMode(false);
-      
-      // Direct entry to the world map
-      setRoute('world_map');
-      soundEngine.playVictory();
-    } else if (directGameMode) {
-      // Direct entry to the interactive game environment
+    if (directGameMode) {
+      // Direct entry to the interactive game environment (demo mode if not licensed)
       localStorage.setItem('wwk_view_preference', 'app_only');
       setRoute('world_map');
     }

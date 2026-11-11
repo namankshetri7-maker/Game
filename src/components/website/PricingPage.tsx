@@ -45,7 +45,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSu
             <ul className="space-y-3 text-xs sm:text-sm text-slate-200">
               <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> Full access to all 45 educational mini-games</li>
               <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> All 5 magical world islands (Math, Phonics, Geo, Science, Logic)</li>
-              <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> Offline ZIP package for Windows PC & Mac (.bat/.command)</li>
+              <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> 100% Offline App (Installable on iOS, Android, Mac & PC)</li>
               <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> Up to 4 child profile progress trackers & sticker albums</li>
               <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> COPPA-compliant parental gate & screen time limits</li>
             </ul>

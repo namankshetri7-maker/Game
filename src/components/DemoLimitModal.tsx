@@ -166,7 +166,7 @@ export const DemoLimitModal: React.FC<DemoLimitModalProps> = ({
               </div>
               <div className="flex items-center gap-1.5 bg-white p-2 rounded-xl border border-amber-200 shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>100% Offline PWA & Desktop Files</span>
+                <span>100% Offline PWA App (All Devices)</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white p-2 rounded-xl border border-amber-200 shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
