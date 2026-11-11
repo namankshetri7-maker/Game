@@ -81,15 +81,20 @@ export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash.toLowerCase();
-    const pageParam = params.get('page') || params.get('mode');
+    const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
 
-    if (pageParam === 'my_games' || hash.includes('my_games')) {
-      return 'my_games';
-    }
-
-    if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) {
-      return 'downloads';
-    }
+    if (pageParam === 'worlds' || hash.includes('worlds')) return 'worlds';
+    if (pageParam === 'world_detail' || hash.includes('world_detail')) return 'world_detail';
+    if (pageParam === 'demo' || hash.includes('demo')) return 'demo';
+    if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return 'pricing';
+    if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return 'downloads';
+    if (pageParam === 'parents' || hash.includes('parents')) return 'parents';
+    if (pageParam === 'about' || hash.includes('about')) return 'about';
+    if (pageParam === 'faq' || hash.includes('faq')) return 'faq';
+    if (pageParam === 'privacy' || hash.includes('privacy')) return 'privacy';
+    if (pageParam === 'contact' || hash.includes('contact')) return 'contact';
+    if (pageParam === 'my_games' || hash.includes('my_games')) return 'my_games';
+    if (pageParam === 'success' || hash.includes('success')) return 'success';
 
     const isDirectGame = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
     const wasAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
@@ -100,7 +105,10 @@ export default function App() {
     }
     return 'home';
   });
-  const [selectedWorldId, setSelectedWorldId] = useState<string>('world_math');
+  const [selectedWorldId, setSelectedWorldId] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('world') || 'world_math';
+  });
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
   
@@ -182,6 +190,43 @@ export default function App() {
       setRoute('world_map');
     }
   }, []);
+
+  // Dynamic Page Title & Canonical Meta Sync for Google Search Console and SEO
+  useEffect(() => {
+    const titleMap: Record<AppRoute, string> = {
+      home: 'Wonder World Kids Learning – 45 Educational Games for Kids (Ages 3–8)',
+      worlds: 'Explore 5 Magical Learning Worlds (45 Mini-Games) – Wonder World Kids',
+      world_detail: 'World Curriculum & Games – Wonder World Kids Learning',
+      demo: 'Free Interactive Demo Simulator (Play Levels 1 & 2) – Wonder World Kids',
+      pricing: 'Lifetime Family Access ($9 One-Time Payment) – Wonder World Kids',
+      downloads: 'Install Wonder World Kids Offline PWA – iPad, Android, PC, Mac',
+      parents: 'Parent Dashboard, Milestones & Safe Screen Time Gate – Wonder World Kids',
+      about: 'About Our Educational Mission & Child Safety – Wonder World Kids',
+      faq: 'Frequently Asked Questions – Wonder World Kids Learning',
+      privacy: 'Child Safety & COPPA Compliant Privacy Policy – Wonder World Kids',
+      contact: 'Parent Support & Helpdesk – Wonder World Kids Learning',
+      my_games: 'My Purchased Games & Family License – Wonder World Kids',
+      success: 'Purchase Successful! Welcome to Wonder World Kids',
+      world_map: 'Wonder World Map – Choose Your Learning Adventure',
+      world_detail_game: 'Learning World – Pick Your Mini-Game',
+      game: 'Playing Mini-Game – Wonder World Kids Learning',
+    };
+
+    if (titleMap[route]) {
+      document.title = titleMap[route];
+    }
+
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    const pageUrl = route === 'home' 
+      ? 'https://wonderworldkidslearning.space/' 
+      : `https://wonderworldkidslearning.space/?page=${route}`;
+    canonical.href = pageUrl;
+  }, [route]);
 
   const refreshActiveProfile = () => {
     setActiveProfile(storageService.getActiveProfile());

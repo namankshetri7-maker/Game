@@ -399,5 +399,63 @@ test('Offline Bug Fixer: Self-heals corrupted storage without crashing', async (
   assert.ok(boundaryCode.includes('offlineBugFixer.healLocalStorage()'), 'Must call storage heal on catch');
 });
 
+// ---------------------------------------------------------------------------
+// SUITE 13: SEO, Sitemap & Google Search Console Audit
+// ---------------------------------------------------------------------------
+test('SEO & Google Search Console: sitemap.xml, robots.txt, and metadata integrity', async () => {
+  // 1. Robots.txt
+  const robotsPath = path.resolve('public/robots.txt');
+  assert.ok(fs.existsSync(robotsPath), 'public/robots.txt must exist');
+  const robotsContent = fs.readFileSync(robotsPath, 'utf8');
+  assert.ok(robotsContent.includes('User-agent: Googlebot'), 'robots.txt must allow Googlebot');
+  assert.ok(robotsContent.includes('Sitemap: https://wonderworldkidslearning.space/sitemap.xml'), 'robots.txt must link canonical sitemap');
+
+  // 2. Sitemap.xml
+  const sitemapPath = path.resolve('public/sitemap.xml');
+  assert.ok(fs.existsSync(sitemapPath), 'public/sitemap.xml must exist');
+  const sitemapContent = fs.readFileSync(sitemapPath, 'utf8');
+  assert.ok(sitemapContent.startsWith('<?xml version="1.0" encoding="UTF-8"?>'), 'sitemap.xml must have valid XML header');
+  assert.ok(!sitemapContent.includes('#'), 'sitemap.xml must NOT contain URL hash fragments (Google guidelines)');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=worlds'), 'sitemap.xml must include worlds page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=demo'), 'sitemap.xml must include demo page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=pricing'), 'sitemap.xml must include pricing page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=downloads'), 'sitemap.xml must include downloads page');
+  assert.ok(sitemapContent.includes('hreflang="en-in"'), 'sitemap.xml must support India regional targeting');
+  assert.ok(sitemapContent.includes('hreflang="en-ae"'), 'sitemap.xml must support UAE/Dubai regional targeting');
+  assert.ok(sitemapContent.includes('hreflang="en-us"'), 'sitemap.xml must support US regional targeting');
+  assert.ok(sitemapContent.includes('hreflang="x-default"'), 'sitemap.xml must support x-default fallback');
+
+  // 3. index.html SEO, Verification & Crawlability
+  const indexHtmlPath = path.resolve('index.html');
+  assert.ok(fs.existsSync(indexHtmlPath), 'index.html must exist');
+  const indexContent = fs.readFileSync(indexHtmlPath, 'utf8');
+  assert.ok(indexContent.includes('google-site-verification'), 'index.html must have google-site-verification tag');
+  assert.ok(indexContent.includes('rel="canonical"'), 'index.html must specify canonical URL');
+  assert.ok(indexContent.includes('wonder world kids'), 'index.html must include brand keyword');
+  assert.ok(indexContent.includes('kids learning game'), 'index.html must include target category keyword');
+  assert.ok(indexContent.includes('application/ld+json'), 'index.html must have Schema.org JSON-LD');
+  assert.ok(indexContent.includes('EducationalApplication'), 'index.html schema must specify EducationalApplication');
+  assert.ok(indexContent.includes('<noscript>'), 'index.html must have semantic crawlable fallback');
+  assert.ok(indexContent.includes('Math Safari'), 'Crawlable fallback must describe Math Safari');
+  assert.ok(indexContent.includes('Phonics Island'), 'Crawlable fallback must describe Phonics Island');
+});
+
+// ---------------------------------------------------------------------------
+// SUITE 14: Zero Code or Zip Downloads Security Verification
+// ---------------------------------------------------------------------------
+test('Zero Code or Zip Downloads: Strict PWA-Only Policy', async () => {
+  // 1. Confirm ZIP package does not exist
+  const zipPath = path.resolve('public/WonderWorldKids_Offline_Package.zip');
+  assert.ok(!fs.existsSync(zipPath), 'WonderWorldKids_Offline_Package.zip must NOT exist in public folder');
+
+  // 2. Confirm DownloadInstructionsPage does not offer zip download buttons
+  const downloadPagePath = path.resolve('src/components/website/DownloadInstructionsPage.tsx');
+  const downloadPageContent = fs.readFileSync(downloadPagePath, 'utf8');
+  assert.ok(!downloadPageContent.includes('Direct Download ZIP'), 'DownloadInstructionsPage must not offer Direct Download ZIP');
+  assert.ok(!downloadPageContent.includes('WonderWorldKids_Offline_Package.zip'), 'Must not link to zip archive');
+  assert.ok(downloadPageContent.includes('Install Offline App'), 'Must offer 1-click PWA offline install');
+});
+
+
 
 

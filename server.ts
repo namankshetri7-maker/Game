@@ -52,19 +52,32 @@ function saveStats(stats: AppStats) {
   }
 }
 
-// 1. Download Offline ZIP Package with Counter Tracking
+// 1. Legacy Zip Download Route Deprecated (PWA Only)
 app.get('/api/download-zip', (req, res) => {
-  const stats = loadStats();
-  stats.zipDownloads += 1;
-  saveStats(stats);
+  res.status(410).json({
+    success: false,
+    message: 'Direct ZIP code downloads have been discontinued. Wonder World Kids installs directly as a 100% offline Progressive Web App (PWA) with full local caching.'
+  });
+});
 
-  const zipPath = path.join(__dirname, 'public', 'WonderWorldKids_Offline_Package.zip');
-  if (fs.existsSync(zipPath)) {
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="WonderWorldKids_Offline_Package.zip"');
-    fs.createReadStream(zipPath).pipe(res);
+// Explicit SEO handlers for Googlebot, Bingbot & Search Console
+app.get('/sitemap.xml', (req, res) => {
+  const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
+  if (fs.existsSync(sitemapPath)) {
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.sendFile(sitemapPath);
   } else {
-    res.status(404).json({ error: 'Zip package file preparing or not found.' });
+    res.status(404).send('sitemap.xml not found');
+  }
+});
+
+app.get('/robots.txt', (req, res) => {
+  const robotsPath = path.join(__dirname, 'public', 'robots.txt');
+  if (fs.existsSync(robotsPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.sendFile(robotsPath);
+  } else {
+    res.status(404).send('robots.txt not found');
   }
 });
 
