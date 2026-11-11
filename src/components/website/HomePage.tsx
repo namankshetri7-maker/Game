@@ -44,11 +44,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
         </div>
 
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black font-fun tracking-tight text-white mb-6 drop-shadow-md leading-tight">
-          A Whole World of <span className="text-amber-300 drop-shadow">Fun & Learning!</span> 🚀
+          A Whole World of <span className="text-amber-300 drop-shadow">Kids Learning Games!</span> 🚀
         </h1>
 
         <p className="text-base sm:text-xl text-white max-w-2xl font-bold mb-10 leading-relaxed drop-shadow-sm">
-          Explore magical islands, play 45 exciting mini-games, and collect golden stars with Wonder World Kids!
+          Play 45 safe, ad-free offline kids learning games across 5 magical worlds. Boost math, reading &amp; STEM skills with Wonder World Kids for ages 3–8!
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center mb-12">

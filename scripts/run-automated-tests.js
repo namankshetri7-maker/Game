@@ -456,6 +456,42 @@ test('Zero Code or Zip Downloads: Strict PWA-Only Policy', async () => {
   assert.ok(downloadPageContent.includes('Install Offline App'), 'Must offer 1-click PWA offline install');
 });
 
+// ---------------------------------------------------------------------------
+// SUITE 15: Meta Descriptions, OpenGraph & Structured Data (Homepage & Pricing)
+// ---------------------------------------------------------------------------
+test('SEO Metadata & JSON-LD: Homepage & PricingPage Schema Integrity', async () => {
+  // 1. Verify index.html meta description length (120-160 chars)
+  const indexContent = fs.readFileSync(path.resolve('index.html'), 'utf8');
+  const descMatch = indexContent.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/);
+  assert.ok(descMatch, 'Meta description tag must exist in index.html');
+  const descText = descMatch[1];
+  assert.ok(descText.length >= 120 && descText.length <= 160, `Meta description length must be 120-160 chars, got ${descText.length}`);
+  assert.ok(descText.includes('kids learning game'), 'Meta description must target "kids learning game" keyword');
+
+  // 2. OpenGraph & Twitter tags
+  assert.ok(indexContent.includes('property="og:title"'), 'og:title must exist');
+  assert.ok(indexContent.includes('property="og:description"'), 'og:description must exist');
+  assert.ok(indexContent.includes('property="og:image"'), 'og:image must exist');
+  assert.ok(indexContent.includes('name="twitter:card"'), 'twitter:card must exist');
+
+  // 3. Structured Data JSON-LD for Homepage & PricingPage
+  assert.ok(indexContent.includes('"@type": "WebSite"'), 'Homepage WebSite schema must exist');
+  assert.ok(indexContent.includes('"@type": ["Product", "SoftwareApplication"]'), 'PricingPage Product schema must exist');
+  assert.ok(indexContent.includes('"price": "9.00"'), 'Pricing schema must specify $9.00');
+  assert.ok(indexContent.includes('"priceCurrency": "USD"'), 'Pricing schema must specify USD');
+  assert.ok(indexContent.includes('https://namank3.gumroad.com/l/wvpisb'), 'Pricing schema must link Gumroad checkout');
+
+  // 4. Dynamic SEO Manager service
+  const seoManagerPath = path.resolve('src/services/seoManager.ts');
+  assert.ok(fs.existsSync(seoManagerPath), 'src/services/seoManager.ts must exist');
+  const seoManagerContent = fs.readFileSync(seoManagerPath, 'utf8');
+  assert.ok(seoManagerContent.includes('SEO_CONFIGS'), 'Must export SEO_CONFIGS');
+  assert.ok(seoManagerContent.includes('applyRouteSEO'), 'Must export applyRouteSEO');
+  assert.ok(seoManagerContent.includes('pricing'), 'Must have dedicated pricing SEO config');
+  assert.ok(seoManagerContent.includes('home'), 'Must have dedicated home SEO config');
+});
+
+
 
 
 

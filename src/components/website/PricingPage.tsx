@@ -31,10 +31,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onUnlockSu
             <span>Lifetime Family License</span>
           </span>
           <h1 className="text-3xl sm:text-5xl font-black font-fun text-white mb-3">
-            Unlock Full Game Access
+            Unlock 45 Kids Learning Games
           </h1>
           <p className="text-sm sm:text-base text-slate-300">
-            One simple payment of $9 USD. No subscriptions. No recurring charges. Lifetime updates included.
+            One simple payment of $9 USD. Play all 45 kids learning games offline forever with zero subscriptions.
           </p>
         </div>
 

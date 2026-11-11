@@ -58,6 +58,7 @@ import { DemoLimitModal } from './components/DemoLimitModal';
 import { DemoHeaderBar } from './components/DemoHeaderBar';
 import { LicenseVerificationModal } from './components/LicenseVerificationModal';
 import { licenseService } from './services/licenseService';
+import { applyRouteSEO } from './services/seoManager';
 
 export type AppRoute =
   | 'home'
@@ -191,41 +192,9 @@ export default function App() {
     }
   }, []);
 
-  // Dynamic Page Title & Canonical Meta Sync for Google Search Console and SEO
+  // Dynamic Page Title, Meta Description, OpenGraph & JSON-LD Sync
   useEffect(() => {
-    const titleMap: Record<AppRoute, string> = {
-      home: 'Wonder World Kids Learning – 45 Educational Games for Kids (Ages 3–8)',
-      worlds: 'Explore 5 Magical Learning Worlds (45 Mini-Games) – Wonder World Kids',
-      world_detail: 'World Curriculum & Games – Wonder World Kids Learning',
-      demo: 'Free Interactive Demo Simulator (Play Levels 1 & 2) – Wonder World Kids',
-      pricing: 'Lifetime Family Access ($9 One-Time Payment) – Wonder World Kids',
-      downloads: 'Install Wonder World Kids Offline PWA – iPad, Android, PC, Mac',
-      parents: 'Parent Dashboard, Milestones & Safe Screen Time Gate – Wonder World Kids',
-      about: 'About Our Educational Mission & Child Safety – Wonder World Kids',
-      faq: 'Frequently Asked Questions – Wonder World Kids Learning',
-      privacy: 'Child Safety & COPPA Compliant Privacy Policy – Wonder World Kids',
-      contact: 'Parent Support & Helpdesk – Wonder World Kids Learning',
-      my_games: 'My Purchased Games & Family License – Wonder World Kids',
-      success: 'Purchase Successful! Welcome to Wonder World Kids',
-      world_map: 'Wonder World Map – Choose Your Learning Adventure',
-      world_detail_game: 'Learning World – Pick Your Mini-Game',
-      game: 'Playing Mini-Game – Wonder World Kids Learning',
-    };
-
-    if (titleMap[route]) {
-      document.title = titleMap[route];
-    }
-
-    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.rel = 'canonical';
-      document.head.appendChild(canonical);
-    }
-    const pageUrl = route === 'home' 
-      ? 'https://wonderworldkidslearning.space/' 
-      : `https://wonderworldkidslearning.space/?page=${route}`;
-    canonical.href = pageUrl;
+    applyRouteSEO(route);
   }, [route]);
 
   const refreshActiveProfile = () => {
