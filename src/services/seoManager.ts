@@ -221,6 +221,28 @@ export const SEO_CONFIGS: Record<string, PageSEOConfig> = {
     ogDescription: 'Track learning progress, star achievements, and playtime limits with zero ads and complete privacy protection.',
     ogImage: DEFAULT_IMAGE,
     jsonLd: []
+  },
+
+  activate: {
+    title: 'Activate Etsy Order & Claim Lifetime Key – Wonder World Kids Learning',
+    description: 'Purchased Wonder World Kids on Etsy for $8.99? Enter your Etsy Order Number to verify your purchase and receive your unique lifetime offline activation key.',
+    canonicalUrl: `${BASE_URL}/?page=activate`,
+    ogType: 'website',
+    ogTitle: 'Activate Your Etsy Purchase – Wonder World Kids Learning',
+    ogDescription: 'Instant order verification and unique lifetime activation key assignment for Etsy customers ($8.99 listing). 100% offline play.',
+    ogImage: DEFAULT_IMAGE,
+    jsonLd: []
+  },
+
+  etsy: {
+    title: 'Activate Etsy Order & Claim Lifetime Key – Wonder World Kids Learning',
+    description: 'Purchased Wonder World Kids on Etsy for $8.99? Enter your Etsy Order Number to verify your purchase and receive your unique lifetime offline activation key.',
+    canonicalUrl: `${BASE_URL}/?page=activate`,
+    ogType: 'website',
+    ogTitle: 'Activate Your Etsy Purchase – Wonder World Kids Learning',
+    ogDescription: 'Instant order verification and unique lifetime activation key assignment for Etsy customers ($8.99 listing). 100% offline play.',
+    ogImage: DEFAULT_IMAGE,
+    jsonLd: []
   }
 };
 

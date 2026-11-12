@@ -1,0 +1,22 @@
+{
+  "3481928471": {
+    "orderId": "3481928471",
+    "email": "sarah.parent@example.com",
+    "buyerName": "Sarah & Leo",
+    "licenseKey": "WWK-ETSY-980A-1B85-8471",
+    "claimedAt": "2026-11-12T19:40:41.588Z",
+    "pricePaid": 8.99,
+    "currency": "USD",
+    "status": "active"
+  },
+  "ETSY-TEST-123456": {
+    "orderId": "ETSY-TEST-123456",
+    "email": "test@wonderworldkids.com",
+    "buyerName": "Etsy Reviewer",
+    "licenseKey": "WWK-ETSY-TEST-7788-PASS",
+    "claimedAt": "2026-11-12T19:40:41.588Z",
+    "pricePaid": 8.99,
+    "currency": "USD",
+    "status": "active"
+  }
+}

@@ -153,9 +153,11 @@ export default function App() {
     const hash = window.location.hash.toLowerCase();
     const licenseParam = params.get('license');
     const directGameMode = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
-    const pageParam = params.get('page') || params.get('mode');
+    const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
+
     const wantsUnlockModal = 
       pageParam === 'activate' || 
+      pageParam === 'etsy' || 
       params.get('unlock') === 'true' || 
       (params.has('license') && !licenseParam) ||
       hash.includes('activate') || 

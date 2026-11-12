@@ -272,15 +272,16 @@ test('Support & Social Channels Audit: Correct contact details throughout', asyn
 });
 
 // ---------------------------------------------------------------------------
-// SUITE 9: Gumroad Checkout & Licensing Integrity
+// SUITE 9: License Activation & Master Pass Integrity
 // ---------------------------------------------------------------------------
-test('Gumroad Licensing: Correct permalink and test license pass', async () => {
+test('License Activation: Master lifetime keys and key activation pass', async () => {
   const licenseServiceContent = fs.readFileSync(path.resolve('src/services/licenseService.ts'), 'utf8');
-  assert.ok(licenseServiceContent.includes('wvpisb'), 'Must reference Gumroad permalink wvpisb');
+  assert.ok(licenseServiceContent.includes('MASTER_LIFETIME_KEYS'), 'Must define MASTER_LIFETIME_KEYS');
+  assert.ok(licenseServiceContent.includes('WWK-ETSY-FAMILY-ACCESS'), 'Must support Etsy key WWK-ETSY-FAMILY-ACCESS');
   assert.ok(licenseServiceContent.includes('WWK-TEST-PASS'), 'Must support QA test key WWK-TEST-PASS');
 
   const pricingPageContent = fs.readFileSync(path.resolve('src/components/website/PricingPage.tsx'), 'utf8');
-  assert.ok(pricingPageContent.includes('https://namank3.gumroad.com/l/wvpisb'), 'Checkout must route to Gumroad product');
+  assert.ok(pricingPageContent.includes('Enter Activation Key'), 'Pricing page must prompt for activation key');
 });
 
 // ---------------------------------------------------------------------------
@@ -490,6 +491,26 @@ test('SEO Metadata & JSON-LD: Homepage & PricingPage Schema Integrity', async ()
   assert.ok(seoManagerContent.includes('pricing'), 'Must have dedicated pricing SEO config');
   assert.ok(seoManagerContent.includes('home'), 'Must have dedicated home SEO config');
 });
+
+// ---------------------------------------------------------------------------
+// SUITE 16: Simplified Etsy & Family Master Key Activation
+// ---------------------------------------------------------------------------
+test('Etsy Workflow: Simple Activation Key & Master Pass Verification', async () => {
+  // 1. Verify licenseService includes master lifetime keys and WWK-ETSY support
+  const licenseServiceCode = fs.readFileSync(path.resolve('src/services/licenseService.ts'), 'utf8');
+  assert.ok(licenseServiceCode.includes('MASTER_LIFETIME_KEYS'), 'licenseService must define MASTER_LIFETIME_KEYS');
+  assert.ok(licenseServiceCode.includes('WWK-ETSY-FAMILY-ACCESS'), 'Must include master key WWK-ETSY-FAMILY-ACCESS');
+  assert.ok(licenseServiceCode.includes("cleanKey.startsWith('WWK-ETSY-')"), 'Must recognize WWK-ETSY keys');
+
+  // 2. Verify LicenseVerificationModal accepts keys cleanly
+  const modalContent = fs.readFileSync(path.resolve('src/components/LicenseVerificationModal.tsx'), 'utf8');
+  assert.ok(modalContent.includes('Enter Activation Key'), 'Modal must prompt for activation key');
+
+  // 3. Verify strictly ZERO PayU references anywhere
+  const serverContent = fs.readFileSync(path.resolve('server.ts'), 'utf8');
+  assert.ok(!serverContent.toLowerCase().includes('payu'), 'server.ts must not contain PayU');
+});
+
 
 
 

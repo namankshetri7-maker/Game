@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { BrandLogo } from '../BrandLogo';
 import { soundEngine } from '../../services/soundEngine';
-import { Play, ShoppingBag, Menu, X, Sparkles, Youtube, Instagram, Facebook } from 'lucide-react';
+import { Play, ShoppingBag, Menu, X, Sparkles, Youtube, Instagram, Facebook, KeyRound } from 'lucide-react';
 import { SOCIAL_LINKS } from '../../data/socialLinks';
 
 interface NavbarProps {
@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
     { label: 'Home', route: 'home' },
     { label: 'Explore Worlds', route: 'worlds' },
     { label: 'Demo Simulator', route: 'demo' },
-    { label: 'Pricing ($9)', route: 'pricing' },
+    { label: 'Unlock Full Game', route: 'pricing' },
     { label: 'Install PWA', route: 'downloads' },
     { label: 'Parents & Safety', route: 'parents' }
   ];
@@ -117,9 +117,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
             }}
             className="px-2.5 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow-lg transition active:scale-95 cursor-pointer border sm:border-2 border-white flex items-center gap-1 sm:gap-1.5 shrink-0"
           >
-            <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Unlock ($9)</span>
-            <span className="sm:hidden text-[11px]">$9</span>
+            <KeyRound className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Unlock Game</span>
+            <span className="sm:hidden text-[11px]">Unlock</span>
           </button>
 
           {/* Mobile Hamburger Menu Button */}

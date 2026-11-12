@@ -85,10 +85,10 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-fun">
-                Gumroad Customer Verification
+                Lifetime Key Activation
               </span>
               <h2 className="text-xl sm:text-2xl font-black font-fun text-white">
-                Enter License Key
+                Enter Activation Key
               </h2>
             </div>
           </div>
@@ -110,7 +110,7 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
             </div>
           ) : (
             <p className="text-xs text-slate-300 mb-5 leading-relaxed">
-              If you purchased on <strong className="text-white">Gumroad</strong> or <strong className="text-white">Etsy</strong>, paste the unique license key from your receipt below to permanently unlock all 45 games on this device.
+              Paste your unique lifetime activation key from your purchase receipt below to permanently unlock all 45 games on this device.
             </p>
           )}
 
@@ -118,13 +118,13 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
           <form onSubmit={handleVerify} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-300 font-fun mb-1.5">
-                License Key (from your Gumroad receipt)
+                Lifetime Activation Key
               </label>
               <input
                 type="text"
                 required
                 autoFocus
-                placeholder="e.g. 8F7A2B1C-4D5E6F-7G8H9I"
+                placeholder="e.g. WWK-ETSY-FAMILY-ACCESS"
                 value={licenseKeyInput}
                 onChange={(e) => setLicenseKeyInput(e.target.value)}
                 disabled={isLoading}
@@ -152,7 +152,7 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
                         <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                       </div>
                       <p className="text-[11px] text-emerald-300 mt-0.5">
-                        Welcome {result.buyerEmail ? `(${result.buyerEmail})` : ''}! Unlocking all 45 games now...
+                        Unlocking all 45 games now...
                       </p>
                     </div>
                   </>
@@ -176,7 +176,7 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying with Gumroad...</span>
+                  <span>Verifying Key...</span>
                 </>
               ) : (
                 <>
@@ -188,18 +188,8 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
           </form>
 
           {/* Help Links Footer */}
-          <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400">
-            <a
-              href="https://namank3.gumroad.com/l/wvpisb"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-400 hover:underline flex items-center gap-1"
-            >
-              <span>Don't have a license? Buy for $9</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-
-            <span className="text-slate-500">Need help? wonderworldkidslearning@gmail.com</span>
+          <div className="mt-6 pt-4 border-t border-slate-800 space-y-1 text-[11px] text-slate-400 text-center">
+            <div className="text-slate-500">Need help activating your key? Email <a href="mailto:wonderworldkidslearning@gmail.com" className="text-amber-400 hover:underline font-bold">wonderworldkidslearning@gmail.com</a></div>
           </div>
         </motion.div>
       </div>

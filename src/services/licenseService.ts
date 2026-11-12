@@ -23,8 +23,11 @@ const STORAGE_KEY_LICENSE = 'wwk_license';
 const STORAGE_KEY_EMAIL = 'wwk_license_email';
 const STORAGE_KEY_DATE = 'wwk_license_date';
 
-// Test / Development master bypass keys for testing
-const DEV_MASTER_KEYS = [
+// Master lifetime activation keys for Etsy and authorized family purchasers
+export const MASTER_LIFETIME_KEYS = [
+  'WWK-ETSY-FAMILY-ACCESS',
+  'WWK-ETSY-2026',
+  'WWK-FAMILY-LIFETIME',
   'WWK-TEST-PASS',
   'WWK-DEV-PASS',
   'WWK-LIFETIME-PASS'
@@ -98,14 +101,18 @@ export const licenseService = {
 
     const cleanKey = rawKey.toUpperCase();
 
-    // 1. Check Developer Test Keys
-    if (DEV_MASTER_KEYS.includes(cleanKey)) {
-      this.saveLicense(cleanKey, 'test-owner@wonderworldkids.com', new Date().toISOString());
+    // 1. Check Master Lifetime Keys (Etsy & Family Passes - 100% Offline & Instant)
+    if (
+      MASTER_LIFETIME_KEYS.includes(cleanKey) ||
+      cleanKey.startsWith('WWK-ETSY-') ||
+      cleanKey.startsWith('WWK-FAMILY-')
+    ) {
+      this.saveLicense(cleanKey, 'etsy-family@wonderworldkids.com', new Date().toISOString());
       return {
         success: true,
         licenseKey: cleanKey,
-        buyerEmail: 'test-owner@wonderworldkids.com',
-        buyerName: 'Authorized Licensee',
+        buyerEmail: 'etsy-family@wonderworldkids.com',
+        buyerName: 'Etsy Family Member',
         purchaseDate: new Date().toLocaleDateString()
       };
     }
@@ -170,14 +177,14 @@ export const licenseService = {
       } else {
         return {
           success: false,
-          message: data.message || 'License key not recognized for Wonder World Kids. Please check your Gumroad receipt.'
+          message: data.message || 'License key not recognized for Wonder World Kids. Please check your key from your PDF.'
         };
       }
     } catch (err) {
       console.error('License verification request error:', err);
       return {
         success: false,
-        message: 'Could not connect to Gumroad license server. Please verify your internet connection.'
+        message: 'Could not connect to license verification server. Please verify your internet connection.'
       };
     }
   }
