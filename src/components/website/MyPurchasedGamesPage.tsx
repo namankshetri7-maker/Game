@@ -21,7 +21,7 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
 
   const stored = licenseService.getStoredLicense();
   const isPurchased = stored.isUnlocked;
-  const licenseKey = stored.licenseKey || 'WWK-LIFETIME-PASS';
+  const licenseKey = stored.licenseKey || 'Active Lifetime License';
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +105,7 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
             <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                placeholder="Enter Activation Key (e.g. WWK-FAMILY-LIFETIME)"
+                placeholder="Enter your activation key (XXXX-XXXX-XXXX-XXXX)"
                 value={licenseInput}
                 disabled={isLoading}
                 onChange={e => setLicenseInput(e.target.value)}

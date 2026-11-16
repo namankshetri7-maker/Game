@@ -23,11 +23,10 @@ const STORAGE_KEY_LICENSE = 'wwk_license';
 const STORAGE_KEY_EMAIL = 'wwk_license_email';
 const STORAGE_KEY_DATE = 'wwk_license_date';
 
-// Master lifetime activation keys for Etsy and authorized family purchasers
+// Authorized offline master passes
 export const MASTER_LIFETIME_KEYS = [
   'WWK-ETSY-FAMILY-ACCESS',
   'WWK-ETSY-2026',
-  'WWK-FAMILY-LIFETIME',
   'WWK-TEST-PASS',
   'WWK-DEV-PASS',
   'WWK-LIFETIME-PASS'
@@ -101,18 +100,14 @@ export const licenseService = {
 
     const cleanKey = rawKey.toUpperCase();
 
-    // 1. Check Master Lifetime Keys (Etsy & Family Passes - 100% Offline & Instant)
-    if (
-      MASTER_LIFETIME_KEYS.includes(cleanKey) ||
-      cleanKey.startsWith('WWK-ETSY-') ||
-      cleanKey.startsWith('WWK-FAMILY-')
-    ) {
-      this.saveLicense(cleanKey, 'etsy-family@wonderworldkids.com', new Date().toISOString());
+    // 1. Check exact authorized offline master passes
+    if (MASTER_LIFETIME_KEYS.includes(cleanKey)) {
+      this.saveLicense(cleanKey, 'family-license@wonderworldkidslearning.space', new Date().toISOString());
       return {
         success: true,
         licenseKey: cleanKey,
-        buyerEmail: 'etsy-family@wonderworldkids.com',
-        buyerName: 'Etsy Family Member',
+        buyerEmail: 'family-license@wonderworldkidslearning.space',
+        buyerName: 'Lifetime Family Member',
         purchaseDate: new Date().toLocaleDateString()
       };
     }

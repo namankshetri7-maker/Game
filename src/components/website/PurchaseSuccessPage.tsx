@@ -13,7 +13,7 @@ interface PurchaseSuccessPageProps {
 }
 
 export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({ onNavigate, onEnterGame }) => {
-  const licenseKey = localStorage.getItem('wwk_license') || 'WWK-LIFETIME-PASS';
+  const licenseKey = localStorage.getItem('wwk_license') || 'Check your purchase receipt email';
 
   const handleInstallApp = () => {
     soundEngine.playVictory();

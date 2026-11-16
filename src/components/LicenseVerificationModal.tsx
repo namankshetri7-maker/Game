@@ -124,7 +124,7 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
                 type="text"
                 required
                 autoFocus
-                placeholder="e.g. WWK-FAMILY-LIFETIME"
+                placeholder="XXXX-XXXX-XXXX-XXXX"
                 value={licenseKeyInput}
                 onChange={(e) => setLicenseKeyInput(e.target.value)}
                 disabled={isLoading}

@@ -569,12 +569,24 @@ test('PayU Removed, Etsy UI Removed, Key Button + Gumroad Checkout & Clean ?unlo
     );
   }
 
-  // 4. Verify ?unlock=true modal UI text has zero Gumroad or $9 strings
+  // 4. Verify ?unlock=true modal UI text has zero Gumroad or $9 strings & leaks NO working activation key
   const modalContent = fs.readFileSync(path.resolve('src/components/LicenseVerificationModal.tsx'), 'utf8');
+  const myGamesContent = fs.readFileSync(path.resolve('src/components/website/MyPurchasedGamesPage.tsx'), 'utf8');
+  const purchaseSuccessContent = fs.readFileSync(path.resolve('src/components/website/PurchaseSuccessPage.tsx'), 'utf8');
+  const licenseSvcContent = fs.readFileSync(path.resolve('src/services/licenseService.ts'), 'utf8');
   assert.ok(modalContent.includes('Enter Activation Key'), 'Modal must prompt for activation key');
   const modalWithoutMethodName = modalContent.replace(/verifyGumroadLicense/g, '');
   assert.ok(!modalWithoutMethodName.toLowerCase().includes('gumroad'), 'Unlock modal (?unlock=true) must not mention Gumroad');
   assert.ok(!modalWithoutMethodName.includes('$9'), 'Unlock modal (?unlock=true) must not mention $9');
+
+  // Security check: No valid/master key may ever appear in UI placeholders or public fallbacks
+  assert.ok(!licenseSvcContent.includes('WWK-FAMILY-LIFETIME'), 'Exposed key WWK-FAMILY-LIFETIME must be revoked');
+  assert.ok(!licenseSvcContent.includes("startsWith('WWK-FAMILY-')"), 'Must not allow broad WWK-FAMILY- wildcard');
+  for (const leakedKey of ['WWK-FAMILY-LIFETIME', 'WWK-ETSY-FAMILY-ACCESS', 'WWK-ETSY-2026', 'WWK-TEST-PASS', 'WWK-DEV-PASS', 'WWK-LIFETIME-PASS']) {
+    assert.ok(!modalContent.includes(leakedKey), `LicenseVerificationModal must never expose key ${leakedKey}`);
+    assert.ok(!myGamesContent.includes(leakedKey), `MyPurchasedGamesPage must never expose key ${leakedKey}`);
+    assert.ok(!purchaseSuccessContent.includes(leakedKey), `PurchaseSuccessPage must never expose key ${leakedKey}`);
+  }
 });
 
 // ---------------------------------------------------------------------------
