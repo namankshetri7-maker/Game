@@ -12,17 +12,28 @@ import {
   Shield,
   ChevronRight,
   Lock,
-  Globe
+  Globe,
+  KeyRound
 } from 'lucide-react';
 import { WORLDS } from '../../data/gameMatrix';
 import { soundEngine } from '../../services/soundEngine';
+import { getRoutePath } from '../../services/seoManager';
 
 interface HomePageProps {
   onNavigate: (route: string, worldId?: string) => void;
   onEnterGame: () => void;
+  onOpenLicenseModal?: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLicenseModal }) => {
+  const handleAnchorNav = (e: React.MouseEvent, route: string, worldId?: string) => {
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      soundEngine.playPop();
+      onNavigate(route, worldId);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-sky-400 via-sky-300 to-indigo-600 text-slate-800 font-body selection:bg-amber-400 selection:text-amber-950 relative overflow-hidden">
       
@@ -52,21 +63,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center mb-12">
-          <button
-            onClick={() => { soundEngine.playPop(); onNavigate('worlds'); }}
+          <a
+            href={getRoutePath('worlds')}
+            onClick={(e) => handleAnchorNav(e, 'worlds')}
             className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-white"
           >
             <Compass className="w-5 h-5 text-amber-900" />
             <span>Explore Worlds 🗺️</span>
-          </button>
-          <button
-            onClick={() => { soundEngine.playPop(); onNavigate('demo'); }}
+          </a>
+          <a
+            href={getRoutePath('demo')}
+            onClick={(e) => handleAnchorNav(e, 'demo')}
             className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-white animate-bounce"
             style={{ animationDuration: '3s' }}
           >
             <Play className="w-5 h-5 fill-current" />
             <span>Try Free Demo ✨</span>
-          </button>
+          </a>
         </div>
       </section>
 
@@ -82,10 +95,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
           {WORLDS.map((world, idx) => {
             const ISLAND_BG = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500'];
             return (
-              <motion.div
+              <motion.a
                 key={world.id}
+                href={getRoutePath('world_detail', world.id)}
                 whileHover={{ y: -6, scale: 1.02 }}
-                onClick={() => { soundEngine.playPop(); onNavigate('world_detail', world.id); }}
+                onClick={(e) => handleAnchorNav(e, 'world_detail', world.id)}
                 className={`rounded-3xl p-6 shadow-2xl border-4 border-white cursor-pointer flex flex-col group transition-all ${ISLAND_BG[idx % ISLAND_BG.length]} text-white`}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -100,7 +114,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
                   <span>Enter Island</span>
                   <ChevronRight className="w-5 h-5" />
                 </div>
-              </motion.div>
+              </motion.a>
             );
           })}
         </div>
@@ -120,7 +134,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
             </div>
             <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100">
               <h3 className="font-fun text-xl text-amber-950 mb-3">For Parents</h3>
-              <p className="text-sm font-medium leading-relaxed">Enjoy total peace of mind: 100% offline gameplay, absolutely no data storage, no internet required, and a simple one-time payment.</p>
+              <p className="text-sm font-medium leading-relaxed">Enjoy total peace of mind: 100% offline gameplay, absolutely no data storage, no internet required, and a simple one-time checkout.</p>
             </div>
           </div>
         </div>
@@ -142,7 +156,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
           <div className="p-6 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
             <Lock className="w-10 h-10 mx-auto mb-3 text-amber-400" />
             <h3 className="font-fun font-black mb-1">Simple Payment</h3>
-            <p className="text-xs">Single $9 lifetime payment. No hidden subscriptions.</p>
+            <p className="text-xs">Single lifetime payment on Gumroad or activate via Key. Zero subscriptions.</p>
           </div>
         </div>
       </section>
@@ -150,14 +164,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onEnterGame }) =
       {/* 5. Pricing Section */}
       <section id="pricing" className="relative z-10 bg-amber-400 py-16 px-4 border-y-4 border-white text-amber-950">
         <div className="max-w-3xl mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-2xl text-center">
-          <h2 className="text-3xl sm:text-4xl font-black font-fun mb-4">Unlock All 45 Games for $9!</h2>
-          <p className="text-sm font-bold mb-8">Lifetime access, all worlds, all levels, sticker books, and offline packages.</p>
-          <button
-            onClick={() => { soundEngine.playPop(); onNavigate('pricing'); }}
-            className="px-10 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-fun font-black text-base shadow-xl transition active:scale-95 cursor-pointer border-2 border-amber-600"
-          >
-            Unlock Full Access ($9) 🚀
-          </button>
+          <h2 className="text-3xl sm:text-4xl font-black font-fun mb-4">Unlock All 45 Games for Life!</h2>
+          <p className="text-sm font-bold mb-8">Lifetime access, all 5 worlds, all 225 difficulty levels, sticker books & offline PWA install for one-time $9 USD.</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href={getRoutePath('pricing')}
+              onClick={(e) => handleAnchorNav(e, 'pricing')}
+              className="inline-block px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-fun font-black text-base shadow-xl transition active:scale-95 cursor-pointer border-2 border-amber-600"
+            >
+              Unlock Full Access 🚀
+            </a>
+            {onOpenLicenseModal && (
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onOpenLicenseModal();
+                }}
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-fun font-black text-base shadow-xl transition active:scale-95 cursor-pointer border-2 border-indigo-400"
+              >
+                <KeyRound className="w-5 h-5" />
+                <span>Enter Activation Key</span>
+              </button>
+            )}
+          </div>
         </div>
       </section>
     </div>

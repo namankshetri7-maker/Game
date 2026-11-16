@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Volume2, Sparkles, AlertCircle, CheckCircle2, ShieldAlert, Compass, Eye } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
@@ -267,6 +267,13 @@ export const FootprintDetectiveGame: React.FC<FootprintDetectiveGameProps> = ({
   const [isInspecting, setIsInspecting] = useState(false);
   const [activeTab, setActiveTab] = useState<'anatomy' | 'habitat' | 'diet'>('anatomy');
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCaseIndex(0);
+    setSelectedOption(null);
+    setIsInspecting(false);
+    setActiveTab('anatomy');
+  }, [currentLevel]);
 
   const currentCase = levelCases[caseIndex % levelCases.length];
 

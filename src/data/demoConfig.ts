@@ -5,10 +5,10 @@
 
 export const ALLOWED_DEMO_GAMES_BY_WORLD: Record<string, string[]> = {
   world_math: ['game_dino_addition', 'game_shape_sorter_express'],
-  world_phonics: ['game_word_builder_bee', 'game_abc_phonics_pop'],
-  world_geography: ['game_continent_jigsaw', 'game_flag_match_explorer'],
-  world_science: ['game_animal_sound_memory', 'game_color_shadow_match'],
-  world_logic: ['game_pattern_block_builder', 'game_memory_match_matrix']
+  world_phonics: ['game_word_builder_bee', 'game_phonics_popsicle'],
+  world_geography: ['game_continent_jigsaw', 'game_flag_runner'],
+  world_science: ['game_animal_sound_memory', 'game_footprint_detective'],
+  world_logic: ['game_color_shadow_match', 'game_memory_card_flip']
 };
 
 export const ALLOWED_DEMO_GAMES: string[] = Object.values(ALLOWED_DEMO_GAMES_BY_WORLD).flat();

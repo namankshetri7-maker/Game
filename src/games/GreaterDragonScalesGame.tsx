@@ -76,6 +76,10 @@ export const GreaterDragonScalesGame: React.FC<GreaterDragonScalesGameProps> = (
   const [feedbackState, setFeedbackState] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [dragonMouth, setDragonMouth] = useState<'neutral' | 'left' | 'right' | 'equal'>('neutral');
 
+  useEffect(() => {
+    setQuestionIndex(0);
+  }, [currentLevel]);
+
   // Reset when level or question changes
   useEffect(() => {
     setSelectedOp(null);

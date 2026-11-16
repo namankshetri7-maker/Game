@@ -8,7 +8,7 @@
  * - Hard (8–10): Blank ocean grid where kids place continents by spatial shape.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Check, Info, Home, ArrowLeft } from 'lucide-react';
 import { AgeGroup, DifficultyLevel, GameState, Sticker } from '../types/game';
@@ -25,6 +25,7 @@ interface ContinentJigsawProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 interface ContinentPiece {
@@ -139,7 +140,8 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(() => {
@@ -159,6 +161,13 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   const [placedContinents, setPlacedContinents] = useState<string[]>([]);
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
   const [latestFact, setLatestFact] = useState<string | null>(null);
+  const winTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (winTimerRef.current) clearTimeout(winTimerRef.current);
+    };
+  }, []);
 
   // Dynamic pieces based on currentLevel and difficulty
   const getPiecesForLevelAndDifficulty = (lvl: number, diff: DifficultyLevel): ContinentPiece[] => {
@@ -198,11 +207,13 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   const unplacedContinents = targetContinents.filter(c => !placedContinents.includes(c.id));
 
   const handlePlaceContinent = (continent: ContinentPiece) => {
+    if (placedContinents.includes(continent.id) || gameState !== 'PLAYING') return;
     soundEngine.playSnap();
     const updated = [...placedContinents, continent.id];
     setPlacedContinents(updated);
     setSelectedPieceId(null);
-    setScore(prev => prev + 100);
+    const nextScore = score + 100;
+    setScore(nextScore);
     setLatestFact(`🌟 ${continent.name} ${continent.icon}: ${continent.funFact}`);
 
     // Try speech pronunciation of continent and fact
@@ -217,7 +228,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
 
     // Check if all placed
     if (updated.length === targetContinents.length) {
-      setTimeout(() => {
+      winTimerRef.current = setTimeout(() => {
         let calculatedStars = 3;
         if (mistakes === 1) calculatedStars = 2;
         else if (mistakes > 1) calculatedStars = 1;
@@ -236,7 +247,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           'game_continent_jigsaw',
           'world_geography',
           calculatedStars,
-          score + 200,
+          nextScore + 100,
           timeSec,
           true
         );
@@ -286,7 +297,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
       {/* Top Status Bar */}
       <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -301,17 +312,19 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           )}
 
           {/* Direct Home Map Button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-blue-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-cyan-300 active:scale-95 transition flex items-center gap-1.5"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-cyan-600" />
-            <span className="hidden sm:inline">Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-blue-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-cyan-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-cyan-600" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -582,10 +595,16 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           setLatestFact(null);
         }}
         onNextLevel={() => {
+          if (isDemoMode && currentLevel >= 2) {
+            onNextGame();
+            return;
+          }
           if (currentLevel < 5) {
             setCurrentLevel(prev => prev + 1);
             setGameState('PLAYING');
-            setScore(prev => prev + 100);
+            setPlacedContinents([]);
+            setSelectedPieceId(null);
+            setLatestFact(null);
             setMistakes(0);
           } else {
             onNextGame();

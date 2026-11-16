@@ -8,7 +8,7 @@
  * - Hard (8–10): 5 complex shapes, fast visual discrimination challenge.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Pause, RotateCcw, Sparkles, HelpCircle, Check, Home, ArrowLeft } from 'lucide-react';
 import { AgeGroup, GameState, Sticker } from '../types/game';
@@ -25,6 +25,7 @@ interface ColorShadowMatchProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 interface ShadowItem {
@@ -77,7 +78,8 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<1 | 2 | 3 | 4 | 5>(initialLevel);
   const [gameState, setGameState] = useState<GameState>('PLAYING');
@@ -92,6 +94,18 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
 
   const [placedItemIds, setPlacedItemIds] = useState<string[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const winTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (winTimerRef.current) clearTimeout(winTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    setPlacedItemIds([]);
+    setSelectedItemId(null);
+  }, [currentLevel]);
 
   const unplacedItems = targetItems.filter(item => !placedItemIds.includes(item.id));
 
@@ -107,7 +121,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
       setScore(prev => prev + 100);
 
       if (updated.length === targetItems.length) {
-        setTimeout(() => {
+        winTimerRef.current = setTimeout(() => {
           let calculatedStars = 3;
           if (mistakes === 1) calculatedStars = 2;
           else if (mistakes > 1) calculatedStars = 1;
@@ -148,7 +162,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
       {/* Top Header */}
       <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -163,17 +177,19 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           )}
 
           {/* Direct Home Map Button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-purple-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-purple-300 active:scale-95 transition flex items-center gap-1.5"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-purple-600" />
-            <span className="hidden sm:inline">Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-purple-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-purple-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-purple-600" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -320,6 +336,10 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           setMistakes(0);
         }}
         onNextLevel={() => {
+          if (isDemoMode && currentLevel >= 2) {
+            onNextGame();
+            return;
+          }
           if (currentLevel < 5) {
             setCurrentLevel(prev => (prev + 1) as 1 | 2 | 3 | 4 | 5);
             setGameState('PLAYING');

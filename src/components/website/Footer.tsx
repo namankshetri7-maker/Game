@@ -8,6 +8,7 @@ import { BrandLogo } from '../BrandLogo';
 import { soundEngine } from '../../services/soundEngine';
 import { Heart, Globe, HelpCircle, Lock, Shield, Youtube, Instagram, Facebook } from 'lucide-react';
 import { SOCIAL_LINKS } from '../../data/socialLinks';
+import { getRoutePath } from '../../services/seoManager';
 
 interface FooterProps {
   onNavigate: (route: string) => void;
@@ -48,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       icon: Shield,
       links: [
         { label: 'Terms of Use', route: 'privacy' },
-        { label: 'Regional Info', route: 'home' }
+        { label: 'Explore All Worlds', route: 'worlds' }
       ]
     }
   ];
@@ -61,7 +62,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="col-span-2 space-y-4">
           <BrandLogo size="md" showText={true} />
           <p className="text-xs text-slate-400 leading-relaxed font-body max-w-sm">
-            Wonder World Kids Learning is a 100% offline educational game suite. No ads, no data storage, simple one-time payment of $9.
+            Wonder World Kids Learning is a 100% offline educational game suite. No ads, no data storage, simple one-time checkout via Gumroad or an activation key.
           </p>
           <div className="text-xs text-slate-300">
             <span className="text-slate-400">Support: </span>
@@ -114,12 +115,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <ul className="space-y-2">
               {section.links.map((link) => (
                 <li key={link.label}>
-                  <button
-                    onClick={() => { soundEngine.playPop(); onNavigate(link.route); }}
-                    className="text-xs text-slate-300 hover:text-amber-400 transition-colors cursor-pointer text-left"
+                  <a
+                    href={getRoutePath(link.route)}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                        e.preventDefault();
+                        soundEngine.playPop();
+                        onNavigate(link.route);
+                      }
+                    }}
+                    className="text-xs text-slate-300 hover:text-amber-400 transition-colors cursor-pointer text-left inline-block"
                   >
                     {link.label}
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>

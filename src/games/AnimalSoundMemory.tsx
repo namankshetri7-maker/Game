@@ -8,7 +8,7 @@
  * - Hard (8–10): 8 cards (4 pairs), fast concentration grid with star score bonus.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Check, Home, ArrowLeft } from 'lucide-react';
 import { AgeGroup, GameState, Sticker } from '../types/game';
@@ -25,6 +25,7 @@ interface AnimalSoundMemoryProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 interface AnimalCard {
@@ -50,7 +51,8 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
   const [gameState, setGameState] = useState<GameState>('PLAYING');
@@ -60,6 +62,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   const [startTime] = useState(Date.now());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
+  const [deckSeed, setDeckSeed] = useState(0);
 
   // Progressive pair count based on level
   const pairCount = Math.min(6, Math.max(2, currentLevel + (ageGroup === '8-10' ? 1 : 0)));
@@ -69,8 +72,17 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   const [matchedAnimalIds, setMatchedAnimalIds] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Initialize randomized cards
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  // Initialize randomized cards cleanly on level, pairCount, or manual restart
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     const selectedAnimals = ALL_ANIMALS.slice(0, pairCount);
     const deck: AnimalCard[] = [];
     selectedAnimals.forEach(a => {
@@ -81,7 +93,8 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
     setCards(deck.sort(() => Math.random() - 0.5));
     setFlippedIndices([]);
     setMatchedAnimalIds([]);
-  }, [pairCount]);
+    setIsProcessing(false);
+  }, [pairCount, currentLevel, deckSeed]);
 
   // Procedural animal audio cue
   const playAnimalSound = (type: AnimalCard['soundType']) => {
@@ -127,7 +140,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
 
         // Check if all pairs matched
         if (updatedMatches.length === pairCount) {
-          setTimeout(() => {
+          timerRef.current = setTimeout(() => {
             let calculatedStars = 3;
             if (mistakes === 1) calculatedStars = 2;
             else if (mistakes > 1) calculatedStars = 1;
@@ -161,7 +174,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
         // Mismatch
         setMistakes(prev => prev + 1);
         soundEngine.playOops();
-        setTimeout(() => {
+        timerRef.current = setTimeout(() => {
           setFlippedIndices([]);
           setIsProcessing(false);
         }, 900);
@@ -174,7 +187,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
       {/* Top Header */}
       <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -189,17 +202,19 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
           )}
 
           {/* Direct Home Map Button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-rose-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-rose-300 active:scale-95 transition flex items-center gap-1.5"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-rose-600" />
-            <span className="hidden sm:inline">Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-rose-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-rose-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-rose-600" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -312,8 +327,13 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
           setFlippedIndices([]);
           setScore(0);
           setMistakes(0);
+          setDeckSeed(prev => prev + 1);
         }}
         onNextLevel={() => {
+          if (isDemoMode && currentLevel >= 2) {
+            onNextGame();
+            return;
+          }
           if (currentLevel < 5) {
             setCurrentLevel(prev => (prev + 1) as 1 | 2 | 3 | 4 | 5);
             setGameState('PLAYING');
@@ -346,6 +366,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
           setFlippedIndices([]);
           setScore(0);
           setMistakes(0);
+          setDeckSeed(prev => prev + 1);
         }}
         onHome={onHome}
         onBackToWorld={onBackToWorld ? () => {

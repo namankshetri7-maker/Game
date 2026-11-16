@@ -257,6 +257,7 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
 
   // Checkpoints traced by kid's finger/pen
   const [tracedCheckpoints, setTracedCheckpoints] = useState<number[]>([]);
+  const tracedCheckpointsRef = useRef<number[]>([]);
   const [rainbowHue, setRainbowHue] = useState(0);
   const [hasCompleted, setHasCompleted] = useState(false);
 
@@ -264,9 +265,21 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
   const strokeHistoryRef = useRef<ImageData[]>([]);
   // Last pointer point for smooth quadratic curve interpolation
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const winTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (winTimerRef.current) clearTimeout(winTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    setLetterIndex(0);
+  }, [currentLevel]);
 
   // Reset drawing state when letter changes
   useEffect(() => {
+    tracedCheckpointsRef.current = [];
     setTracedCheckpoints([]);
     setHasCompleted(false);
     strokeHistoryRef.current = [];
@@ -426,19 +439,23 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
     const normX = (px / width) * 100;
     const normY = (py / height) * 100;
 
+    let added = false;
+    const nextList = [...tracedCheckpointsRef.current];
+
     currentLetter.checkpoints.forEach(cp => {
       const dist = Math.hypot(normX - cp.x, normY - cp.y);
       // Generous 18% radius for young children and touchscreen precision
-      if (dist < 18) {
-        setTracedCheckpoints(prev => {
-          if (!prev.includes(cp.id)) {
-            soundEngine.playPop();
-            return [...prev, cp.id];
-          }
-          return prev;
-        });
+      if (dist < 18 && !nextList.includes(cp.id)) {
+        nextList.push(cp.id);
+        added = true;
       }
     });
+
+    if (added) {
+      tracedCheckpointsRef.current = nextList;
+      soundEngine.playPop();
+      setTracedCheckpoints(nextList);
+    }
   };
 
   // Evaluate letter tracing completion
@@ -446,7 +463,7 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
     if (hasCompleted) return;
 
     const total = currentLetter.checkpoints.length;
-    const covered = tracedCheckpoints.length;
+    const covered = tracedCheckpointsRef.current.length;
 
     // Generous 70% threshold so toddlers and young kids don't get frustrated
     if (covered >= Math.ceil(total * 0.7)) {
@@ -460,7 +477,7 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
         });
       } catch {}
 
-      setTimeout(() => {
+      winTimerRef.current = setTimeout(() => {
         onCorrect(120);
         setLetterIndex(prev => prev + 1);
       }, 1200);
@@ -469,15 +486,16 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
 
   // Manual Check Button
   const handleDoneCheck = () => {
+    if (hasCompleted) return;
     const total = currentLetter.checkpoints.length;
-    const covered = tracedCheckpoints.length;
+    const covered = tracedCheckpointsRef.current.length;
     if (covered >= Math.ceil(total * 0.6)) {
       setHasCompleted(true);
       soundEngine.playVictory();
       try {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
       } catch {}
-      setTimeout(() => {
+      winTimerRef.current = setTimeout(() => {
         onCorrect(120);
         setLetterIndex(prev => prev + 1);
       }, 1000);

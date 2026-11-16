@@ -1,6 +1,6 @@
 /**
- * License Key Verification Modal for Gumroad & Etsy Customers
- * Connects directly to Gumroad API to authenticate paying buyers and unlock all 45 games.
+ * License Key Verification Modal (?unlock=true)
+ * Authenticates lifetime family activation keys to unlock all 45 offline games.
  */
 
 import React, { useState } from 'react';
@@ -124,7 +124,7 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
                 type="text"
                 required
                 autoFocus
-                placeholder="e.g. WWK-ETSY-FAMILY-ACCESS"
+                placeholder="e.g. WWK-FAMILY-LIFETIME"
                 value={licenseKeyInput}
                 onChange={(e) => setLicenseKeyInput(e.target.value)}
                 disabled={isLoading}

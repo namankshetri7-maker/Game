@@ -417,10 +417,13 @@ test('SEO & Google Search Console: sitemap.xml, robots.txt, and metadata integri
   const sitemapContent = fs.readFileSync(sitemapPath, 'utf8');
   assert.ok(sitemapContent.startsWith('<?xml version="1.0" encoding="UTF-8"?>'), 'sitemap.xml must have valid XML header');
   assert.ok(!sitemapContent.includes('#'), 'sitemap.xml must NOT contain URL hash fragments (Google guidelines)');
-  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=worlds'), 'sitemap.xml must include worlds page');
-  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=demo'), 'sitemap.xml must include demo page');
-  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=pricing'), 'sitemap.xml must include pricing page');
-  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/?page=downloads'), 'sitemap.xml must include downloads page');
+  assert.ok(!sitemapContent.includes('?page='), 'sitemap.xml must use clean multi-page URLs instead of ?page= query parameters');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/worlds'), 'sitemap.xml must include /worlds page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/demo'), 'sitemap.xml must include /demo page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/pricing'), 'sitemap.xml must include /pricing page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/downloads'), 'sitemap.xml must include /downloads page');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/worlds/world_math'), 'sitemap.xml must include /worlds/world_math');
+  assert.ok(sitemapContent.includes('https://wonderworldkidslearning.space/worlds/world_logic'), 'sitemap.xml must include /worlds/world_logic');
   assert.ok(sitemapContent.includes('hreflang="en-in"'), 'sitemap.xml must support India regional targeting');
   assert.ok(sitemapContent.includes('hreflang="en-ae"'), 'sitemap.xml must support UAE/Dubai regional targeting');
   assert.ok(sitemapContent.includes('hreflang="en-us"'), 'sitemap.xml must support US regional targeting');
@@ -458,9 +461,9 @@ test('Zero Code or Zip Downloads: Strict PWA-Only Policy', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// SUITE 15: Meta Descriptions, OpenGraph & Structured Data (Homepage & Pricing)
+// SUITE 15: Meta Descriptions, OpenGraph & Google Merchant Schema (offers)
 // ---------------------------------------------------------------------------
-test('SEO Metadata & JSON-LD: Homepage & PricingPage Schema Integrity', async () => {
+test('SEO Metadata & JSON-LD: Homepage, PricingPage & Google Merchant offers Integrity', async () => {
   // 1. Verify index.html meta description length (120-160 chars)
   const indexContent = fs.readFileSync(path.resolve('index.html'), 'utf8');
   const descMatch = indexContent.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/);
@@ -475,44 +478,144 @@ test('SEO Metadata & JSON-LD: Homepage & PricingPage Schema Integrity', async ()
   assert.ok(indexContent.includes('property="og:image"'), 'og:image must exist');
   assert.ok(indexContent.includes('name="twitter:card"'), 'twitter:card must exist');
 
-  // 3. Structured Data JSON-LD for Homepage & PricingPage
+  // 3. Structured Data JSON-LD + Google Merchant required offers fields
   assert.ok(indexContent.includes('"@type": "WebSite"'), 'Homepage WebSite schema must exist');
   assert.ok(indexContent.includes('"@type": ["Product", "SoftwareApplication"]'), 'PricingPage Product schema must exist');
   assert.ok(indexContent.includes('"price": "9.00"'), 'Pricing schema must specify $9.00');
   assert.ok(indexContent.includes('"priceCurrency": "USD"'), 'Pricing schema must specify USD');
   assert.ok(indexContent.includes('https://namank3.gumroad.com/l/wvpisb'), 'Pricing schema must link Gumroad checkout');
+  assert.ok(indexContent.includes('"validFrom":'), 'offers schema must include validFrom for GSC');
+  assert.ok(indexContent.includes('"shippingDetails":'), 'offers schema must include shippingDetails for GSC');
+  assert.ok(indexContent.includes('"hasMerchantReturnPolicy":'), 'offers schema must include hasMerchantReturnPolicy for GSC');
 
-  // 4. Dynamic SEO Manager service
+  // 4. Dynamic SEO Manager service & multi-page route support
   const seoManagerPath = path.resolve('src/services/seoManager.ts');
   assert.ok(fs.existsSync(seoManagerPath), 'src/services/seoManager.ts must exist');
   const seoManagerContent = fs.readFileSync(seoManagerPath, 'utf8');
   assert.ok(seoManagerContent.includes('SEO_CONFIGS'), 'Must export SEO_CONFIGS');
   assert.ok(seoManagerContent.includes('applyRouteSEO'), 'Must export applyRouteSEO');
-  assert.ok(seoManagerContent.includes('pricing'), 'Must have dedicated pricing SEO config');
-  assert.ok(seoManagerContent.includes('home'), 'Must have dedicated home SEO config');
+  assert.ok(seoManagerContent.includes('getRoutePath'), 'Must export getRoutePath');
+  assert.ok(seoManagerContent.includes('getWorldSEO'), 'Must export getWorldSEO');
+  assert.ok(seoManagerContent.includes('shippingDetails'), 'seoManager must include shippingDetails');
+  assert.ok(seoManagerContent.includes('validFrom'), 'seoManager must include validFrom');
+  assert.ok(seoManagerContent.includes('hasMerchantReturnPolicy'), 'seoManager must include hasMerchantReturnPolicy');
+  ['home', 'pricing', 'worlds', 'downloads', 'demo', 'parents', 'about', 'faq', 'privacy', 'contact', 'my_games'].forEach(r => {
+    assert.ok(seoManagerContent.includes(`${r}:`), `SEO_CONFIGS must include route ${r}`);
+  });
 });
 
 // ---------------------------------------------------------------------------
-// SUITE 16: Simplified Etsy & Family Master Key Activation
+// SUITE 16: PayU & Etsy UI Removal, Activation Key Button + Gumroad & Unlock Modal
 // ---------------------------------------------------------------------------
-test('Etsy Workflow: Simple Activation Key & Master Pass Verification', async () => {
-  // 1. Verify licenseService includes master lifetime keys and WWK-ETSY support
-  const licenseServiceCode = fs.readFileSync(path.resolve('src/services/licenseService.ts'), 'utf8');
-  assert.ok(licenseServiceCode.includes('MASTER_LIFETIME_KEYS'), 'licenseService must define MASTER_LIFETIME_KEYS');
-  assert.ok(licenseServiceCode.includes('WWK-ETSY-FAMILY-ACCESS'), 'Must include master key WWK-ETSY-FAMILY-ACCESS');
-  assert.ok(licenseServiceCode.includes("cleanKey.startsWith('WWK-ETSY-')"), 'Must recognize WWK-ETSY keys');
+test('PayU Removed, Etsy UI Removed, Key Button + Gumroad Checkout & Clean ?unlock=true Modal', async () => {
+  // 1. Verify PayUCheckoutModal & Etsy Access Guide HTML do not exist and zero PayU references
+  assert.ok(!fs.existsSync(path.resolve('src/components/PayUCheckoutModal.tsx')), 'PayUCheckoutModal.tsx must be deleted');
+  assert.ok(!fs.existsSync(path.resolve('public/Etsy_Access_Guide_Wonder_World_Kids.html')), 'Etsy_Access_Guide_Wonder_World_Kids.html must be deleted');
+  const filesToScan = [
+    'server.ts',
+    'index.html',
+    '.env.example',
+    'src/App.tsx',
+    'src/components/website/PricingPage.tsx',
+    'src/components/website/DownloadInstructionsPage.tsx',
+    'src/components/website/MyPurchasedGamesPage.tsx',
+    'src/components/PWAInstallModal.tsx',
+  ];
+  for (const rel of filesToScan) {
+    const content = fs.readFileSync(path.resolve(rel), 'utf8').toLowerCase();
+    assert.ok(!content.includes('payu'), `${rel} must not contain any PayU references`);
+  }
 
-  // 2. Verify LicenseVerificationModal accepts keys cleanly
+  // 2. Verify zero Etsy checkout/UI links across storefront, SEO, and HTML
+  for (const rel of [
+    'src/components/website/PricingPage.tsx',
+    'src/components/website/DownloadInstructionsPage.tsx',
+    'src/components/PWAInstallModal.tsx',
+    'src/components/website/MyPurchasedGamesPage.tsx',
+    'src/components/website/HomePage.tsx',
+    'src/components/website/FreeDemoPage.tsx',
+    'src/components/website/Footer.tsx',
+    'src/services/seoManager.ts',
+    'index.html',
+  ]) {
+    const content = fs.readFileSync(path.resolve(rel), 'utf8');
+    assert.ok(!content.toLowerCase().includes('etsy.com'), `${rel} must not include etsy.com checkout links`);
+    assert.ok(!content.includes('Buy on Etsy'), `${rel} must not include Buy on Etsy button`);
+    assert.ok(!content.includes('$8.99'), `${rel} must not include $8.99 Etsy pricing`);
+  }
+
+  // 3. Verify Activation Key buttons and Gumroad checkout exist across conversion flows
+  for (const rel of [
+    'src/components/website/DownloadInstructionsPage.tsx',
+    'src/components/website/PricingPage.tsx',
+    'src/components/PWAInstallModal.tsx',
+  ]) {
+    const content = fs.readFileSync(path.resolve(rel), 'utf8');
+    assert.ok(content.includes('Enter Activation Key'), `${rel} must include Enter Activation Key button`);
+    assert.ok(content.includes('namank3.gumroad.com/l/wvpisb'), `${rel} must include Gumroad checkout option`);
+  }
+
+  for (const rel of [
+    'src/components/website/HomePage.tsx',
+    'src/components/website/FreeDemoPage.tsx',
+    'src/components/DemoLimitModal.tsx',
+    'src/games/UniversalMiniGameRunner.tsx',
+  ]) {
+    const content = fs.readFileSync(path.resolve(rel), 'utf8');
+    assert.ok(content.includes('KeyRound'), `${rel} must use KeyRound icon for Key button`);
+    assert.ok(
+      content.includes('Enter Activation Key') || content.includes('Enter Key'),
+      `${rel} must include an Activation Key action button`
+    );
+  }
+
+  // 4. Verify ?unlock=true modal UI text has zero Gumroad or $9 strings
   const modalContent = fs.readFileSync(path.resolve('src/components/LicenseVerificationModal.tsx'), 'utf8');
   assert.ok(modalContent.includes('Enter Activation Key'), 'Modal must prompt for activation key');
-
-  // 3. Verify strictly ZERO PayU references anywhere
-  const serverContent = fs.readFileSync(path.resolve('server.ts'), 'utf8');
-  assert.ok(!serverContent.toLowerCase().includes('payu'), 'server.ts must not contain PayU');
+  const modalWithoutMethodName = modalContent.replace(/verifyGumroadLicense/g, '');
+  assert.ok(!modalWithoutMethodName.toLowerCase().includes('gumroad'), 'Unlock modal (?unlock=true) must not mention Gumroad');
+  assert.ok(!modalWithoutMethodName.includes('$9'), 'Unlock modal (?unlock=true) must not mention $9');
 });
 
+// ---------------------------------------------------------------------------
+// SUITE 17: Demo Simulator & Offline Games Integrity
+// ---------------------------------------------------------------------------
+test('Demo Simulator Integrity & Offline Game Demo Gating', async () => {
+  const matrixContent = fs.readFileSync(path.resolve('src/data/gameMatrix.ts'), 'utf8');
+  const matrixIds = new Set([...matrixContent.matchAll(/id:\s*['"](game_[a-z0-9_]+)['"]/g)].map(m => m[1]));
 
+  // All demoConfig game IDs must exist in gameMatrix.ts
+  const demoConfig = fs.readFileSync(path.resolve('src/data/demoConfig.ts'), 'utf8');
+  const demoIds = [...demoConfig.matchAll(/['"](game_[a-z0-9_]+)['"]/g)].map(m => m[1]);
+  assert.equal(new Set(demoIds).size, 10, 'demoConfig must specify 10 unique demo games');
+  for (const id of demoIds) {
+    assert.ok(matrixIds.has(id), `Demo game ID ${id} must exist in gameMatrix.ts`);
+  }
 
+  // FreeDemoPage must include all 6 simulator tabs including Logic Island (Memory Flip)
+  const demoPage = fs.readFileSync(path.resolve('src/components/website/FreeDemoPage.tsx'), 'utf8');
+  assert.ok(demoPage.includes('Memory Flip'), 'FreeDemoPage must include Memory Flip logic simulator tab');
+  assert.ok(demoPage.includes('Logic'), 'FreeDemoPage must cover Logic world');
 
+  // App.tsx must pass isDemoMode={isDemoMode} to all dedicated games and must NOT unlock on DemoLimitModal.onUnlockFull
+  const appContent = fs.readFileSync(path.resolve('src/App.tsx'), 'utf8');
+  const matchCount = (appContent.match(/isDemoMode=\{isDemoMode\}/g) || []).length;
+  assert.ok(matchCount >= 7, `Expected isDemoMode prop passed to all dedicated and universal games, found ${matchCount}`);
+  assert.ok(appContent.includes('onGetFullVersion={() => navigateTo(\'pricing\')}'), 'App.tsx must wire onGetFullVersion to pricing');
 
+  // Game engine (UniversalMiniGameRunner.tsx) must never have a bare safety fallback `return null;` and must render a visual placeholder + Get Full Version CTA
+  const runnerContent = fs.readFileSync(path.resolve('src/games/UniversalMiniGameRunner.tsx'), 'utf8');
+  assert.ok(runnerContent.includes('isGameAllowedInDemo'), 'UniversalMiniGameRunner must check isGameAllowedInDemo');
+  assert.ok(runnerContent.includes('isLevelAllowedInDemo'), 'UniversalMiniGameRunner must check isLevelAllowedInDemo');
+  assert.ok(runnerContent.includes('Demo Simulator Preview Limit'), 'UniversalMiniGameRunner must render Demo Simulator Preview Limit visual placeholder');
+  assert.ok(runnerContent.includes('Get Full Version'), 'UniversalMiniGameRunner must render Get Full Version CTA');
+  assert.ok(!runnerContent.includes('// Safety fallback\n    return null;'), 'UniversalMiniGameRunner must not have bare return null fallback');
+
+  // Demo Simulator & Demo UI components must display clear Get Full Version CTAs
+  const demoModalContent = fs.readFileSync(path.resolve('src/components/DemoLimitModal.tsx'), 'utf8');
+  const demoHeaderContent = fs.readFileSync(path.resolve('src/components/DemoHeaderBar.tsx'), 'utf8');
+  assert.ok(demoPage.includes('Get Full Version'), 'FreeDemoPage must display Get Full Version CTA');
+  assert.ok(demoModalContent.includes('Get Full Version'), 'DemoLimitModal must display Get Full Version CTA');
+  assert.ok(demoHeaderContent.includes('Get Full Version'), 'DemoHeaderBar must display Get Full Version CTA');
+});
 

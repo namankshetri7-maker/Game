@@ -5,8 +5,9 @@
 import React, { useState } from 'react';
 import { BrandLogo } from '../BrandLogo';
 import { soundEngine } from '../../services/soundEngine';
-import { Play, ShoppingBag, Menu, X, Sparkles, Youtube, Instagram, Facebook, KeyRound } from 'lucide-react';
+import { Play, Menu, X, Sparkles, Youtube, Instagram, Facebook, KeyRound } from 'lucide-react';
 import { SOCIAL_LINKS } from '../../data/socialLinks';
+import { getRoutePath } from '../../services/seoManager';
 
 interface NavbarProps {
   currentRoute: string;
@@ -14,7 +15,7 @@ interface NavbarProps {
   onEnterGame: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnterGame }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -26,34 +27,38 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
     { label: 'Parents & Safety', route: 'parents' }
   ];
 
+  const handleLinkClick = (e: React.MouseEvent, route: string) => {
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      soundEngine.playPop();
+      setIsMobileMenuOpen(false);
+      onNavigate(route);
+    }
+  };
+
   return (
     <header className="sticky top-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 z-[100] px-3 sm:px-6 py-2.5 sm:py-3 font-body shadow-xl transition-all relative">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 relative">
         
         {/* Brand Logo */}
-        <button
-          onClick={() => {
-            soundEngine.playPop();
-            setIsMobileMenuOpen(false);
-            onNavigate('home');
-          }}
+        <a
+          href={getRoutePath('home')}
+          onClick={(e) => handleLinkClick(e, 'home')}
           className="flex items-center cursor-pointer group text-left shrink min-w-0 active:scale-95 transition"
           title="Wonder World Kids Learning Home"
         >
           <BrandLogo size="header" showText={true} />
-        </button>
+        </a>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-slate-300 font-fun">
+        <nav aria-label="Primary Navigation" className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-slate-300 font-fun">
           {navItems.map((item) => {
             const isActive = currentRoute === item.route;
             return (
-              <button
+              <a
                 key={item.route}
-                onClick={() => {
-                  soundEngine.playPop();
-                  onNavigate(item.route);
-                }}
+                href={getRoutePath(item.route)}
+                onClick={(e) => handleLinkClick(e, item.route)}
                 className={`px-3.5 py-2.5 rounded-2xl transition cursor-pointer active:scale-95 ${
                   isActive
                     ? 'bg-amber-400/15 text-amber-300 border border-amber-400/40'
@@ -61,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
                 }`}
               >
                 {item.label}
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -96,31 +101,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
             })}
           </div>
 
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              setIsMobileMenuOpen(false);
-              onNavigate('demo');
-            }}
+          <a
+            href={getRoutePath('demo')}
+            onClick={(e) => handleLinkClick(e, 'demo')}
             className="px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-fun font-black text-xs shadow-lg border sm:border-2 border-emerald-400/40 transition active:scale-95 cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0"
           >
             <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
             <span className="hidden sm:inline">Try Free Demo</span>
             <span className="sm:hidden text-[11px]">Demo</span>
-          </button>
+          </a>
 
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              setIsMobileMenuOpen(false);
-              onNavigate('pricing');
-            }}
+          <a
+            href={getRoutePath('pricing')}
+            onClick={(e) => handleLinkClick(e, 'pricing')}
             className="px-2.5 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow-lg transition active:scale-95 cursor-pointer border sm:border-2 border-white flex items-center gap-1 sm:gap-1.5 shrink-0"
           >
             <KeyRound className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Unlock Game</span>
             <span className="sm:hidden text-[11px]">Unlock</span>
-          </button>
+          </a>
 
           {/* Mobile Hamburger Menu Button */}
           <button
@@ -147,13 +146,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
           {navItems.map((item) => {
             const isActive = currentRoute === item.route;
             return (
-              <button
+              <a
                 key={item.route}
-                onClick={() => {
-                  soundEngine.playPop();
-                  setIsMobileMenuOpen(false);
-                  onNavigate(item.route);
-                }}
+                href={getRoutePath(item.route)}
+                onClick={(e) => handleLinkClick(e, item.route)}
                 className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center justify-between cursor-pointer ${
                   isActive
                     ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
@@ -162,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, onEnte
               >
                 <span>{item.label}</span>
                 {isActive && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
-              </button>
+              </a>
             );
           })}
 

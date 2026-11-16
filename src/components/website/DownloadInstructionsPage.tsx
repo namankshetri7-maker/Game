@@ -52,9 +52,9 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
     }
   };
 
-  const handleOpenGumroad = () => {
+  const handleOpenCheckout = (url: string) => {
     soundEngine.playPop();
-    window.open(GUMROAD_CHECKOUT_URL, '_blank', 'noopener,noreferrer');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleLicenseSuccess = () => {
@@ -111,21 +111,21 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                 <>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold font-fun mb-2 border border-amber-400/30">
                     <Lock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Full Game Gated — $9 Lifetime License Required</span>
+                    <span>Lifetime License Required for Full 45 Games</span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-black font-fun text-white mb-1.5">
                     Follow 3 Easy Steps to Unlock & Install
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-                    The full play link for all 45 games is enabled right after completing the one-time $9 family purchase and entering your license key.
+                    Purchase your one-time lifetime pass or click Enter Activation Key to unlock all 45 games and install the offline app onto any phone, tablet, or computer.
                   </p>
                 </>
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
+            <div className="flex flex-col gap-2.5 w-full lg:w-auto shrink-0">
               {isUnlocked ? (
-                <>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
                   <button
                     onClick={() => { soundEngine.playVictory(); onEnterGame(); }}
                     className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-fun font-black text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer border border-emerald-400 transition"
@@ -141,28 +141,33 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                     <Download className="w-4 h-4 text-amber-950" />
                     <span>Install Offline App</span>
                   </button>
-                </>
+                </div>
               ) : (
                 <>
-                  <button
-                    onClick={handleOpenGumroad}
-                    className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-amber-950 font-fun font-black text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer border-2 border-white transition"
-                  >
-                    <ShoppingBag className="w-4 h-4 text-amber-950" />
-                    <span>Buy $9 License (Gumroad)</span>
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                    <button
+                      onClick={() => { soundEngine.playPop(); setIsLicenseModalOpen(true); }}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-fun font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer border-2 border-indigo-400 transition"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>Enter Activation Key 🔑</span>
+                    </button>
 
-                  <button
-                    onClick={() => { soundEngine.playPop(); setIsLicenseModalOpen(true); }}
-                    className="w-full sm:w-auto px-5 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-fun font-bold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer border border-indigo-400 transition"
-                  >
-                    <KeyRound className="w-4 h-4" />
-                    <span>Enter License Key</span>
-                  </button>
+                    <a
+                      href={GUMROAD_CHECKOUT_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => soundEngine.playPop()}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-amber-950 font-fun font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer border-2 border-white transition"
+                    >
+                      <ShoppingBag className="w-4 h-4 text-amber-950" />
+                      <span>Buy on Gumroad ($9)</span>
+                    </a>
+                  </div>
 
                   <button
                     onClick={() => { soundEngine.playPop(); onNavigate('demo'); }}
-                    className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white font-fun font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-white/20 transition"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white font-fun font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-white/20 transition"
                   >
                     <Play className="w-3.5 h-3.5" />
                     <span>Try Free Demo</span>
@@ -195,16 +200,16 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                   One-Time $9 Payment
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed mb-4">
-                  Visit our official Gumroad store and complete the one-time $9 USD family purchase. No subscriptions, no ads, lifetime updates included.
+                  Complete your one-time lifetime family checkout on Gumroad ($9 USD). No subscriptions, no ads, lifetime updates included.
                 </p>
               </div>
 
               <button
-                onClick={handleOpenGumroad}
+                onClick={() => handleOpenCheckout(GUMROAD_CHECKOUT_URL)}
                 className="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Pay $9 on Gumroad →</span>
+                <span>Checkout on Gumroad ($9) →</span>
               </button>
             </div>
 
@@ -219,7 +224,7 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                   Get Your License Key
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed mb-4">
-                  Check your email for your Gumroad receipt. Your unique License Key (e.g. <span className="font-mono text-amber-300 font-bold">8F7A2B1C-4D5E-7G8H</span>) is delivered immediately.
+                  Receive your instant lifetime activation key upon purchase and click below to permanently unlock all 45 games.
                 </p>
               </div>
 
@@ -228,7 +233,7 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                 className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-fun font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
               >
                 <KeyRound className="w-3.5 h-3.5" />
-                <span>Enter License Key 🔑</span>
+                <span>Enter Activation Key 🔑</span>
               </button>
             </div>
 
@@ -245,7 +250,7 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                   Play & Install Offline (PWA)
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed mb-4">
-                  Once your key is entered, all 45 games are unlocked! Install the PWA to your home screen or desktop for 1-tap full-screen play with zero internet needed.
+                  Once unlocked, all 45 games stay unlocked! Tap Install Offline App to add Wonder World Kids to your home screen for zero-Wi-Fi play.
                 </p>
               </div>
 
@@ -254,7 +259,7 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                 className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Install PWA to Home Screen</span>
+                <span>Install Offline App (PWA)</span>
               </button>
             </div>
 
@@ -385,6 +390,8 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
         isIOS={isIOS}
         isAndroid={isAndroid}
         isStandalone={isStandalone}
+        isUnlocked={isUnlocked}
+        onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
       />
 
       {/* License Key Verification Modal */}

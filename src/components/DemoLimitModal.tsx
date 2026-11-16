@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { Sparkles, ShoppingBag, ArrowLeft, Lock, Star, CheckCircle2, X, Eye, Shield, Smartphone } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowLeft, Lock, Star, CheckCircle2, X, Eye, Shield, Smartphone, KeyRound } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
 import { WORLDS, MINI_GAMES_MATRIX } from '../data/gameMatrix';
+import { isGameAllowedInDemo } from '../data/demoConfig';
 
 interface DemoLimitModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUnlockFull: () => void;
   onReturnToWebsite: () => void;
+  onOpenLicenseModal?: () => void;
 }
 
 export const DemoLimitModal: React.FC<DemoLimitModalProps> = ({
   isOpen,
   onClose,
   onUnlockFull,
-  onReturnToWebsite
+  onReturnToWebsite,
+  onOpenLicenseModal
 }) => {
   const [activeWorldId, setActiveWorldId] = useState<string>('world_math');
 
@@ -93,7 +96,7 @@ export const DemoLimitModal: React.FC<DemoLimitModalProps> = ({
                   <h3 className="text-sm font-black font-fun text-white flex items-center gap-2">
                     <span>{activeWorld.title}</span>
                     <span className="text-[10px] bg-indigo-800 text-indigo-200 px-2 py-0.5 rounded-full font-bold">
-                      10 Games • 50 Levels
+                      {activeWorldGames.length} Games • {activeWorldGames.length * 5} Levels
                     </span>
                   </h3>
                   <p className="text-[11px] text-slate-300 font-medium">{activeWorld.subtitle}</p>
@@ -107,42 +110,64 @@ export const DemoLimitModal: React.FC<DemoLimitModalProps> = ({
             </div>
 
             {/* Grid Preview of Games in Selected World */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 max-h-36 overflow-y-auto pr-1">
-              {activeWorldGames.slice(0, 8).map((game, idx) => {
-                const isDemoAllowed = idx < 2; // First 2 are demo allowed
-                return (
-                  <div
-                    key={game.id}
-                    className={`p-2 rounded-xl border text-left flex flex-col justify-between relative overflow-hidden transition ${
-                      isDemoAllowed
-                        ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-100'
-                        : 'bg-slate-800/80 border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-1">
-                      <span className="text-xl">{game.icon}</span>
-                      {isDemoAllowed ? (
-                        <span className="text-[9px] bg-emerald-500 text-white font-black px-1.5 py-0.2 rounded-md uppercase font-fun">
-                          Demo Free
-                        </span>
-                      ) : (
-                        <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded-md uppercase font-fun flex items-center gap-0.5">
-                          <Lock className="w-2.5 h-2.5" /> $9
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-bold font-fun leading-tight text-white line-clamp-1">
-                        {game.title}
+            {activeWorldGames.length === 0 ? (
+              <div className="p-5 rounded-xl bg-slate-800/80 border border-indigo-500/40 text-center mb-3 flex flex-col items-center">
+                <span className="text-3xl mb-2">{activeWorld.icon}</span>
+                <p className="text-xs font-bold text-white font-fun mb-1">
+                  Full {activeWorld.title} Adventure Locked in Demo
+                </p>
+                <p className="text-[11px] text-indigo-200 mb-3">
+                  Get the full lifetime pass to unlock all 45 mini-games across every world!
+                </p>
+                <button
+                  onClick={() => {
+                    soundEngine.playPop();
+                    onUnlockFull();
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow cursor-pointer flex items-center gap-1.5"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Get Full Version</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 max-h-40 overflow-y-auto pr-1">
+                {activeWorldGames.map((game) => {
+                  const isDemoAllowed = isGameAllowedInDemo(game.id);
+                  return (
+                    <div
+                      key={game.id}
+                      className={`p-2 rounded-xl border text-left flex flex-col justify-between relative overflow-hidden transition ${
+                        isDemoAllowed
+                          ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-100'
+                          : 'bg-slate-800/80 border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-1">
+                        <span className="text-xl">{game.icon}</span>
+                        {isDemoAllowed ? (
+                          <span className="text-[9px] bg-emerald-500 text-white font-black px-1.5 py-0.2 rounded-md uppercase font-fun">
+                            Demo Free
+                          </span>
+                        ) : (
+                          <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded-md uppercase font-fun flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> Full
+                          </span>
+                        )}
                       </div>
-                      <div className="text-[9px] text-slate-300 line-clamp-1 mt-0.5">
-                        {game.skills[0]}
+                      <div>
+                        <div className="text-[11px] font-bold font-fun leading-tight text-white line-clamp-1">
+                          {game.title}
+                        </div>
+                        <div className="text-[9px] text-slate-300 line-clamp-1 mt-0.5">
+                          {game.skills[0]}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="text-[11px] text-indigo-200 font-semibold flex items-center justify-between pt-1 border-t border-indigo-900/60">
               <span className="flex items-center gap-1">
@@ -186,8 +211,22 @@ export const DemoLimitModal: React.FC<DemoLimitModalProps> = ({
               className="w-full sm:flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-amber-950 font-fun font-black text-sm sm:text-base shadow-xl border-2 border-white active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer ring-2 ring-amber-300/60"
             >
               <ShoppingBag className="w-5 h-5 text-amber-950" />
-              <span>Unlock All 45 Games ($9)</span>
+              <span>Get Full Version — Unlock All 45 Games</span>
             </button>
+
+            {onOpenLicenseModal && (
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onClose();
+                  onOpenLicenseModal();
+                }}
+                className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-fun font-black text-xs sm:text-sm border border-indigo-400 active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0 shadow-md"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Enter Key</span>
+              </button>
+            )}
 
             {/* Secondary Action */}
             <button

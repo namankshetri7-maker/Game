@@ -58,7 +58,7 @@ import { DemoLimitModal } from './components/DemoLimitModal';
 import { DemoHeaderBar } from './components/DemoHeaderBar';
 import { LicenseVerificationModal } from './components/LicenseVerificationModal';
 import { licenseService } from './services/licenseService';
-import { applyRouteSEO } from './services/seoManager';
+import { applyRouteSEO, getRoutePath } from './services/seoManager';
 
 export type AppRoute =
   | 'home'
@@ -78,42 +78,66 @@ export type AppRoute =
   | 'world_detail_game'
   | 'game';
 
+function parseInitialLocation(): { route: AppRoute; worldId: string; openUnlockModal: boolean } {
+  const pathname = window.location.pathname.replace(/\/+$/, '').toLowerCase() || '/';
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.toLowerCase();
+  const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
+  let worldId = params.get('world') || 'world_math';
+
+  // Clean multi-page URL path resolution (for Google indexing & direct links)
+  if (pathname.startsWith('/worlds/')) {
+    const slug = pathname.split('/')[2] || 'world_math';
+    return { route: 'world_detail', worldId: slug, openUnlockModal: false };
+  }
+  if (pathname === '/worlds') return { route: 'worlds', worldId, openUnlockModal: false };
+  if (pathname === '/demo') return { route: 'demo', worldId, openUnlockModal: false };
+  if (pathname === '/pricing') return { route: 'pricing', worldId, openUnlockModal: false };
+  if (pathname === '/downloads') return { route: 'downloads', worldId, openUnlockModal: false };
+  if (pathname === '/parents') return { route: 'parents', worldId, openUnlockModal: false };
+  if (pathname === '/about') return { route: 'about', worldId, openUnlockModal: false };
+  if (pathname === '/faq') return { route: 'faq', worldId, openUnlockModal: false };
+  if (pathname === '/privacy') return { route: 'privacy', worldId, openUnlockModal: false };
+  if (pathname === '/contact') return { route: 'contact', worldId, openUnlockModal: false };
+  if (pathname === '/my-games') return { route: 'my_games', worldId, openUnlockModal: false };
+  if (pathname === '/success') return { route: 'success', worldId, openUnlockModal: false };
+  if (pathname === '/activate') return { route: 'pricing', worldId, openUnlockModal: true };
+
+  // Legacy query-param / hash fallbacks
+  if (pageParam === 'worlds' || hash.includes('worlds')) return { route: 'worlds', worldId, openUnlockModal: false };
+  if (pageParam === 'world_detail' || hash.includes('world_detail')) return { route: 'world_detail', worldId, openUnlockModal: false };
+  if (pageParam === 'demo' || hash.includes('demo')) return { route: 'demo', worldId, openUnlockModal: false };
+  if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return { route: 'pricing', worldId, openUnlockModal: false };
+  if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return { route: 'downloads', worldId, openUnlockModal: false };
+  if (pageParam === 'parents' || hash.includes('parents')) return { route: 'parents', worldId, openUnlockModal: false };
+  if (pageParam === 'about' || hash.includes('about')) return { route: 'about', worldId, openUnlockModal: false };
+  if (pageParam === 'faq' || hash.includes('faq')) return { route: 'faq', worldId, openUnlockModal: false };
+  if (pageParam === 'privacy' || hash.includes('privacy')) return { route: 'privacy', worldId, openUnlockModal: false };
+  if (pageParam === 'contact' || hash.includes('contact')) return { route: 'contact', worldId, openUnlockModal: false };
+  if (pageParam === 'my_games' || hash.includes('my_games')) return { route: 'my_games', worldId, openUnlockModal: false };
+  if (pageParam === 'success' || hash.includes('success')) return { route: 'success', worldId, openUnlockModal: false };
+
+  const isDirectGame = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
+  const isStandalonePWA =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(display-mode: standalone)')?.matches ||
+      (window.navigator as Navigator & { standalone?: boolean })?.standalone === true);
+
+  if (isDirectGame || isStandalonePWA) {
+    return { route: 'world_map', worldId, openUnlockModal: false };
+  }
+
+  return { route: 'home', worldId, openUnlockModal: false };
+}
+
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const hash = window.location.hash.toLowerCase();
-    const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
-
-    if (pageParam === 'worlds' || hash.includes('worlds')) return 'worlds';
-    if (pageParam === 'world_detail' || hash.includes('world_detail')) return 'world_detail';
-    if (pageParam === 'demo' || hash.includes('demo')) return 'demo';
-    if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return 'pricing';
-    if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return 'downloads';
-    if (pageParam === 'parents' || hash.includes('parents')) return 'parents';
-    if (pageParam === 'about' || hash.includes('about')) return 'about';
-    if (pageParam === 'faq' || hash.includes('faq')) return 'faq';
-    if (pageParam === 'privacy' || hash.includes('privacy')) return 'privacy';
-    if (pageParam === 'contact' || hash.includes('contact')) return 'contact';
-    if (pageParam === 'my_games' || hash.includes('my_games')) return 'my_games';
-    if (pageParam === 'success' || hash.includes('success')) return 'success';
-
-    const isDirectGame = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
-    const wasAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
-
-    if (isDirectGame || wasAppOnly) {
-      if (isDirectGame) localStorage.setItem('wwk_view_preference', 'app_only');
-      return 'world_map';
-    }
-    return 'home';
-  });
-  const [selectedWorldId, setSelectedWorldId] = useState<string>(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('world') || 'world_math';
-  });
+  const initialLocation = parseInitialLocation();
+  const [route, setRoute] = useState<AppRoute>(initialLocation.route);
+  const [selectedWorldId, setSelectedWorldId] = useState<string>(initialLocation.worldId);
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
   
-  // Purchase state: Unlocked ONLY with verified Gumroad license key
+  // Purchase state: Unlocked ONLY with verified activation key or Gumroad license
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => !licenseService.isUnlocked());
   const [isDemoLimitOpen, setIsDemoLimitOpen] = useState<boolean>(false);
 
@@ -126,7 +150,7 @@ export default function App() {
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [isStickerBookOpen, setIsStickerBookOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
-  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState<boolean>(initialLocation.openUnlockModal);
 
   // PWA Offline and Install Hook
   const {
@@ -144,23 +168,52 @@ export default function App() {
   const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
 
   /**
+   * Multi-page URL Navigation helper synced with History API
+   */
+  const navigateTo = (targetRoute: AppRoute, worldId?: string) => {
+    const resolvedWorld = worldId || selectedWorldId;
+    if (worldId) setSelectedWorldId(worldId);
+    setRoute(targetRoute);
+
+    if (!['world_map', 'world_detail_game', 'game'].includes(targetRoute)) {
+      const targetPath = getRoutePath(targetRoute, resolvedWorld);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ route: targetRoute, worldId: resolvedWorld }, '', targetPath);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Browser Back/Forward button synchronization
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseInitialLocation();
+      setSelectedWorldId(parsed.worldId);
+      setRoute(parsed.route);
+      if (parsed.openUnlockModal) setIsLicenseModalOpen(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  /**
    * DIRECT ACCESS & LICENSE UNLOCKING
-   * Detects URL parameters like ?license=XXXX or ?purchased=true or ?mode=game or #game
-   * Used for direct sales links (Etsy/Gumroad) to bypass the landing page and unlock the game.
+   * Detects URL parameters like ?license=XXXX or ?unlock=true or ?mode=game or /activate
    */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash.toLowerCase();
+    const pathname = window.location.pathname.replace(/\/+$/, '').toLowerCase();
     const licenseParam = params.get('license');
     const directGameMode = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
     const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
 
-    const wantsUnlockModal = 
-      pageParam === 'activate' || 
-      pageParam === 'etsy' || 
-      params.get('unlock') === 'true' || 
+    const wantsUnlockModal =
+      pathname === '/activate' ||
+      pageParam === 'activate' ||
+      params.get('unlock') === 'true' ||
       (params.has('license') && !licenseParam) ||
-      hash.includes('activate') || 
+      hash.includes('activate') ||
       hash.includes('unlock');
 
     if (wantsUnlockModal) {
@@ -173,7 +226,7 @@ export default function App() {
       return;
     }
 
-    // 1. Auto-verify Gumroad License Key from URL if provided (?license=XXXXX)
+    // Auto-verify License Key from URL if provided (?license=XXXXX)
     if (licenseParam) {
       licenseService.verifyGumroadLicense(licenseParam).then((res) => {
         if (res.success) {
@@ -188,7 +241,6 @@ export default function App() {
     }
 
     if (directGameMode) {
-      // Direct entry to the interactive game environment (demo mode if not licensed)
       localStorage.setItem('wwk_view_preference', 'app_only');
       setRoute('world_map');
     }
@@ -196,8 +248,8 @@ export default function App() {
 
   // Dynamic Page Title, Meta Description, OpenGraph & JSON-LD Sync
   useEffect(() => {
-    applyRouteSEO(route);
-  }, [route]);
+    applyRouteSEO(route, selectedWorldId);
+  }, [route, selectedWorldId]);
 
   const refreshActiveProfile = () => {
     setActiveProfile(storageService.getActiveProfile());
@@ -301,19 +353,22 @@ export default function App() {
   };
 
   const handleBackToWebsite = () => {
+    try {
+      localStorage.removeItem('wwk_view_preference');
+    } catch {
+      // Ignore storage errors
+    }
     resetAppPlayState();
-    setRoute('home');
+    navigateTo('home');
   };
 
   const handleBackAction = (isHomeAction: boolean = false) => {
     const isAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
 
-    // If in demo mode (unpaid) AND NOT in app-only mode, exit to website.
-    // BUT if they are in app-only mode (via direct link), they stay in the app hub even in demo.
-    if (isDemoMode && !isAppOnly) {
+    // In demo mode (unless standalone/app-only), home action returns to website; otherwise navigate inside the game hub
+    if (isDemoMode && !isAppOnly && isHomeAction) {
       handleBackToWebsite();
     } else {
-      // Stay within the internal game suite (Map or Detail view)
       setRoute(isHomeAction ? 'world_map' : 'world_detail_game');
     }
   };
@@ -341,9 +396,8 @@ export default function App() {
       {isDemoMode && isInGameApp && (
         <DemoHeaderBar
           onReturnToWebsite={handleBackToWebsite}
-          onUnlockFull={() => setRoute('pricing')}
+          onUnlockFull={() => navigateTo('pricing')}
           onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
-          isAppOnly={localStorage.getItem('wwk_view_preference') === 'app_only'}
         />
       )}
 
@@ -352,6 +406,7 @@ export default function App() {
           currentView={route === 'world_map' ? 'world_map' : route === 'world_detail_game' ? 'world_detail' : 'game'}
           onNavigateHome={() => handleBackAction(true)}
           onNavigateWorld={() => handleBackAction(false)}
+          onReturnToWebsite={handleBackToWebsite}
           onOpenParentGate={() => setIsParentGateOpen(true)}
           onOpenDirectory={() => {
             if (isDemoMode) {
@@ -431,6 +486,7 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -443,6 +499,7 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -455,6 +512,7 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -467,6 +525,7 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -479,6 +538,7 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -491,6 +551,7 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  isDemoMode={isDemoMode}
                 />
               )}
 
@@ -512,6 +573,8 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onGetFullVersion={() => navigateTo('pricing')}
+                  onOpenKeyModal={() => setIsLicenseModalOpen(true)}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -522,36 +585,28 @@ export default function App() {
         <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100">
           <Navbar
             currentRoute={route}
-            onNavigate={(newRoute) => setRoute(newRoute as AppRoute)}
+            onNavigate={(newRoute) => navigateTo(newRoute as AppRoute)}
             onEnterGame={() => handleEnterGameApp('world_map')}
           />
 
           <main className="flex-1">
             {route === 'home' && (
               <HomePage
-                onNavigate={(r, wId) => {
-                  if (wId) setSelectedWorldId(wId);
-                  setRoute(r as AppRoute);
-                }}
+                onNavigate={(r, wId) => navigateTo(r as AppRoute, wId)}
                 onEnterGame={() => handleEnterGameApp('world_map')}
+                onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
               />
             )}
             {route === 'worlds' && (
               <ExploreWorldsPage
-                onNavigate={(r, wId) => {
-                  if (wId) setSelectedWorldId(wId);
-                  setRoute(r as AppRoute);
-                }}
+                onNavigate={(r, wId) => navigateTo(r as AppRoute, wId)}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
             )}
             {route === 'world_detail' && (
               <WorldDetailPage
                 worldId={selectedWorldId}
-                onNavigate={(r, wId) => {
-                  if (wId) setSelectedWorldId(wId);
-                  setRoute(r as AppRoute);
-                }}
+                onNavigate={(r, wId) => navigateTo(r as AppRoute, wId)}
                 onEnterGame={() => handleEnterGameApp('world_detail_game', selectedWorldId)}
               />
             )}
@@ -561,13 +616,14 @@ export default function App() {
                 onLaunchDemoGame={(gameId) => handleLaunchDemoMode(gameId)}
                 onNavigate={(r) => {
                   if (r === 'home') handleBackToWebsite();
-                  else setRoute(r as AppRoute);
+                  else navigateTo(r as AppRoute);
                 }}
+                onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
               />
             )}
             {route === 'pricing' && (
               <PricingPage
-                onNavigate={(r) => setRoute(r as AppRoute)}
+                onNavigate={(r) => navigateTo(r as AppRoute)}
                 onUnlockSuccess={() => {
                   setIsDemoMode(false);
                 }}
@@ -578,7 +634,7 @@ export default function App() {
               <PurchaseSuccessPage
                 onNavigate={(r) => {
                   resetAppPlayState();
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute);
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
@@ -587,7 +643,7 @@ export default function App() {
               <MyPurchasedGamesPage
                 onNavigate={(r) => {
                   resetAppPlayState();
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute);
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
@@ -596,7 +652,7 @@ export default function App() {
               <DownloadInstructionsPage
                 onNavigate={(r) => {
                   resetAppPlayState();
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute);
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
               />
@@ -605,7 +661,7 @@ export default function App() {
               <ParentInfoPage
                 onNavigate={(r) => {
                   resetAppPlayState();
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute);
                 }}
               />
             )}
@@ -613,23 +669,23 @@ export default function App() {
               <HomePage
                 onNavigate={(r, wId) => {
                   resetAppPlayState();
-                  if (wId) setSelectedWorldId(wId);
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute, wId);
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
+                onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
               />
             )}
             {route === 'faq' && (
               <FAQPage onNavigate={(r) => {
                 resetAppPlayState();
-                setRoute(r as AppRoute);
+                navigateTo(r as AppRoute);
               }} />
             )}
             {route === 'privacy' && (
               <PrivacyPolicyPage
                 onNavigate={(r) => {
                   resetAppPlayState();
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute);
                 }}
               />
             )}
@@ -637,13 +693,13 @@ export default function App() {
               <ContactSupportPage
                 onNavigate={(r) => {
                   resetAppPlayState();
-                  setRoute(r as AppRoute);
+                  navigateTo(r as AppRoute);
                 }}
               />
             )}
           </main>
 
-          <Footer onNavigate={(r) => setRoute(r as AppRoute)} />
+          <Footer onNavigate={(r) => navigateTo(r as AppRoute)} />
         </div>
       )}
 
@@ -653,12 +709,15 @@ export default function App() {
         onClose={() => setIsDemoLimitOpen(false)}
         onUnlockFull={() => {
           setIsDemoLimitOpen(false);
-          setIsDemoMode(false);
-          setRoute('pricing');
+          navigateTo('pricing');
         }}
         onReturnToWebsite={() => {
           setIsDemoLimitOpen(false);
-          setRoute('home');
+          navigateTo('home');
+        }}
+        onOpenLicenseModal={() => {
+          setIsDemoLimitOpen(false);
+          setIsLicenseModalOpen(true);
         }}
       />
 
@@ -704,6 +763,12 @@ export default function App() {
         isIOS={isIOS}
         isAndroid={isAndroid}
         isStandalone={isStandalone}
+        isUnlocked={!isDemoMode}
+        onOpenLicenseModal={() => {
+          setIsInstallModalOpen(false);
+          closeIOSInstructions();
+          setIsLicenseModalOpen(true);
+        }}
       />
 
       <LicenseVerificationModal

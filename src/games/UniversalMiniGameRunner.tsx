@@ -12,7 +12,7 @@
  * - Stars, time, score tracking, stickers, and Universal WinModal
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Home,
@@ -33,9 +33,13 @@ import {
   Heart,
   Palette,
   Crosshair,
-  Feather
+  Feather,
+  Lock,
+  ShoppingBag,
+  KeyRound
 } from 'lucide-react';
 import { MINI_GAMES_MATRIX, WORLDS } from '../data/gameMatrix';
+import { isGameAllowedInDemo, isLevelAllowedInDemo } from '../data/demoConfig';
 import { AgeGroup, GameState, Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { storageService } from '../services/storageService';
@@ -57,6 +61,8 @@ interface UniversalMiniGameRunnerProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onGetFullVersion?: () => void;
+  onOpenKeyModal?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -78,9 +84,12 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   onHome,
   onBackToWorld,
   onNextGame,
+  onGetFullVersion,
+  onOpenKeyModal,
   isDemoMode = false
 }) => {
-  const gameMeta = MINI_GAMES_MATRIX.find(g => g.id === gameId) || MINI_GAMES_MATRIX[0];
+  const matchedGameMeta = MINI_GAMES_MATRIX.find(g => g.id === gameId);
+  const gameMeta = matchedGameMeta || MINI_GAMES_MATRIX[0];
   const worldMeta = WORLDS.find(w => w.id === gameMeta.worldId) || WORLDS[0];
 
   // Core Game State
@@ -113,6 +122,16 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   const [camouflageFound, setCamouflageFound] = useState(false);
   const [activeMagnifierItem, setActiveMagnifierItem] = useState<string | null>(null);
 
+  const winTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, []);
+
   // Reset or initialize question on level or game change
   useEffect(() => {
     setCurrentLevel(initialLevel);
@@ -120,6 +139,14 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   }, [gameId, initialLevel]);
 
   const resetGameState = (lvl: 1 | 2 | 3 | 4 | 5) => {
+    if (winTimeoutRef.current) {
+      clearTimeout(winTimeoutRef.current);
+      winTimeoutRef.current = null;
+    }
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
     setGameState('PLAYING');
     setScore(0);
     setMistakes(0);
@@ -146,13 +173,16 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   };
 
   const handleCorrect = (points = 100) => {
+    if (winTimeoutRef.current || gameState !== 'PLAYING') return;
     soundEngine.playCorrect();
-    setScore(prev => prev + points);
+    const updatedScore = score + points;
+    setScore(updatedScore);
     setFeedbackMsg({ text: 'Wonderful job! ⭐', positive: true });
 
-    setTimeout(() => {
+    winTimeoutRef.current = setTimeout(() => {
+      winTimeoutRef.current = null;
       setFeedbackMsg(null);
-      triggerWin();
+      triggerWin(updatedScore);
     }, 800);
   };
 
@@ -160,10 +190,11 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     soundEngine.playError();
     setMistakes(prev => prev + 1);
     setFeedbackMsg({ text: hint || 'Oops! Try again 🌱', positive: false });
-    setTimeout(() => setFeedbackMsg(null), 1200);
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => setFeedbackMsg(null), 1200);
   };
 
-  const triggerWin = () => {
+  const triggerWin = (overrideScore?: number) => {
     try {
       confetti({
         particleCount: 80,
@@ -179,13 +210,14 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
     setStars(finalStars);
     setGameState('LEVEL_COMPLETE');
 
+    const finalScore = overrideScore ?? score;
     const timeSpent = Math.max(1, Math.round((Date.now() - startTime) / 1000));
     storageService.recordGameResult(
       activeProfileId,
       gameMeta.id,
       gameMeta.worldId,
       finalStars,
-      score + 150,
+      finalScore + 150,
       timeSpent,
       true
     );
@@ -214,6 +246,85 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   // GAME CONTENT GENERATOR BASED ON GAME ID & LEVEL
   // =========================================================================
   const renderGameContent = () => {
+    const isDemoGameLocked = isDemoMode && (!matchedGameMeta || !isGameAllowedInDemo(gameMeta.id) || !isLevelAllowedInDemo(currentLevel));
+
+    if (isDemoGameLocked) {
+      const canPlayDemoLevel1 = Boolean(matchedGameMeta && isGameAllowedInDemo(gameMeta.id));
+      return (
+        <div className="flex flex-col items-center justify-center p-5 sm:p-8 h-full text-center max-w-lg mx-auto">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-100 to-indigo-100 border-4 border-amber-300 shadow-lg flex items-center justify-center text-4xl mb-3 relative">
+            <span>{matchedGameMeta ? gameMeta.icon : '🎮'}</span>
+            <span className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center shadow">
+              <Lock className="w-4 h-4 text-amber-950" />
+            </span>
+          </div>
+
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-950 text-[11px] font-black uppercase tracking-wider font-fun border border-amber-300 mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <span>Demo Simulator Preview Limit</span>
+          </span>
+
+          <h3 className="text-xl sm:text-2xl font-black font-fun text-slate-900 mb-1.5">
+            {matchedGameMeta
+              ? !isGameAllowedInDemo(gameMeta.id)
+                ? `${gameMeta.title} Is in the Full Version`
+                : `${gameMeta.title} — Level ${currentLevel} Preview Locked`
+              : 'Explore the Full 45-Game Adventure'}
+          </h3>
+
+          <p className="text-xs sm:text-sm text-slate-600 font-semibold mb-5 leading-relaxed">
+            Free Demo includes 2 games per world (Levels 1 &amp; 2). Unlock all 45 educational mini-games across 5 worlds, Levels 1–5, and 100% offline play!
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full">
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                if (onGetFullVersion) {
+                  onGetFullVersion();
+                } else {
+                  onNextGame();
+                }
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-amber-950 font-fun font-black text-sm shadow-lg border-2 border-amber-500 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Get Full Version</span>
+            </button>
+
+            {onOpenKeyModal && (
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onOpenKeyModal();
+                }}
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-fun font-black text-xs sm:text-sm border-2 border-indigo-400 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Enter Key</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                if (canPlayDemoLevel1) {
+                  setCurrentLevel(1);
+                  resetGameState(1);
+                } else {
+                  onHome();
+                }
+              }}
+              className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-fun font-bold text-xs sm:text-sm border-2 border-indigo-200 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+            >
+              <Home className="w-4 h-4" />
+              <span>{canPlayDemoLevel1 ? 'Play Free Level 1' : 'Back to Demo Map'}</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     // -----------------------------------------------------------------------
     // MATH 2: NUMBER SAFARI (Counting animals)
     // -----------------------------------------------------------------------
@@ -2041,6 +2152,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
           <div className={`grid grid-cols-3 gap-3 p-4 sm:p-5 rounded-3xl border-4 ${curBiome.borderColor} bg-gradient-to-b ${curBiome.bgGradient} shadow-2xl w-full max-w-md relative overflow-hidden`}>
             {curBiome.scenery.map((item) => {
               const isFound = camouflageFound && item.isTarget;
+              const isLightBiome = curBiome.biome === 'Polar Arctic Tundra';
               return (
                 <button
                   key={item.id}
@@ -2057,6 +2169,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                   className={`relative h-20 sm:h-22 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 active:scale-90 group ${
                     isFound
                       ? 'bg-amber-400 text-amber-950 scale-110 shadow-2xl ring-4 ring-white animate-bounce z-20'
+                      : isLightBiome
+                      ? 'bg-white/65 hover:bg-white/90 backdrop-blur-sm border border-sky-300 text-slate-900 shadow-sm'
                       : 'bg-white/20 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white shadow-sm'
                   }`}
                   title={item.label}
@@ -2064,7 +2178,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                   <span className={`text-3xl sm:text-4xl transition-transform ${isFound ? 'scale-125' : 'group-hover:scale-110'}`}>
                     {item.emoji}
                   </span>
-                  <span className="text-[9px] font-fun font-bold mt-1 text-white/90 drop-shadow truncate max-w-[85px] px-1">
+                  <span className={`text-[9px] font-fun font-bold mt-1 truncate max-w-[85px] px-1 ${
+                    isFound
+                      ? 'text-amber-950'
+                      : isLightBiome
+                      ? 'text-slate-800'
+                      : 'text-white/90 drop-shadow'
+                  }`}>
                     {item.label}
                   </span>
                   {isFound && (
@@ -2706,8 +2826,54 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       );
     }
 
-    // Safety fallback
-    return null;
+    // Safety visual placeholder fallback (never render a blank screen)
+    return (
+      <div className="flex flex-col items-center justify-center p-6 sm:p-8 h-full text-center max-w-md mx-auto">
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-100 to-sky-100 border-4 border-indigo-200 shadow-md flex items-center justify-center text-4xl mb-3">
+          {gameMeta.icon || '🎮'}
+        </div>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100 text-indigo-900 text-[11px] font-black uppercase font-fun border border-indigo-200 mb-2">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+          <span>{isDemoMode ? 'Demo Simulator Preview' : worldMeta.title}</span>
+        </span>
+        <h3 className="text-lg sm:text-xl font-black font-fun text-slate-900 mb-1.5">
+          {matchedGameMeta ? `${gameMeta.title} Adventure` : 'Ready for More Learning Fun?'}
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-600 font-semibold mb-5">
+          {isDemoMode
+            ? 'Unlock all 45 games, 225 progressive levels, and 100% offline play across every device.'
+            : 'Tap below to explore another world or continue your learning adventure.'}
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full">
+          {isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                if (onGetFullVersion) {
+                  onGetFullVersion();
+                } else {
+                  onNextGame();
+                }
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-fun font-black text-sm shadow-lg border-2 border-amber-500 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Get Full Version</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              soundEngine.playPop();
+              onHome();
+            }}
+            className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-fun font-bold text-xs sm:text-sm shadow flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+          >
+            <Home className="w-4 h-4" />
+            <span>Back to World Map</span>
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -2829,9 +2995,40 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
           })}
         </div>
 
-        <div className="text-[11px] text-white/90">
-          Ages 3–10 Adaptive Suite
-        </div>
+        {isDemoMode ? (
+          <div className="flex items-center gap-1.5">
+            {onOpenKeyModal && (
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onOpenKeyModal();
+                }}
+                className="px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-fun font-black text-[11px] shadow-sm border border-indigo-400 flex items-center gap-1 transition active:scale-95 cursor-pointer"
+              >
+                <KeyRound className="w-3 h-3" />
+                <span>Key</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                if (onGetFullVersion) {
+                  onGetFullVersion();
+                } else {
+                  onNextGame();
+                }
+              }}
+              className="px-3 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-[11px] shadow-sm border border-amber-500 flex items-center gap-1 transition active:scale-95 cursor-pointer"
+            >
+              <ShoppingBag className="w-3 h-3" />
+              <span>Get Full Version</span>
+            </button>
+          </div>
+        ) : (
+          <div className="text-[11px] text-white/90">
+            Ages 3–10 Adaptive Suite
+          </div>
+        )}
       </div>
 
       {/* Win Modal */}

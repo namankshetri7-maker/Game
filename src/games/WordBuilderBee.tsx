@@ -8,7 +8,7 @@
  * - Hard (8–10): Multi-letter vocabulary (PLANET, JUNGLE, BREEZE) with jumbled tiles.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Pause, RotateCcw, Sparkles, Volume2, HelpCircle, Home, ArrowLeft } from 'lucide-react';
 import { AgeGroup, DifficultyLevel, GameState, Sticker } from '../types/game';
@@ -25,6 +25,7 @@ interface WordBuilderBeeProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 interface PhonicsWord {
@@ -39,7 +40,8 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(() => {
@@ -56,6 +58,14 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
   const [showHint, setShowHint] = useState(ageGroup === '3-4' || difficulty === 'EASY');
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTransitioningRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    };
+  }, []);
 
   // Dynamic 3-tier dictionary across all 5 levels
   const getWordsForLevelAndDifficulty = (lvl: number, diff: DifficultyLevel): PhonicsWord[] => {
@@ -212,6 +222,8 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
 
   // Handle letter slot drop or tap
   const handleSelectLetter = (tileId: string, letter: string) => {
+    if (isTransitioningRef.current || gameState !== 'PLAYING') return;
+
     // Play letter tone
     soundEngine.playLetterTone(letter);
 
@@ -228,20 +240,24 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
       setPlacedLetters(updatedPlaced);
 
       setAvailableTiles(prev => prev.map(t => t.id === tileId ? { ...t, isUsed: true } : t));
-      setScore(prev => prev + 50);
+      const nextScore = score + 50;
+      setScore(nextScore);
 
       // Check if word is completely spelled!
       if (updatedPlaced.every(slot => slot !== null)) {
+        isTransitioningRef.current = true;
         soundEngine.playSnap();
-        setScore(prev => prev + 100);
+        const completedScore = nextScore + 100;
+        setScore(completedScore);
 
         if (wordIndex < wordList.length - 1) {
-          setTimeout(() => {
+          transitionTimerRef.current = setTimeout(() => {
             setWordIndex(prev => prev + 1);
+            isTransitioningRef.current = false;
           }, 900);
         } else {
           // All words complete
-          setTimeout(() => {
+          transitionTimerRef.current = setTimeout(() => {
             const finalMistakes = mistakes;
             let calculatedStars = 3;
             if (finalMistakes === 1) calculatedStars = 2;
@@ -250,6 +266,7 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
             setStars(calculatedStars);
             setGameState('LEVEL_COMPLETE');
             soundEngine.playVictory();
+            isTransitioningRef.current = false;
 
             try {
               confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
@@ -301,7 +318,7 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
       {/* Top Status Bar */}
       <div className="flex items-center justify-between z-10 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -316,17 +333,19 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           )}
 
           {/* Direct Home Map Button */}
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-amber-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-amber-300 active:scale-95 transition flex items-center gap-1.5"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-amber-700" />
-            <span className="hidden sm:inline">Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-white/95 hover:bg-white text-amber-950 font-fun font-bold text-xs sm:text-sm rounded-2xl shadow-md border-2 border-amber-300 active:scale-95 transition flex items-center gap-1.5"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-amber-700" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -510,6 +529,7 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
         gameTitle="Word Builder Bee 🐝"
         worldName="Language Jungle"
         onRestart={() => {
+          isTransitioningRef.current = false;
           setGameState('PLAYING');
           setWordIndex(0);
           setScore(0);
@@ -517,10 +537,16 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           setPlacedLetters([]);
         }}
         onNextLevel={() => {
+          if (isDemoMode && currentLevel >= 2) {
+            onNextGame();
+            return;
+          }
           if (currentLevel < 5) {
+            isTransitioningRef.current = false;
             setCurrentLevel(prev => prev + 1);
             setGameState('PLAYING');
-            setScore(prev => prev + 100);
+            setWordIndex(0);
+            setPlacedLetters([]);
             setMistakes(0);
           } else {
             onNextGame();

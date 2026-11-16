@@ -6,14 +6,15 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { WORLDS, MINI_GAMES_MATRIX } from '../../data/gameMatrix';
 import { soundEngine } from '../../services/soundEngine';
-import { ChevronRight, Play, Star, Sparkles } from 'lucide-react';
+import { getRoutePath } from '../../services/seoManager';
+import { Sparkles } from 'lucide-react';
 
 interface ExploreWorldsPageProps {
   onNavigate: (route: string, worldId?: string) => void;
   onEnterGame: () => void;
 }
 
-export const ExploreWorldsPage: React.FC<ExploreWorldsPageProps> = ({ onNavigate, onEnterGame }) => {
+export const ExploreWorldsPage: React.FC<ExploreWorldsPageProps> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-300 to-indigo-600 text-slate-800 font-body py-12 px-4 sm:px-8">
       <div className="max-w-7xl mx-auto">
@@ -28,7 +29,7 @@ export const ExploreWorldsPage: React.FC<ExploreWorldsPageProps> = ({ onNavigate
             Explore All 5 Learning Worlds! 🏝️
           </h1>
           <p className="text-sm sm:text-base text-white font-bold drop-shadow-xs">
-            Each island features 10 fun educational mini-games designed to build math, reading, geography, science, and logic skills.
+            Explore 45 educational mini-games designed to build math, reading, geography, science, and logic skills for ages 3–8.
           </p>
         </div>
 
@@ -72,24 +73,32 @@ export const ExploreWorldsPage: React.FC<ExploreWorldsPageProps> = ({ onNavigate
                   </div>
 
                   <div className="flex items-center gap-3 flex-wrap">
-                    <button
-                      onClick={() => {
-                        soundEngine.playPop();
-                        onNavigate('world_detail', world.id);
+                    <a
+                      href={getRoutePath('world_detail', world.id)}
+                      onClick={(e) => {
+                        if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                          e.preventDefault();
+                          soundEngine.playPop();
+                          onNavigate('world_detail', world.id);
+                        }
                       }}
                       className="px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-fun font-black text-xs shadow-lg transition cursor-pointer border-2 border-white"
                     >
                       View Island Details ⭐
-                    </button>
-                    <button
-                      onClick={() => {
-                        soundEngine.playPop();
-                        onNavigate('pricing');
+                    </a>
+                    <a
+                      href={getRoutePath('pricing')}
+                      onClick={(e) => {
+                        if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                          e.preventDefault();
+                          soundEngine.playPop();
+                          onNavigate('pricing');
+                        }
                       }}
                       className="px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow-lg transition cursor-pointer border-2 border-amber-500 flex items-center gap-1.5"
                     >
-                      <span>Unlock World ($9)</span>
-                    </button>
+                      <span>Unlock World</span>
+                    </a>
                   </div>
                 </div>
 

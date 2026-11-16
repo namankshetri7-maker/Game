@@ -21,7 +21,8 @@ import {
   Laptop,
   Youtube,
   Instagram,
-  Facebook
+  Facebook,
+  Globe
 } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
 import { BrandLogo } from './BrandLogo';
@@ -34,6 +35,7 @@ interface DeviceFrameWrapperProps {
   currentView?: 'world_map' | 'world_detail' | 'game';
   onNavigateHome?: () => void;
   onNavigateWorld?: () => void;
+  onReturnToWebsite?: () => void;
   onOpenParentGate: () => void;
   onOpenDirectory: () => void;
   onOpenInstallModal: () => void;
@@ -53,6 +55,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
   currentView = 'world_map',
   onNavigateHome,
   onNavigateWorld,
+  onReturnToWebsite,
   onOpenParentGate,
   onOpenDirectory,
 
@@ -166,7 +169,19 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
 
           {/* Right Zone for Large Tablets, iPads & Desktop (lg:flex) - Fully Visible Controls */}
           <div className="hidden lg:flex items-center gap-2 shrink-0 ml-auto">
-
+            {onReturnToWebsite && (
+              <button
+                onClick={() => {
+                  soundEngine.playPop();
+                  onReturnToWebsite();
+                }}
+                className="h-9 xl:h-10 flex items-center gap-1.5 px-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 text-xs font-fun font-black shadow-xs border-2 border-indigo-200 transition active:scale-95 cursor-pointer shrink-0"
+                title="Return to Main Website"
+              >
+                <Globe className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Website</span>
+              </button>
+            )}
 
             {/* 2. Offline Guide & Install App Button */}
             <button
@@ -316,6 +331,32 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                   </div>
                   <Download className="w-5 h-5 text-amber-700 shrink-0" />
                 </button>
+
+                {onReturnToWebsite && (
+                  <button
+                    onClick={() => {
+                      soundEngine.playPop();
+                      setIsMobileMenuOpen(false);
+                      onReturnToWebsite();
+                    }}
+                    className="w-full text-left p-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 shadow-sm flex items-center justify-between gap-3 active:scale-[0.98] transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                        <Globe className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-fun font-black text-sm text-indigo-950">
+                          Back to Website
+                        </div>
+                        <p className="text-[11px] text-indigo-700 font-semibold font-body leading-tight mt-0.5">
+                          View homepage, Demo Simulator, Pricing & Downloads
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowLeft className="w-5 h-5 text-indigo-700 shrink-0" />
+                  </button>
+                )}
 
                 {/* 2. Parent Control Card */}
                 <button

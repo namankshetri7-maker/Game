@@ -99,13 +99,13 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
           <div className="bg-slate-800 rounded-3xl border border-slate-700 p-8 shadow-xl mb-8">
             <h2 className="text-lg font-bold font-fun text-white mb-2">Retrieve Your Purchase</h2>
             <p className="text-xs text-slate-400 mb-6">
-              If you purchased Wonder World Kids on Gumroad, enter the unique license key from your receipt below to permanently unlock this device:
+              Enter your lifetime activation key from your purchase receipt or PDF guide below to permanently unlock this device:
             </p>
 
             <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                placeholder="Enter Gumroad License Key (e.g. 8F7A2B1C-4D5E6F-7G8H9I)"
+                placeholder="Enter Activation Key (e.g. WWK-FAMILY-LIFETIME)"
                 value={licenseInput}
                 disabled={isLoading}
                 onChange={e => setLicenseInput(e.target.value)}
@@ -134,11 +134,16 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
               <div className="mt-4 p-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-300">
                 <p className="font-bold mb-1">Verification Unsuccessful</p>
                 <p>{errorMessage || 'License key not recognized for Wonder World Kids.'}</p>
-                <div className="mt-2 text-[11px] text-slate-400">
-                  Don't have a license key yet?{' '}
-                  <button onClick={() => onNavigate('pricing')} className="text-amber-400 underline font-bold">
-                    Buy Lifetime Access for $9
-                  </button>
+                <div className="mt-2 text-[11px] text-slate-400 flex flex-wrap items-center gap-2">
+                  <span>Don't have a license key yet?</span>
+                  <a
+                    href="https://namank3.gumroad.com/l/wvpisb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-amber-400 underline font-bold"
+                  >
+                    Buy on Gumroad ($9)
+                  </a>
                 </div>
               </div>
             )}

@@ -31,6 +31,7 @@ interface ShapeSorterGameProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  isDemoMode?: boolean;
 }
 
 interface ShapeItem {
@@ -84,7 +85,8 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
   initialLevel = 1,
   onHome,
   onBackToWorld,
-  onNextGame
+  onNextGame,
+  isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<1 | 2 | 3 | 4 | 5>(initialLevel);
   const [gameState, setGameState] = useState<GameState>('PLAYING');
@@ -103,6 +105,13 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
 
   // Train track horizontal scroll reference
   const trackScrollRef = useRef<HTMLDivElement>(null);
+  const winTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (winTimerRef.current) clearTimeout(winTimerRef.current);
+    };
+  }, []);
 
   // Cleanly reset level state whenever currentLevel changes (Level 1 -> Level 2 -> Level 3, etc.)
   useEffect(() => {
@@ -153,7 +162,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
       setStatusMessage('🚂 All aboard! The Shape Express is rolling out!');
       soundEngine.playCelebration();
 
-      setTimeout(() => {
+      winTimerRef.current = setTimeout(() => {
         let calculatedStars = 3;
         if (mistakes === 1) calculatedStars = 2;
         else if (mistakes > 1) calculatedStars = 1;
@@ -227,7 +236,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
       {/* Top Header Bar */}
       <div className="flex items-center justify-between z-10 flex-wrap gap-2 mb-2 bg-white/90 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border-2 border-indigo-200 shadow-sm">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onBackToWorld && (
+          {!isDemoMode && onBackToWorld && (
             <button
               onClick={() => {
                 soundEngine.playPop();
@@ -241,17 +250,19 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
             </button>
           )}
 
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onHome();
-            }}
-            className="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-fun font-bold text-xs sm:text-sm rounded-xl shadow-sm border border-indigo-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer"
-            title="Return to World Map"
-          >
-            <Home className="w-4 h-4 text-indigo-600" />
-            <span className="hidden sm:inline">Map</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={() => {
+                soundEngine.playPop();
+                onHome();
+              }}
+              className="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-fun font-bold text-xs sm:text-sm rounded-xl shadow-sm border border-indigo-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer"
+              title="Return to World Map"
+            >
+              <Home className="w-4 h-4 text-indigo-600" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -535,6 +546,10 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           setMistakes(0);
         }}
         onNextLevel={() => {
+          if (isDemoMode && currentLevel >= 2) {
+            onNextGame();
+            return;
+          }
           if (currentLevel < 5) {
             setCurrentLevel(prev => (prev + 1) as 1 | 2 | 3 | 4 | 5);
             setGameState('PLAYING');

@@ -34,7 +34,7 @@ export const DemoHeaderBar: React.FC<DemoHeaderBarProps> = ({
               onOpenLicenseModal();
             }}
             className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-white text-amber-950 font-fun font-bold text-xs shadow-xs border border-amber-600 transition active:scale-95 cursor-pointer flex items-center gap-1"
-            title="Enter Gumroad License Key"
+            title="Enter Activation Key"
           >
             <KeyRound className="w-3.5 h-3.5 text-amber-800" />
             <span className="hidden sm:inline">Enter License</span>
@@ -42,18 +42,16 @@ export const DemoHeaderBar: React.FC<DemoHeaderBarProps> = ({
           </button>
         )}
 
-        {!isAppOnly && (
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              onReturnToWebsite();
-            }}
-            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-fun font-bold text-xs shadow-xs border border-slate-200 transition active:scale-95 cursor-pointer flex items-center gap-1"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Website</span>
-          </button>
-        )}
+        <button
+          onClick={() => {
+            soundEngine.playPop();
+            onReturnToWebsite();
+          }}
+          className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-fun font-bold text-xs shadow-xs border border-slate-200 transition active:scale-95 cursor-pointer flex items-center gap-1"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Website</span>
+        </button>
 
         <button
           onClick={() => {
@@ -63,7 +61,7 @@ export const DemoHeaderBar: React.FC<DemoHeaderBarProps> = ({
           className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-fun font-black text-xs shadow-xs transition active:scale-95 cursor-pointer flex items-center gap-1"
         >
           <ShoppingBag className="w-3.5 h-3.5" />
-          <span>Unlock Full ($9)</span>
+          <span>Get Full Version</span>
         </button>
       </div>
     </div>

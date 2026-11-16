@@ -68,6 +68,14 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   const [showHint, setShowHint] = useState(ageGroup === '3-4' || difficulty === 'EASY');
 
   const nestRef = useRef<HTMLDivElement>(null);
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTransitioningRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    };
+  }, []);
 
   // Generate 3 distinct difficulty tiers per game level (Levels 1 to 5)
   const getProblemsForLevelAndDifficulty = (lvl: number, diff: DifficultyLevel): AdditionProblem[] => {
@@ -189,34 +197,41 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   );
 
   useEffect(() => {
+    isTransitioningRef.current = false;
     setProblems(getProblemsForLevelAndDifficulty(currentLevel, difficulty));
     setProblemIndex(0);
     setSelectedAnswer(null);
+    setDinoEmotion('thinking');
   }, [currentLevel, difficulty]);
 
   const currentProblem = problems[problemIndex] || problems[0];
 
   // Check answer logic
   const handleAnswerSubmit = (candidate: number) => {
+    if (isTransitioningRef.current || gameState !== 'PLAYING') return;
+
     const isCorrect = candidate === (currentProblem.isMissingAddend
       ? (currentProblem.missingPosition === 'B' ? currentProblem.numB : currentProblem.numA)
       : currentProblem.answer);
 
     if (isCorrect) {
+      isTransitioningRef.current = true;
       soundEngine.playSnap();
       setDinoEmotion('cheering');
-      setScore(prev => prev + 100);
+      const nextScore = score + 100;
+      setScore(nextScore);
 
       // Advance or complete level
       if (problemIndex < problems.length - 1) {
-        setTimeout(() => {
+        transitionTimerRef.current = setTimeout(() => {
           setProblemIndex(prev => prev + 1);
           setDinoEmotion('thinking');
           setSelectedAnswer(null);
+          isTransitioningRef.current = false;
         }, 800);
       } else {
         // Round Complete!
-        setTimeout(() => {
+        transitionTimerRef.current = setTimeout(() => {
           const finalMistakes = mistakes;
           let calculatedStars = 3;
           if (finalMistakes === 1) calculatedStars = 2;
@@ -225,6 +240,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setStars(calculatedStars);
           setGameState('LEVEL_COMPLETE');
           soundEngine.playVictory();
+          isTransitioningRef.current = false;
 
           try {
             confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
@@ -236,7 +252,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
             'game_dino_addition',
             'world_math',
             calculatedStars,
-            score + 100,
+            nextScore,
             timeSec,
             true
           );
@@ -251,7 +267,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
       soundEngine.playOops();
       setDinoEmotion('oops');
       setMistakes(prev => prev + 1);
-      setTimeout(() => setDinoEmotion('thinking'), 1200);
+      transitionTimerRef.current = setTimeout(() => setDinoEmotion('thinking'), 1200);
     }
   };
 
@@ -531,6 +547,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
         gameTitle="Dino Addition 🦖"
         worldName="Math Valley"
         onRestart={() => {
+          isTransitioningRef.current = false;
           setGameState('PLAYING');
           setProblemIndex(0);
           setScore(0);
@@ -538,10 +555,16 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setSelectedAnswer(null);
         }}
         onNextLevel={() => {
+          if (isDemoMode && currentLevel >= 2) {
+            onNextGame();
+            return;
+          }
           if (currentLevel < 5) {
+            isTransitioningRef.current = false;
             setCurrentLevel(prev => prev + 1);
             setGameState('PLAYING');
-            setScore(prev => prev + 100);
+            setProblemIndex(0);
+            setSelectedAnswer(null);
             setMistakes(0);
           } else {
             onNextGame();

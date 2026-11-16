@@ -1,6 +1,8 @@
 import React from 'react';
-import { Download, X, Share2, PlusSquare, Smartphone, CheckCircle, WifiOff, Laptop, HelpCircle } from 'lucide-react';
+import { Download, X, Share2, PlusSquare, Smartphone, CheckCircle, WifiOff, Laptop, ShoppingBag, KeyRound } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
+
+const GUMROAD_CHECKOUT_URL = 'https://namank3.gumroad.com/l/wvpisb';
 
 interface PWAInstallModalProps {
   isOpen: boolean;
@@ -10,6 +12,8 @@ interface PWAInstallModalProps {
   isIOS: boolean;
   isAndroid: boolean;
   isStandalone: boolean;
+  isUnlocked?: boolean;
+  onOpenLicenseModal?: () => void;
 }
 
 export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
@@ -20,6 +24,8 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
   isIOS,
   isAndroid,
   isStandalone,
+  isUnlocked = false,
+  onOpenLicenseModal,
 }) => {
   if (!isOpen) return null;
 
@@ -66,7 +72,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
                   100% Offline Ready!
                 </p>
                 <p className="text-[11px] font-bold text-emerald-700">
-                  Zero internet required to play all 45 games right now.
+                  Zero internet required to play after PWA home-screen install.
                 </p>
               </div>
             </div>
@@ -91,6 +97,45 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
               </div>
             </div>
           ) : null}
+
+          {/* Unlock Options (Key Activation + Gumroad) when not yet unlocked */}
+          {!isUnlocked && (
+            <div className="mb-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-slate-800 shadow-sm">
+              <p className="text-xs font-black font-fun text-amber-950 mb-1">
+                Unlock All 45 Games & 5 Worlds for Lifetime Offline Play
+              </p>
+              <p className="text-[11px] text-slate-600 mb-3">
+                Enter your activation key or purchase on Gumroad ($9) to unlock lifetime access.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {onOpenLicenseModal && (
+                  <button
+                    onClick={() => {
+                      soundEngine.playPop();
+                      onClose();
+                      onOpenLicenseModal();
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-fun font-black text-xs shadow flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Enter Activation Key</span>
+                  </button>
+                )}
+                <a
+                  href={GUMROAD_CHECKOUT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => soundEngine.playPop()}
+                  className={`py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow flex items-center justify-center gap-1.5 transition border border-amber-500 ${
+                    !onOpenLicenseModal ? 'sm:col-span-2' : ''
+                  }`}
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Buy on Gumroad ($9)</span>
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Offline benefit pills */}
           <div className="grid grid-cols-2 gap-2 mb-5">
