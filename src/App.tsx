@@ -36,6 +36,20 @@ import { DownloadInstructionsPage } from './components/website/DownloadInstructi
 import { ParentInfoPage } from './components/website/ParentInfoPage';
 import { PrivacyPolicyPage } from './components/website/PrivacyPolicyPage';
 import { ContactSupportPage } from './components/website/ContactSupportPage';
+import { StorePage } from './components/website/StorePage';
+import { ProductDetailPage } from './components/website/ProductDetailPage';
+import { StoreCartDrawer } from './components/website/StoreCartDrawer';
+import { StoreProductManagerModal } from './components/website/StoreProductManagerModal';
+import {
+  StoreProduct,
+  getStoreProducts,
+  upsertStoreProduct,
+  toggleStoreProductStatus,
+  deleteCustomStoreProduct,
+  resetStoreCatalog,
+  getSavedBagIds,
+  saveBagIds,
+} from './data/storeCatalog';
 
 import { usePWA } from './hooks/usePWA';
 import { storageService } from './services/storageService';
@@ -64,6 +78,8 @@ export type AppRoute =
   | 'home'
   | 'worlds'
   | 'world_detail'
+  | 'store'
+  | 'store_product'
   | 'demo'
   | 'pricing'
   | 'success'
@@ -78,44 +94,62 @@ export type AppRoute =
   | 'world_detail_game'
   | 'game';
 
-function parseInitialLocation(): { route: AppRoute; worldId: string; openUnlockModal: boolean } {
+function parseInitialLocation(): {
+  route: AppRoute;
+  worldId: string;
+  productSlug: string;
+  openUnlockModal: boolean;
+} {
   const pathname = window.location.pathname.replace(/\/+$/, '').toLowerCase() || '/';
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash.toLowerCase();
   const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
-  let worldId = params.get('world') || 'world_math';
+  const worldId = params.get('world') || 'world_math';
+  const productSlug = params.get('product') || 'wonder-world-kids-learning-app';
 
   // Clean multi-page URL path resolution (for Google indexing & direct links)
   if (pathname.startsWith('/worlds/')) {
     const slug = pathname.split('/')[2] || 'world_math';
-    return { route: 'world_detail', worldId: slug, openUnlockModal: false };
+    return { route: 'world_detail', worldId: slug, productSlug, openUnlockModal: false };
   }
-  if (pathname === '/worlds') return { route: 'worlds', worldId, openUnlockModal: false };
-  if (pathname === '/demo') return { route: 'demo', worldId, openUnlockModal: false };
-  if (pathname === '/pricing') return { route: 'pricing', worldId, openUnlockModal: false };
-  if (pathname === '/downloads') return { route: 'downloads', worldId, openUnlockModal: false };
-  if (pathname === '/parents') return { route: 'parents', worldId, openUnlockModal: false };
-  if (pathname === '/about') return { route: 'about', worldId, openUnlockModal: false };
-  if (pathname === '/faq') return { route: 'faq', worldId, openUnlockModal: false };
-  if (pathname === '/privacy') return { route: 'privacy', worldId, openUnlockModal: false };
-  if (pathname === '/contact') return { route: 'contact', worldId, openUnlockModal: false };
-  if (pathname === '/my-games') return { route: 'my_games', worldId, openUnlockModal: false };
-  if (pathname === '/success') return { route: 'success', worldId, openUnlockModal: false };
-  if (pathname === '/activate') return { route: 'pricing', worldId, openUnlockModal: true };
+  if (pathname.startsWith('/store/')) {
+    const slug = pathname.slice('/store/'.length).replace(/\/+$/, '');
+    return {
+      route: 'store_product',
+      worldId,
+      productSlug: slug || 'wonder-world-kids-learning-app',
+      openUnlockModal: false,
+    };
+  }
+  if (pathname === '/store') return { route: 'store', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/worlds') return { route: 'worlds', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/demo') return { route: 'demo', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/pricing') return { route: 'pricing', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/downloads') return { route: 'downloads', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/parents') return { route: 'parents', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/about') return { route: 'about', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/faq') return { route: 'faq', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/privacy') return { route: 'privacy', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/contact') return { route: 'contact', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/my-games') return { route: 'my_games', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/success') return { route: 'success', worldId, productSlug, openUnlockModal: false };
+  if (pathname === '/activate') return { route: 'pricing', worldId, productSlug, openUnlockModal: true };
 
   // Legacy query-param / hash fallbacks
-  if (pageParam === 'worlds' || hash.includes('worlds')) return { route: 'worlds', worldId, openUnlockModal: false };
-  if (pageParam === 'world_detail' || hash.includes('world_detail')) return { route: 'world_detail', worldId, openUnlockModal: false };
-  if (pageParam === 'demo' || hash.includes('demo')) return { route: 'demo', worldId, openUnlockModal: false };
-  if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return { route: 'pricing', worldId, openUnlockModal: false };
-  if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return { route: 'downloads', worldId, openUnlockModal: false };
-  if (pageParam === 'parents' || hash.includes('parents')) return { route: 'parents', worldId, openUnlockModal: false };
-  if (pageParam === 'about' || hash.includes('about')) return { route: 'about', worldId, openUnlockModal: false };
-  if (pageParam === 'faq' || hash.includes('faq')) return { route: 'faq', worldId, openUnlockModal: false };
-  if (pageParam === 'privacy' || hash.includes('privacy')) return { route: 'privacy', worldId, openUnlockModal: false };
-  if (pageParam === 'contact' || hash.includes('contact')) return { route: 'contact', worldId, openUnlockModal: false };
-  if (pageParam === 'my_games' || hash.includes('my_games')) return { route: 'my_games', worldId, openUnlockModal: false };
-  if (pageParam === 'success' || hash.includes('success')) return { route: 'success', worldId, openUnlockModal: false };
+  if (pageParam === 'store') return { route: 'store', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'store_product') return { route: 'store_product', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'worlds' || hash.includes('worlds')) return { route: 'worlds', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'world_detail' || hash.includes('world_detail')) return { route: 'world_detail', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'demo' || hash.includes('demo')) return { route: 'demo', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return { route: 'pricing', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return { route: 'downloads', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'parents' || hash.includes('parents')) return { route: 'parents', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'about' || hash.includes('about')) return { route: 'about', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'faq' || hash.includes('faq')) return { route: 'faq', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'privacy' || hash.includes('privacy')) return { route: 'privacy', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'contact' || hash.includes('contact')) return { route: 'contact', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'my_games' || hash.includes('my_games')) return { route: 'my_games', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'success' || hash.includes('success')) return { route: 'success', worldId, productSlug, openUnlockModal: false };
 
   const isDirectGame = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
   const isStandalonePWA =
@@ -124,18 +158,25 @@ function parseInitialLocation(): { route: AppRoute; worldId: string; openUnlockM
       (window.navigator as Navigator & { standalone?: boolean })?.standalone === true);
 
   if (isDirectGame || isStandalonePWA) {
-    return { route: 'world_map', worldId, openUnlockModal: false };
+    return { route: 'world_map', worldId, productSlug, openUnlockModal: false };
   }
 
-  return { route: 'home', worldId, openUnlockModal: false };
+  return { route: 'home', worldId, productSlug, openUnlockModal: false };
 }
 
 export default function App() {
   const initialLocation = parseInitialLocation();
   const [route, setRoute] = useState<AppRoute>(initialLocation.route);
   const [selectedWorldId, setSelectedWorldId] = useState<string>(initialLocation.worldId);
+  const [selectedProductSlug, setSelectedProductSlug] = useState<string>(initialLocation.productSlug);
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
+
+  // Store catalog & multi-marketplace saved bag state
+  const [storeProducts, setStoreProducts] = useState<StoreProduct[]>(() => getStoreProducts(true));
+  const [bagIds, setBagIds] = useState<string[]>(() => getSavedBagIds());
+  const [isBagOpen, setIsBagOpen] = useState<boolean>(false);
+  const [isStoreManagerOpen, setIsStoreManagerOpen] = useState<boolean>(false);
   
   // Purchase state: Unlocked ONLY with verified activation key or Gumroad license
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => !licenseService.isUnlocked());
@@ -170,15 +211,24 @@ export default function App() {
   /**
    * Multi-page URL Navigation helper synced with History API
    */
-  const navigateTo = (targetRoute: AppRoute, worldId?: string) => {
-    const resolvedWorld = worldId || selectedWorldId;
-    if (worldId) setSelectedWorldId(worldId);
+  const navigateTo = (targetRoute: AppRoute, param?: string) => {
+    const resolvedParam =
+      targetRoute === 'store_product'
+        ? param || selectedProductSlug
+        : param || selectedWorldId;
+
+    if (targetRoute === 'store_product' && param) {
+      setSelectedProductSlug(param);
+    } else if (param) {
+      setSelectedWorldId(param);
+    }
+
     setRoute(targetRoute);
 
     if (!['world_map', 'world_detail_game', 'game'].includes(targetRoute)) {
-      const targetPath = getRoutePath(targetRoute, resolvedWorld);
+      const targetPath = getRoutePath(targetRoute, resolvedParam);
       if (window.location.pathname !== targetPath) {
-        window.history.pushState({ route: targetRoute, worldId: resolvedWorld }, '', targetPath);
+        window.history.pushState({ route: targetRoute, param: resolvedParam }, '', targetPath);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -189,8 +239,9 @@ export default function App() {
     const handlePopState = () => {
       const parsed = parseInitialLocation();
       setSelectedWorldId(parsed.worldId);
+      setSelectedProductSlug(parsed.productSlug);
       setRoute(parsed.route);
-      if (parsed.openUnlockModal) setIsLicenseModalOpen(true);
+      setIsLicenseModalOpen(parsed.openUnlockModal);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -248,8 +299,61 @@ export default function App() {
 
   // Dynamic Page Title, Meta Description, OpenGraph & JSON-LD Sync
   useEffect(() => {
-    applyRouteSEO(route, selectedWorldId);
-  }, [route, selectedWorldId]);
+    applyRouteSEO(route, route === 'store_product' ? selectedProductSlug : selectedWorldId);
+    if (route === 'about') {
+      requestAnimationFrame(() => {
+        document.getElementById('about')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [route, selectedWorldId, selectedProductSlug]);
+
+  // Store & Shopping Bag Helpers
+  const activeStoreProducts = storeProducts.filter((p) => p.status === 'active');
+  const bagItems = activeStoreProducts.filter((p) => bagIds.includes(p.id));
+
+  const handleToggleBagItem = (productId: string) => {
+    setBagIds((prev) => {
+      const next = prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId];
+      saveBagIds(next);
+      return next;
+    });
+  };
+
+  const handleRemoveBagItem = (productId: string) => {
+    setBagIds((prev) => {
+      const next = prev.filter((id) => id !== productId);
+      saveBagIds(next);
+      return next;
+    });
+  };
+
+  const handleClearBag = () => {
+    setBagIds([]);
+    saveBagIds([]);
+  };
+
+  const handleViewStoreProduct = (slug: string) => {
+    navigateTo('store_product', slug);
+  };
+
+  const handleSaveStoreProduct = (product: StoreProduct) => {
+    setStoreProducts(upsertStoreProduct(product));
+  };
+
+  const handleToggleStoreProductStatus = (productId: string) => {
+    setStoreProducts(toggleStoreProductStatus(productId));
+  };
+
+  const handleDeleteStoreProduct = (productId: string) => {
+    setStoreProducts(deleteCustomStoreProduct(productId));
+    handleRemoveBagItem(productId);
+  };
+
+  const handleResetStoreDefaults = () => {
+    setStoreProducts(resetStoreCatalog());
+  };
 
   const refreshActiveProfile = () => {
     setActiveProfile(storageService.getActiveProfile());
@@ -338,18 +442,6 @@ export default function App() {
     const nextMuted = !isMuted;
     soundEngine.setMuted(nextMuted);
     setIsMuted(nextMuted);
-  };
-
-  // Centralized Navigation Guard
-  const handleNavigation = (targetRoute: AppRoute, worldId?: string) => {
-    const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
-    
-    // In demo mode, any attempt to go "back" or "home" from within the app must lead to the website home.
-    // If target is world_map or world_detail_game and NOT paid, it's effectively a "back to app entry" action.
-    // However, the user specifically wants "Back" to go to the Website Home.
-    
-    if (worldId) setSelectedWorldId(worldId);
-    setRoute(targetRoute);
   };
 
   const handleBackToWebsite = () => {
@@ -587,6 +679,8 @@ export default function App() {
             currentRoute={route}
             onNavigate={(newRoute) => navigateTo(newRoute as AppRoute)}
             onEnterGame={() => handleEnterGameApp('world_map')}
+            bagCount={bagItems.length}
+            onOpenBag={() => setIsBagOpen(true)}
           />
 
           <main className="flex-1">
@@ -595,6 +689,40 @@ export default function App() {
                 onNavigate={(r, wId) => navigateTo(r as AppRoute, wId)}
                 onEnterGame={() => handleEnterGameApp('world_map')}
                 onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
+                storeProducts={activeStoreProducts}
+                allStoreProducts={storeProducts}
+                bagIds={bagIds}
+                onToggleBagItem={handleToggleBagItem}
+                onOpenBag={() => setIsBagOpen(true)}
+                onViewProduct={handleViewStoreProduct}
+                onOpenStoreManager={() => setIsStoreManagerOpen(true)}
+              />
+            )}
+            {route === 'store' && (
+              <StorePage
+                products={activeStoreProducts}
+                allProductsWithInactive={storeProducts}
+                bagIds={bagIds}
+                onToggleBagItem={handleToggleBagItem}
+                onOpenBag={() => setIsBagOpen(true)}
+                onViewProduct={handleViewStoreProduct}
+                onNavigate={(r, wId) => navigateTo(r as AppRoute, wId)}
+                onOpenManager={() => setIsStoreManagerOpen(true)}
+              />
+            )}
+            {route === 'store_product' && (
+              <ProductDetailPage
+                product={activeStoreProducts.find(
+                  (p) => p.slug.toLowerCase() === selectedProductSlug.toLowerCase()
+                )}
+                relatedProducts={activeStoreProducts.filter(
+                  (p) => p.slug.toLowerCase() !== selectedProductSlug.toLowerCase()
+                )}
+                bagIds={bagIds}
+                onToggleBagItem={handleToggleBagItem}
+                onOpenBag={() => setIsBagOpen(true)}
+                onViewProduct={handleViewStoreProduct}
+                onNavigate={(r, wId) => navigateTo(r as AppRoute, wId)}
               />
             )}
             {route === 'worlds' && (
@@ -646,6 +774,7 @@ export default function App() {
                   navigateTo(r as AppRoute);
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
+                onUnlockSuccess={() => setIsDemoMode(false)}
               />
             )}
             {route === 'downloads' && (
@@ -673,6 +802,13 @@ export default function App() {
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
                 onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
+                storeProducts={activeStoreProducts}
+                allStoreProducts={storeProducts}
+                bagIds={bagIds}
+                onToggleBagItem={handleToggleBagItem}
+                onOpenBag={() => setIsBagOpen(true)}
+                onViewProduct={handleViewStoreProduct}
+                onOpenStoreManager={() => setIsStoreManagerOpen(true)}
               />
             )}
             {route === 'faq' && (
@@ -779,6 +915,28 @@ export default function App() {
           setIsDemoMode(false);
           setRoute('world_map');
         }}
+      />
+
+      <StoreCartDrawer
+        isOpen={isBagOpen}
+        onClose={() => setIsBagOpen(false)}
+        items={bagItems}
+        onRemoveItem={handleRemoveBagItem}
+        onClearBag={handleClearBag}
+        onViewProduct={(slug) => {
+          setIsBagOpen(false);
+          handleViewStoreProduct(slug);
+        }}
+      />
+
+      <StoreProductManagerModal
+        isOpen={isStoreManagerOpen}
+        onClose={() => setIsStoreManagerOpen(false)}
+        products={storeProducts}
+        onSaveProduct={handleSaveStoreProduct}
+        onToggleStatus={handleToggleStoreProductStatus}
+        onDeleteProduct={handleDeleteStoreProduct}
+        onResetDefaults={handleResetStoreDefaults}
       />
     </WorldThemeProvider>
   );

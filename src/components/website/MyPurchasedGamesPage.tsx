@@ -11,9 +11,10 @@ import { licenseService } from '../../services/licenseService';
 interface MyPurchasedGamesPageProps {
   onNavigate: (route: string) => void;
   onEnterGame: () => void;
+  onUnlockSuccess?: () => void;
 }
 
-export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNavigate, onEnterGame }) => {
+export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNavigate, onEnterGame, onUnlockSuccess }) => {
   const [licenseInput, setLicenseInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
       const res = await licenseService.verifyGumroadLicense(licenseInput);
       if (res.success) {
         setSearchVerified(true);
+        onUnlockSuccess?.();
         soundEngine.playVictory();
       } else {
         setSearchVerified(false);
@@ -151,7 +153,10 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({ onNa
         )}
 
         <div className="text-center text-xs text-slate-400">
-          Didn't receive your confirmation email? Contact our support team at <span className="text-amber-300 font-bold">wonderworldkidslearning@gmail.com</span>
+          Didn't receive your confirmation email? Contact our support team at{' '}
+          <a href="mailto:wonderworldkidslearning@gmail.com" className="text-amber-300 font-bold hover:underline">
+            wonderworldkidslearning@gmail.com
+          </a>
         </div>
       </div>
     </div>

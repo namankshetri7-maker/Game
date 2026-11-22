@@ -8,6 +8,12 @@
  * 5. Structured Data JSON-LD (including Google Merchant validFrom, shippingDetails, hasMerchantReturnPolicy)
  */
 
+import {
+  findStoreProductRecordBySlug,
+  STORE_CANONICAL_BASE,
+  StoreProductRecord,
+} from '../data/storeMeta';
+
 export interface PageSEOConfig {
   title: string;
   description: string;
@@ -16,10 +22,11 @@ export interface PageSEOConfig {
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
+  ogImageAlt?: string;
   jsonLd: object[];
 }
 
-const BASE_URL = 'https://wonderworldkidslearning.space';
+const BASE_URL = STORE_CANONICAL_BASE;
 const DEFAULT_IMAGE = `${BASE_URL}/pwa-512x512.png`;
 
 const SHIPPING_DETAILS = {
@@ -118,14 +125,18 @@ const WORLD_SEO_MAP: Record<string, { title: string; description: string; ogTitl
 /**
  * Resolve canonical clean path for any website route.
  */
-export function getRoutePath(route: string, worldId?: string): string {
+export function getRoutePath(route: string, worldOrSlug?: string): string {
   switch (route) {
     case 'home':
       return '/';
+    case 'store':
+      return '/store';
+    case 'store_product':
+      return `/store/${worldOrSlug || 'wonder-world-kids-learning-app'}`;
     case 'worlds':
       return '/worlds';
     case 'world_detail':
-      return `/worlds/${worldId || 'world_math'}`;
+      return `/worlds/${worldOrSlug || 'world_math'}`;
     case 'demo':
       return '/demo';
     case 'pricing':
@@ -395,6 +406,34 @@ export const SEO_CONFIGS: Record<string, PageSEOConfig> = {
     ogDescription: 'Instant lifetime key verification for 45 ad-free offline kids learning games.',
     ogImage: DEFAULT_IMAGE,
     jsonLd: []
+  },
+
+  store: {
+    title: 'Wonder World Kids Store – Learn, Play & Create',
+    description: 'Shop Wonder World Kids educational offline learning games and printable colouring & alphabet activity books for children aged 3–8.',
+    canonicalUrl: `${BASE_URL}/store`,
+    ogType: 'website',
+    ogTitle: 'Wonder World Kids Store – Learn, Play & Create',
+    ogDescription: 'Explore our offline kids learning app and printable dinosaur, ABC alphabet, and seasonal colouring books.',
+    ogImage: DEFAULT_IMAGE,
+    ogImageAlt: 'Wonder World Kids Store collection of offline learning games and printable books',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Wonder World Kids Store – Learn, Play & Create',
+        url: `${BASE_URL}/store`,
+        description: 'Central catalog showcasing the Wonder World Kids Learning App and printable children colouring & activity books.'
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${BASE_URL}/` },
+          { '@type': 'ListItem', position: 2, name: 'Store', item: `${BASE_URL}/store` }
+        ]
+      }
+    ]
   }
 };
 
@@ -423,13 +462,75 @@ export function getWorldSEO(worldId: string): PageSEOConfig {
   };
 }
 
+function buildStoreProductJsonLd(product: StoreProductRecord, canonicalUrl: string): object[] {
+  const productNode: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    category: product.category,
+    url: canonicalUrl,
+    brand: {
+      '@type': 'Brand',
+      name: 'Wonder World Kids Learning'
+    }
+  };
+
+  if (product.price) {
+    productNode.offers = {
+      '@type': 'Offer',
+      url: product.externalUrl,
+      price: product.price,
+      priceCurrency: product.priceCurrency || 'USD'
+    };
+  }
+
+  return [
+    productNode,
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${BASE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: 'Store', item: `${BASE_URL}/store` },
+        { '@type': 'ListItem', position: 3, name: product.name, item: canonicalUrl }
+      ]
+    }
+  ];
+}
+
+export function getStoreProductSEO(slug: string): PageSEOConfig {
+  const product = findStoreProductRecordBySlug(slug);
+  if (!product) {
+    return SEO_CONFIGS.store;
+  }
+
+  const canonicalUrl = `${BASE_URL}/store/${product.slug}`;
+  const pageTitle = `${product.name} – Wonder World Kids Store`;
+  const imageUrl = product.coverImage.startsWith('http') ? product.coverImage : DEFAULT_IMAGE;
+
+  return {
+    title: pageTitle,
+    description: product.description,
+    canonicalUrl,
+    ogType: 'product',
+    ogTitle: pageTitle,
+    ogDescription: product.description,
+    ogImage: imageUrl,
+    ogImageAlt: product.coverAlt,
+    jsonLd: buildStoreProductJsonLd(product, canonicalUrl)
+  };
+}
+
 /**
  * Apply SEO metadata, OpenGraph tags, canonical link, and JSON-LD structured data for the current route.
  */
-export function applyRouteSEO(route: string, worldId?: string): void {
+export function applyRouteSEO(route: string, worldOrSlug?: string): void {
   const config =
-    route === 'world_detail' && worldId
-      ? getWorldSEO(worldId)
+    route === 'world_detail' && worldOrSlug
+      ? getWorldSEO(worldOrSlug)
+      : route === 'store_product' && worldOrSlug
+      ? getStoreProductSEO(worldOrSlug)
       : SEO_CONFIGS[route] || SEO_CONFIGS['home'];
 
   // 1. Update Document Title
@@ -458,7 +559,7 @@ export function applyRouteSEO(route: string, worldId?: string): void {
   setMetaTag('property', 'og:image', config.ogImage);
   setMetaTag('property', 'og:image:width', '512');
   setMetaTag('property', 'og:image:height', '512');
-  setMetaTag('property', 'og:image:alt', `${config.title} - Wonder World Kids`);
+  setMetaTag('property', 'og:image:alt', config.ogImageAlt || `${config.title} - Wonder World Kids`);
 
   // 4. Twitter Card Tags
   setMetaTag('name', 'twitter:card', 'summary_large_image');

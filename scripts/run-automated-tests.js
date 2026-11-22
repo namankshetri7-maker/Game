@@ -631,3 +631,169 @@ test('Demo Simulator Integrity & Offline Game Demo Gating', async () => {
   assert.ok(demoHeaderContent.includes('Get Full Version'), 'DemoHeaderBar must display Get Full Version CTA');
 });
 
+// ---------------------------------------------------------------------------
+// SUITE 18: Clean Main Game (No Confetti), Product B Git Separation & Valid PWA Assets
+// ---------------------------------------------------------------------------
+test('Clean Product A Build: Zero Confetti, Gitignore Product B Separation & Valid PWA Assets', async () => {
+  // 1. package.json must not include canvas-confetti or Product B npm scripts
+  const pkgJson = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8'));
+  assert.ok(!pkgJson.dependencies?.['canvas-confetti'], 'package.json dependencies must not include canvas-confetti');
+  assert.ok(!pkgJson.devDependencies?.['@types/canvas-confetti'], 'package.json devDependencies must not include @types/canvas-confetti');
+  assert.ok(!pkgJson.scripts?.['build:android-full'], 'package.json must not expose build:android-full script');
+  assert.ok(!pkgJson.scripts?.['test:android-full'], 'package.json must not expose test:android-full script');
+
+  // 2. .gitignore must exclude Product B / temporary files from git pushes
+  const gitignore = fs.readFileSync(path.resolve('.gitignore'), 'utf8');
+  for (const entry of [
+    'android-full-app/',
+    'android-full.html',
+    'vite.android.config.ts',
+    'src/AndroidFullApp.tsx',
+    'src/android-full-main.tsx',
+    'scripts/test-android-full.js',
+  ]) {
+    assert.ok(gitignore.includes(entry), `.gitignore must exclude ${entry}`);
+  }
+
+  // 3. Scan Product A source files for confetti, PAID_NATIVE_APP, isPaidNativeApp, or window.open
+  function collectTsFiles(dir) {
+    const results = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        results.push(...collectTsFiles(fullPath));
+      } else if (/\.(ts|tsx)$/.test(entry.name)) {
+        results.push(fullPath);
+      }
+    }
+    return results;
+  }
+
+  const productAFiles = collectTsFiles(path.resolve('src')).filter(
+    (p) => !p.endsWith('AndroidFullApp.tsx') && !p.endsWith('android-full-main.tsx')
+  );
+  assert.ok(productAFiles.length > 20, 'Expected Product A TypeScript source files');
+
+  for (const filePath of productAFiles) {
+    const content = fs.readFileSync(filePath, 'utf8');
+    assert.ok(!/confetti/i.test(content), `Confetti reference found in ${path.relative(process.cwd(), filePath)}`);
+    assert.ok(!content.includes('PAID_NATIVE_APP'), `PAID_NATIVE_APP found in ${path.relative(process.cwd(), filePath)}`);
+    assert.ok(!content.includes('isPaidNativeApp'), `isPaidNativeApp found in ${path.relative(process.cwd(), filePath)}`);
+    assert.ok(!content.includes('window.open('), `window.open found in ${path.relative(process.cwd(), filePath)}`);
+  }
+
+  // 4. Verify unified PWA manifest and icon files
+  const viteConfig = fs.readFileSync(path.resolve('vite.config.ts'), 'utf8');
+  assert.ok(viteConfig.includes('manifest: false'), 'vite.config.ts must set manifest: false to avoid duplicate manifest.webmanifest');
+
+  const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf8');
+  assert.ok(indexHtml.includes('href="/manifest.json"'), 'index.html must link /manifest.json');
+  assert.ok(!indexHtml.includes('manifest.webmanifest'), 'index.html must not reference manifest.webmanifest');
+
+  const manifest = JSON.parse(fs.readFileSync(path.resolve('public/manifest.json'), 'utf8'));
+  assert.equal(manifest.name, 'Wonder World Kids Learning');
+  assert.equal(manifest.short_name, 'WonderWorld');
+  assert.ok(Array.isArray(manifest.icons) && manifest.icons.length === 3, 'manifest.json must declare 3 canonical icons');
+
+  for (const iconPath of [
+    'public/pwa-192x192.png',
+    'public/pwa-512x512.png',
+    'public/pwa-maskable-512x512.png',
+    'public/apple-touch-icon.png',
+    'public/favicon.png',
+    'public/logo.png',
+  ]) {
+    const full = path.resolve(iconPath);
+    assert.ok(fs.existsSync(full), `Missing icon ${iconPath}`);
+    assert.ok(fs.statSync(full).size > 1024, `Icon ${iconPath} appears empty or corrupt`);
+  }
+});
+
+// =========================================================================
+// SUITE 19: WONDER WORLD KIDS STOREFRONT, CATALOG, BAG & PRODUCT SEO
+// =========================================================================
+test('Suite 19: Storefront products, marketplaces, verified pricing, bag drawer & honest SEO', () => {
+  const storeMeta = fs.readFileSync(path.resolve('src/data/storeMeta.ts'), 'utf8');
+  const storeCatalog = fs.readFileSync(path.resolve('src/data/storeCatalog.ts'), 'utf8');
+  const storeSection = fs.readFileSync(path.resolve('src/components/website/StoreSection.tsx'), 'utf8');
+  const storePage = fs.readFileSync(path.resolve('src/components/website/StorePage.tsx'), 'utf8');
+  const pdpPage = fs.readFileSync(path.resolve('src/components/website/ProductDetailPage.tsx'), 'utf8');
+  const cartDrawer = fs.readFileSync(path.resolve('src/components/website/StoreCartDrawer.tsx'), 'utf8');
+  const managerModal = fs.readFileSync(path.resolve('src/components/website/StoreProductManagerModal.tsx'), 'utf8');
+  const seoManager = fs.readFileSync(path.resolve('src/services/seoManager.ts'), 'utf8');
+  const appTsx = fs.readFileSync(path.resolve('src/App.tsx'), 'utf8');
+  const navbar = fs.readFileSync(path.resolve('src/components/website/Navbar.tsx'), 'utf8');
+  const footer = fs.readFileSync(path.resolve('src/components/website/Footer.tsx'), 'utf8');
+  const homePage = fs.readFileSync(path.resolve('src/components/website/HomePage.tsx'), 'utf8');
+  const sitemap = fs.readFileSync(path.resolve('public/sitemap.xml'), 'utf8');
+
+  // 1. Verify section title and all 5 categories
+  assert.ok(storeSection.includes('Wonder World Kids Store – Learn, Play & Create'), 'StoreSection must display exact store heading');
+  for (const cat of [
+    'Learning Games',
+    'Colouring Books',
+    'Educational Activity Books',
+    'Seasonal Collections',
+    'Digital Learning Resources',
+  ]) {
+    assert.ok(storeMeta.includes(`'${cat}'`), `storeMeta.ts must define category ${cat}`);
+  }
+
+  // 2. Verify initial 4 products, exact marketplace URLs, buttons, and verified-only price
+  assert.ok(storeMeta.includes('Wonder World Kids Learning App'), 'Must include Wonder World Kids Learning App');
+  assert.ok(storeMeta.includes('Download Now'), 'Learning App must use Download Now CTA');
+  assert.ok(storeMeta.includes('https://namank3.gumroad.com/l/wvpisb'), 'Learning App must point to Gumroad URL');
+  assert.ok(storeMeta.includes("price: '9.00'"), 'Learning App must retain verified $9.00 price');
+
+  assert.ok(storeMeta.includes('Dinosaur World Colouring Book'), 'Must include Dinosaur World Colouring Book');
+  assert.ok(storeMeta.includes('https://www.etsy.com/listing/4615484511/dinosaur-world-coloring-book-30'), 'Must include Dinosaur Etsy URL');
+
+  assert.ok(storeMeta.includes('ABC Alphabet Activity Book'), 'Must include ABC Alphabet Activity Book');
+  assert.ok(storeMeta.includes('https://www.etsy.com/listing/4618473268/abc-alphabet-activity-book-for-kids'), 'Must include ABC Etsy URL');
+
+  assert.ok(storeMeta.includes('Christmas Wonderland Colouring Book'), 'Must include Christmas Wonderland Colouring Book');
+  assert.ok(storeMeta.includes('https://www.etsy.com/listing/4623136130/christmas-wonderland-printable-colouring'), 'Must include Christmas Etsy URL');
+
+  assert.ok(storeMeta.includes('Buy on Etsy'), 'Etsy products must use Buy on Etsy CTA');
+
+  // 3. Verify generated product cover images exist and are bundled in storeCatalog.ts
+  for (const coverRel of [
+    'src/assets/images/store_dinosaur_colouring_1795363036486.jpg',
+    'src/assets/images/store_abc_alphabet_book_1795363036462.jpg',
+    'src/assets/images/store_christmas_colouring_1795363037005.jpg',
+    'src/assets/images/store_learning_app_featured_1795363037165.jpg',
+  ]) {
+    const full = path.resolve(coverRel);
+    assert.ok(fs.existsSync(full), `Missing generated cover asset ${coverRel}`);
+    assert.ok(fs.statSync(full).size > 5000, `Generated cover asset ${coverRel} appears empty`);
+    assert.ok(storeCatalog.includes(path.basename(coverRel)), `storeCatalog.ts must import ${path.basename(coverRel)}`);
+  }
+
+  // 4. Verify multi-marketplace Shopping Bag drawer & non-simulated checkout
+  assert.ok(cartDrawer.includes('onRemoveItem'), 'StoreCartDrawer must allow removing saved items');
+  assert.ok(cartDrawer.includes('target="_blank"') && cartDrawer.includes('rel="noopener noreferrer"'), 'Cart links must redirect cleanly to external marketplace');
+  assert.ok(!cartDrawer.toLowerCase().includes('order confirmed') && !cartDrawer.toLowerCase().includes('payment complete'), 'StoreCartDrawer must never simulate fake order completion');
+
+  // 5. Verify data-driven Product Catalog Manager (Etsy, Gumroad, Payhip, Amazon KDP + active/inactive)
+  for (const market of ['Etsy', 'Gumroad', 'Payhip', 'Amazon KDP']) {
+    assert.ok(storeMeta.includes(`'${market}'`), `storeMeta.ts must support marketplace ${market}`);
+  }
+  assert.ok(managerModal.includes('onToggleStatus') && managerModal.includes('onSaveProduct'), 'StoreProductManagerModal must allow adding/editing products and toggling status');
+
+  // 6. Verify honest SEO on /store and /store/:slug (Product schema without fake ratings/reviews)
+  assert.ok(seoManager.includes("case 'store':") && seoManager.includes("case 'store_product':"), 'seoManager.ts must route /store and /store/:slug');
+  assert.ok(seoManager.includes("'@type': 'Product'"), 'seoManager.ts must generate Product JSON-LD');
+  const productSeoSlice = seoManager.slice(seoManager.indexOf('export function getStoreProductSEO'));
+  assert.ok(!productSeoSlice.includes('aggregateRating') && !productSeoSlice.includes('ratingValue'), 'Product SEO must not invent fake ratings or reviews');
+
+  // 7. Verify internal cross-linking across App, Navbar, HomePage, StorePage, PDP, Footer, Sitemap
+  assert.ok(appTsx.includes("'store'") && appTsx.includes("'store_product'"), 'App.tsx must mount Store and ProductDetail routes');
+  assert.ok(navbar.includes("route: 'store'") && navbar.includes('onOpenBag'), 'Navbar must link to Store and open Saved Bag');
+  assert.ok(footer.includes("route: 'store'"), 'Footer must link to Wonder World Store');
+  assert.ok(homePage.includes('<StoreSection'), 'HomePage must embed StoreSection');
+  assert.ok(storePage.includes('<StoreSection') && pdpPage.includes("getRoutePath('store')"), 'StorePage and ProductDetailPage must link properly');
+  assert.ok(sitemap.includes('/store') && sitemap.includes('dinosaur-world-colouring-book'), 'sitemap.xml must list /store and product pages');
+});
+
+
+

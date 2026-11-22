@@ -52,11 +52,6 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
     }
   };
 
-  const handleOpenCheckout = (url: string) => {
-    soundEngine.playPop();
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   const handleLicenseSuccess = () => {
     setIsUnlocked(true);
     setIsLicenseModalOpen(false);
@@ -204,13 +199,16 @@ export const DownloadInstructionsPage: React.FC<DownloadInstructionsPageProps> =
                 </p>
               </div>
 
-              <button
-                onClick={() => handleOpenCheckout(GUMROAD_CHECKOUT_URL)}
+              <a
+                href={GUMROAD_CHECKOUT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => soundEngine.playPop()}
                 className="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
                 <span>Checkout on Gumroad ($9) →</span>
-              </button>
+              </a>
             </div>
 
             {/* Step 2 */}

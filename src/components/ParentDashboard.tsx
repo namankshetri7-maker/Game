@@ -8,7 +8,7 @@
  * - Safe COPPA controls (zero ads, zero tracking, local data wipe)
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   X,
@@ -83,11 +83,28 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [diagnosticReport, setDiagnosticReport] = useState<DiagnosticReport | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const diagTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setProfiles(storageService.getProfiles());
+      setActiveProfileId(storageService.getActiveProfileId() || '');
+      setParentSettings(storageService.getParentSettings());
+    }
+    return () => {
+      if (diagTimerRef.current) {
+        clearTimeout(diagTimerRef.current);
+        diagTimerRef.current = null;
+      }
+    };
+  }, [isOpen]);
 
   const handleRunDiagnostics = () => {
     soundEngine.playPop();
     setIsDiagnosing(true);
-    setTimeout(() => {
+    if (diagTimerRef.current) clearTimeout(diagTimerRef.current);
+    diagTimerRef.current = setTimeout(() => {
+      diagTimerRef.current = null;
       const report = offlineBugFixer.runDiagnosticCheck();
       setDiagnosticReport(report);
       setIsDiagnosing(false);

@@ -16,7 +16,6 @@ import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 interface ContinentJigsawProps {
   ageGroup: AgeGroup;
@@ -198,6 +197,10 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   );
 
   useEffect(() => {
+    if (winTimerRef.current) {
+      clearTimeout(winTimerRef.current);
+      winTimerRef.current = null;
+    }
     setTargetContinents(getPiecesForLevelAndDifficulty(currentLevel, difficulty));
     setPlacedContinents([]);
     setSelectedPieceId(null);
@@ -236,10 +239,6 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
         setStars(calculatedStars);
         setGameState('LEVEL_COMPLETE');
         soundEngine.playVictory();
-
-        try {
-          confetti({ particleCount: 85, spread: 70, origin: { y: 0.6 } });
-        } catch {}
 
         const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
         storageService.recordGameResult(
@@ -587,6 +586,10 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
         gameTitle="Continent Jigsaw 🌍"
         worldName="World Geography"
         onRestart={() => {
+          if (winTimerRef.current) {
+            clearTimeout(winTimerRef.current);
+            winTimerRef.current = null;
+          }
           setGameState('PLAYING');
           setPlacedContinents([]);
           setSelectedPieceId(null);
@@ -626,6 +629,10 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           setGameState('PLAYING');
         }}
         onRestart={() => {
+          if (winTimerRef.current) {
+            clearTimeout(winTimerRef.current);
+            winTimerRef.current = null;
+          }
           setIsPaused(false);
           setGameState('PLAYING');
           setPlacedContinents([]);

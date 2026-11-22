@@ -20,6 +20,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       title: 'About',
       icon: HelpCircle,
       links: [
+        { label: 'Wonder World Store', route: 'store' },
         { label: 'Wonder World Story', route: 'about' },
         { label: 'Activate License Key', route: 'my_games' },
         { label: 'FAQ', route: 'faq' },

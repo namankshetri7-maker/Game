@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Eye, RotateCcw, Trophy, CheckCircle2 } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
-import confetti from 'canvas-confetti';
 
 interface MemoryCardFlipGameProps {
   currentLevel: 1 | 2 | 3 | 4 | 5;
@@ -124,8 +123,29 @@ export const MemoryCardFlipGame: React.FC<MemoryCardFlipGameProps> = ({
   const [isPeeking, setIsPeeking] = useState(false);
   const [peekAvailable, setPeekAvailable] = useState(true);
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasCompletedRef = useRef(false);
+
+  const clearAllTimers = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (peekTimerRef.current) {
+      clearTimeout(peekTimerRef.current);
+      peekTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => clearAllTimers();
+  }, []);
+
   // Initialize fresh random deck on level change
   useEffect(() => {
+    clearAllTimers();
+    hasCompletedRef.current = false;
     setDeck(shuffleDeck(theme.pairs));
     setFlippedUids([]);
     setMatchedUids([]);
@@ -137,6 +157,8 @@ export const MemoryCardFlipGame: React.FC<MemoryCardFlipGameProps> = ({
 
   // Restart / reshuffle current level
   const handleRestart = () => {
+    clearAllTimers();
+    hasCompletedRef.current = false;
     soundEngine.playPop();
     setDeck(shuffleDeck(theme.pairs));
     setFlippedUids([]);
@@ -149,11 +171,13 @@ export const MemoryCardFlipGame: React.FC<MemoryCardFlipGameProps> = ({
 
   // Peek Hint: reveals all cards for 2.5 seconds
   const handlePeekHint = () => {
-    if (!peekAvailable || isChecking) return;
+    if (!peekAvailable || isChecking || hasCompletedRef.current) return;
     soundEngine.playStar();
     setIsPeeking(true);
     setPeekAvailable(false);
-    setTimeout(() => {
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    peekTimerRef.current = setTimeout(() => {
+      peekTimerRef.current = null;
       setIsPeeking(false);
     }, 2400);
   };
@@ -161,7 +185,7 @@ export const MemoryCardFlipGame: React.FC<MemoryCardFlipGameProps> = ({
   // Card click handler
   const handleCardClick = (card: CardItem) => {
     // Prevent clicking if busy checking or card is already flipped or matched
-    if (isChecking || isPeeking) return;
+    if (hasCompletedRef.current || isChecking || isPeeking) return;
     if (flippedUids.includes(card.uid) || matchedUids.includes(card.uid)) return;
 
     soundEngine.playPop();
@@ -170,7 +194,8 @@ export const MemoryCardFlipGame: React.FC<MemoryCardFlipGameProps> = ({
 
     // If second card is flipped
     if (nextFlipped.length === 2) {
-      setMovesCount(prev => prev + 1);
+      const nextMoves = movesCount + 1;
+      setMovesCount(nextMoves);
       setIsChecking(true);
 
       const [firstUid, secondUid] = nextFlipped;
@@ -187,22 +212,20 @@ export const MemoryCardFlipGame: React.FC<MemoryCardFlipGameProps> = ({
 
         // Check if all pairs are found!
         if (nextMatched.length === deck.length) {
-          setTimeout(() => {
+          hasCompletedRef.current = true;
+          if (timerRef.current) clearTimeout(timerRef.current);
+          timerRef.current = setTimeout(() => {
+            timerRef.current = null;
             soundEngine.playVictory();
-            try {
-              confetti({
-                particleCount: 80,
-                spread: 70,
-                origin: { y: 0.6 }
-              });
-            } catch {}
-            onCorrect(150 + Math.max(0, 100 - movesCount * 5));
+            onCorrect(150 + Math.max(0, 100 - nextMoves * 5));
           }, 600);
         }
       } else {
         // MISMATCH - Keep visible for 1.2s so kids can memorize before flipping back
         soundEngine.playOops();
-        setTimeout(() => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
           setFlippedUids([]);
           setIsChecking(false);
         }, 1200);

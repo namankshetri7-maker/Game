@@ -160,6 +160,7 @@ export const PixelArtColoringGame: React.FC<PixelArtColoringGameProps> = ({
   const isCompleted = correctPaintedCount === totalTargetCells && totalTargetCells > 0;
 
   const handleCellClick = (r: number, c: number) => {
+    if (isCompleted) return;
     const key = `${r}_${c}`;
     const targetColorNum = template.matrix[r][c];
 
@@ -225,6 +226,7 @@ export const PixelArtColoringGame: React.FC<PixelArtColoringGameProps> = ({
   };
 
   const handleRevealHint = () => {
+    if (isCompleted) return;
     soundEngine.playStar();
     // Auto fill next unpainted cell of selected color
     const updated = { ...paintedGrid };

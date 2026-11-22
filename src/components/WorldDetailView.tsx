@@ -6,7 +6,7 @@
  * 3. Quickly return to the World Map with 1 tap
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Home, Star, Play, Sparkles, Lock, CheckCircle2 } from 'lucide-react';
 import { WORLDS, MINI_GAMES_MATRIX } from '../data/gameMatrix';
@@ -39,6 +39,17 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
     const firstPlayable = gamesInWorld.find(g => isDemoMode ? isGameAllowedInDemo(g.id) : g.playable);
     return firstPlayable?.id || gamesInWorld[0]?.id || 'game_dino_addition';
   });
+
+  useEffect(() => {
+    const worldGames = MINI_GAMES_MATRIX.filter(g => g.worldId === worldId);
+    const currentIsValid = worldGames.some(
+      g => g.id === selectedGameId && (!isDemoMode || isGameAllowedInDemo(g.id))
+    );
+    if (!currentIsValid) {
+      const firstPlayable = worldGames.find(g => isDemoMode ? isGameAllowedInDemo(g.id) : g.playable);
+      setSelectedGameId(firstPlayable?.id || worldGames[0]?.id || 'game_dino_addition');
+    }
+  }, [worldId, isDemoMode, selectedGameId]);
 
   const selectedGame = gamesInWorld.find(g => g.id === selectedGameId) || gamesInWorld[0];
   const progressList = storageService.getProgressList(activeProfileId);

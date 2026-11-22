@@ -16,7 +16,6 @@ import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 interface AnimalSoundMemoryProps {
   ageGroup: AgeGroup;
@@ -113,7 +112,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   };
 
   const handleCardClick = (index: number) => {
-    if (isProcessing || flippedIndices.includes(index)) return;
+    if (gameState !== 'PLAYING' || isProcessing || flippedIndices.includes(index)) return;
     const clickedCard = cards[index];
     if (matchedAnimalIds.includes(clickedCard.animalId)) return;
 
@@ -132,7 +131,8 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
       if (firstCard.animalId === secondCard.animalId) {
         // Matched pair!
         soundEngine.playSnap();
-        setScore(prev => prev + 100);
+        const nextScore = score + 100;
+        setScore(nextScore);
         const updatedMatches = [...matchedAnimalIds, firstCard.animalId];
         setMatchedAnimalIds(updatedMatches);
         setFlippedIndices([]);
@@ -149,17 +149,13 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
             setGameState('LEVEL_COMPLETE');
             soundEngine.playVictory();
 
-            try {
-              confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
-            } catch {}
-
             const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
             storageService.recordGameResult(
               activeProfileId,
               'game_animal_sound_memory',
               'world_science',
               calculatedStars,
-              score + 150,
+              nextScore + 150,
               timeSec,
               true
             );

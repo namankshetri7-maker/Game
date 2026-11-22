@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, Sparkles, ShieldAlert, Award, Lightbulb } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
@@ -159,8 +159,37 @@ export const BunnyMazeRunnerGame: React.FC<BunnyMazeRunnerGameProps> = ({
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [showHintPath, setShowHintPath] = useState(false);
 
+  const hasCompletedRef = useRef(false);
+  const alertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showTimedAlert = useCallback((msg: string, ms: number) => {
+    setAlertMsg(msg);
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+    alertTimerRef.current = setTimeout(() => {
+      alertTimerRef.current = null;
+      setAlertMsg(null);
+    }, ms);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    };
+  }, []);
+
   // Reset maze on level change
   useEffect(() => {
+    if (alertTimerRef.current) {
+      clearTimeout(alertTimerRef.current);
+      alertTimerRef.current = null;
+    }
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+    }
+    hasCompletedRef.current = false;
     setPlayerPos(config.startPos);
     setCollectedItems([]);
     setBonusPoints(0);
@@ -220,6 +249,7 @@ export const BunnyMazeRunnerGame: React.FC<BunnyMazeRunnerGameProps> = ({
   }, [playerPos, config]);
 
   const handleMove = useCallback((dx: number, dy: number) => {
+    if (hasCompletedRef.current) return;
     const nextX = playerPos.x + dx;
     const nextY = playerPos.y + dy;
 
@@ -232,8 +262,7 @@ export const BunnyMazeRunnerGame: React.FC<BunnyMazeRunnerGameProps> = ({
     // Rock Wall collision
     if (isWall(nextX, nextY)) {
       soundEngine.playError();
-      setAlertMsg('🪨 Rock Wall ahead! Find a path around it!');
-      setTimeout(() => setAlertMsg(null), 1500);
+      showTimedAlert('🪨 Rock Wall ahead! Find a path around it!', 1500);
       return;
     }
 
@@ -242,13 +271,12 @@ export const BunnyMazeRunnerGame: React.FC<BunnyMazeRunnerGameProps> = ({
     if (hazard) {
       soundEngine.playError();
       if (hazard.type === 'fox') {
-        setAlertMsg('🦊 Watch out! A sneaky Fox is resting there! Go around!');
+        showTimedAlert('🦊 Watch out! A sneaky Fox is resting there! Go around!', 1800);
         onIncorrect('Stay away from the Fox! Pick an open path.');
       } else {
-        setAlertMsg('🌊 Mud Puddle! Bunny hopped back to dry grass!');
+        showTimedAlert('🌊 Mud Puddle! Bunny hopped back to dry grass!', 1800);
         onIncorrect('Avoid deep mud puddles!');
       }
-      setTimeout(() => setAlertMsg(null), 1800);
       return;
     }
 
@@ -258,22 +286,24 @@ export const BunnyMazeRunnerGame: React.FC<BunnyMazeRunnerGameProps> = ({
     setStepCount(prev => prev + 1);
 
     // Check collectible
+    let nextBonusPoints = bonusPoints;
     const itemKey = `${nextX}_${nextY}`;
     const item = getCollectible(nextX, nextY);
     if (item && !collectedItems.includes(itemKey)) {
       soundEngine.playStar();
+      nextBonusPoints += item.points;
       setCollectedItems(prev => [...prev, itemKey]);
-      setBonusPoints(prev => prev + item.points);
-      setAlertMsg(`Yum! ${item.icon} +${item.points} Bonus Points!`);
-      setTimeout(() => setAlertMsg(null), 1200);
+      setBonusPoints(nextBonusPoints);
+      showTimedAlert(`Yum! ${item.icon} +${item.points} Bonus Points!`, 1200);
     }
 
     // Check reaching Golden Carrot target!
     if (nextX === config.targetPos.x && nextY === config.targetPos.y) {
+      hasCompletedRef.current = true;
       soundEngine.playCelebration();
-      onCorrect(150 + bonusPoints);
+      onCorrect(150 + nextBonusPoints);
     }
-  }, [playerPos, config, isWall, getHazard, getCollectible, collectedItems, bonusPoints, onCorrect, onIncorrect]);
+  }, [playerPos, config, isWall, getHazard, getCollectible, collectedItems, bonusPoints, onCorrect, onIncorrect, showTimedAlert]);
 
   // Keyboard controls listener (Arrow keys & WASD)
   useEffect(() => {
@@ -306,17 +336,21 @@ export const BunnyMazeRunnerGame: React.FC<BunnyMazeRunnerGameProps> = ({
   const handleToggleHint = () => {
     soundEngine.playPop();
     setShowHintPath(true);
-    setTimeout(() => setShowHintPath(false), 5000);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = setTimeout(() => {
+      hintTimerRef.current = null;
+      setShowHintPath(false);
+    }, 5000);
   };
 
   const handleResetLevel = () => {
     soundEngine.playPop();
+    hasCompletedRef.current = false;
     setPlayerPos(config.startPos);
     setCollectedItems([]);
     setBonusPoints(0);
     setStepCount(0);
-    setAlertMsg('Level reset! Hop to it!');
-    setTimeout(() => setAlertMsg(null), 1200);
+    showTimedAlert('Level reset! Hop to it!', 1200);
   };
 
   return (

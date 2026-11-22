@@ -6,12 +6,13 @@
  * 1. Global crash shield (unhandled errors, async rejections, ResizeObserver loops)
  * 2. Self-healing storage engine (detects and repairs corrupt JSON or invalid child profiles)
  * 3. AudioContext unlocker and mute fallback
- * 4. Canvas & Confetti safety fallback
+ * 4. Canvas rendering safety fallback
  * 5. Full in-browser diagnostic runner (10 health checks)
  */
 
 import { MINI_GAMES_MATRIX, WORLDS } from '../data/gameMatrix';
 import { ALLOWED_DEMO_GAMES } from '../data/demoConfig';
+import { soundEngine } from './soundEngine';
 
 export interface HealthCheckResult {
   name: string;
@@ -192,17 +193,14 @@ class OfflineBugFixer {
   }
 
   /**
-   * Resumes Web Audio context on the first touch/click event to avoid browser autoplay policy blocks
+   * Resumes shared soundEngine AudioContext on the first touch/click event to avoid autoplay policy blocks
    */
   private installAudioInteractionListener(): void {
     const unlockAudio = () => {
       try {
-        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (AudioCtx) {
-          const testCtx = new AudioCtx();
-          if (testCtx.state === 'suspended') {
-            testCtx.resume().catch(() => {});
-          }
+        soundEngine.unlockAndWarmup();
+        if (!soundEngine.isPrecached()) {
+          void soundEngine.precacheAll();
         }
       } catch {
         // Fallback gracefully
@@ -290,12 +288,17 @@ class OfflineBugFixer {
       message: `10 Demo games verified (2 per world)`
     });
 
-    // Check 7: Audio Synthesis Engine
+    // Check 7: Audio Synthesis & Pre-Cache Engine
     const hasAudio = typeof window !== 'undefined' && ('AudioContext' in window || 'webkitAudioContext' in window);
+    const audioStatus = soundEngine.getPrecacheStatus();
     checks.push({
       name: 'Procedural Audio Engine',
       passed: hasAudio,
-      message: hasAudio ? 'Web Audio synthesizer ready' : 'Web Audio not supported'
+      message: hasAudio
+        ? audioStatus.usingCachedBuffers
+          ? `Web Audio ready (${audioStatus.cachedCount}/${audioStatus.totalCount} assets pre-cached)`
+          : 'Web Audio synthesizer ready'
+        : 'Web Audio not supported'
     });
 
     // Check 8: Canvas 2D Capabilities

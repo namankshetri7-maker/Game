@@ -13,9 +13,12 @@ import {
   ChevronRight,
   Lock,
   Globe,
-  KeyRound
+  KeyRound,
+  ShoppingBag
 } from 'lucide-react';
 import { WORLDS } from '../../data/gameMatrix';
+import { StoreProduct, getStoreProducts } from '../../data/storeCatalog';
+import { StoreSection } from './StoreSection';
 import { soundEngine } from '../../services/soundEngine';
 import { getRoutePath } from '../../services/seoManager';
 
@@ -23,9 +26,28 @@ interface HomePageProps {
   onNavigate: (route: string, worldId?: string) => void;
   onEnterGame: () => void;
   onOpenLicenseModal?: () => void;
+  storeProducts?: StoreProduct[];
+  allStoreProducts?: StoreProduct[];
+  bagIds?: string[];
+  onToggleBagItem?: (productId: string) => void;
+  onOpenBag?: () => void;
+  onViewProduct?: (slug: string) => void;
+  onOpenStoreManager?: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLicenseModal }) => {
+export const HomePage: React.FC<HomePageProps> = ({
+  onNavigate,
+  onOpenLicenseModal,
+  storeProducts,
+  allStoreProducts,
+  bagIds = [],
+  onToggleBagItem = () => {},
+  onOpenBag = () => {},
+  onViewProduct,
+  onOpenStoreManager = () => {},
+}) => {
+  const resolvedProducts = storeProducts || getStoreProducts(false);
+  const resolvedAllProducts = allStoreProducts || getStoreProducts(true);
   const handleAnchorNav = (e: React.MouseEvent, route: string, worldId?: string) => {
     if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
       e.preventDefault();
@@ -62,19 +84,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLicenseMod
           Play 45 safe, ad-free offline kids learning games across 5 magical worlds. Boost math, reading &amp; STEM skills with Wonder World Kids for ages 3–8!
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center mb-12">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-2xl justify-center mb-12 flex-wrap">
           <a
             href={getRoutePath('worlds')}
             onClick={(e) => handleAnchorNav(e, 'worlds')}
-            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-white"
+            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-white whitespace-nowrap"
           >
             <Compass className="w-5 h-5 text-amber-900" />
             <span>Explore Worlds 🗺️</span>
           </a>
           <a
+            href={getRoutePath('store')}
+            onClick={(e) => handleAnchorNav(e, 'store')}
+            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white hover:bg-indigo-50 text-indigo-950 font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-indigo-200 whitespace-nowrap"
+          >
+            <ShoppingBag className="w-5 h-5 text-indigo-600" />
+            <span>Visit Store</span>
+          </a>
+          <a
             href={getRoutePath('demo')}
             onClick={(e) => handleAnchorNav(e, 'demo')}
-            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-white animate-bounce"
+            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-black text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-3 border-white animate-bounce whitespace-nowrap"
             style={{ animationDuration: '3s' }}
           >
             <Play className="w-5 h-5 fill-current" />
@@ -119,6 +149,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenLicenseMod
           })}
         </div>
       </section>
+
+      {/* 2B. Wonder World Kids Store – Learn, Play & Create */}
+      <StoreSection
+        products={resolvedProducts}
+        allProductsWithInactive={resolvedAllProducts}
+        bagIds={bagIds}
+        onToggleBagItem={onToggleBagItem}
+        onOpenBag={onOpenBag}
+        onViewProduct={(slug) =>
+          onViewProduct ? onViewProduct(slug) : onNavigate('store_product', slug)
+        }
+        onNavigate={onNavigate}
+        onOpenManager={onOpenStoreManager}
+        compactHeader={true}
+      />
 
       {/* 3. About & Passion Section */}
       <section id="about" className="relative z-10 py-16 px-4 bg-slate-900/10">

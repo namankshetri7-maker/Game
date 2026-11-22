@@ -16,7 +16,6 @@ import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 interface ColorShadowMatchProps {
   ageGroup: AgeGroup;
@@ -103,6 +102,10 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
   }, []);
 
   useEffect(() => {
+    if (winTimerRef.current) {
+      clearTimeout(winTimerRef.current);
+      winTimerRef.current = null;
+    }
     setPlacedItemIds([]);
     setSelectedItemId(null);
   }, [currentLevel]);
@@ -110,7 +113,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
   const unplacedItems = targetItems.filter(item => !placedItemIds.includes(item.id));
 
   const handleShadowSlotClick = (item: ShadowItem) => {
-    if (placedItemIds.includes(item.id)) return;
+    if (gameState !== 'PLAYING' || placedItemIds.includes(item.id) || placedItemIds.length >= targetItems.length) return;
     if (!selectedItemId) return;
 
     if (selectedItemId === item.id) {
@@ -118,10 +121,12 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
       const updated = [...placedItemIds, item.id];
       setPlacedItemIds(updated);
       setSelectedItemId(null);
-      setScore(prev => prev + 100);
+      const nextScore = score + 100;
+      setScore(nextScore);
 
       if (updated.length === targetItems.length) {
         winTimerRef.current = setTimeout(() => {
+          winTimerRef.current = null;
           let calculatedStars = 3;
           if (mistakes === 1) calculatedStars = 2;
           else if (mistakes > 1) calculatedStars = 1;
@@ -130,17 +135,13 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           setGameState('LEVEL_COMPLETE');
           soundEngine.playVictory();
 
-          try {
-            confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-          } catch {}
-
           const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
           storageService.recordGameResult(
             activeProfileId,
             'game_color_shadow_match',
             'world_logic',
             calculatedStars,
-            score + 150,
+            nextScore + 150,
             timeSec,
             true
           );
@@ -329,6 +330,10 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
         gameTitle="Color Shadow Match 🎨"
         worldName="Brain & Logic"
         onRestart={() => {
+          if (winTimerRef.current) {
+            clearTimeout(winTimerRef.current);
+            winTimerRef.current = null;
+          }
           setGameState('PLAYING');
           setPlacedItemIds([]);
           setSelectedItemId(null);
@@ -366,6 +371,10 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           setGameState('PLAYING');
         }}
         onRestart={() => {
+          if (winTimerRef.current) {
+            clearTimeout(winTimerRef.current);
+            winTimerRef.current = null;
+          }
           setIsPaused(false);
           setGameState('PLAYING');
           setPlacedItemIds([]);

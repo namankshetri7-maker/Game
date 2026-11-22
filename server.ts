@@ -8,6 +8,7 @@
  */
 
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -17,6 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const httpServer = http.createServer(app);
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
@@ -154,13 +156,19 @@ if (isProduction && fs.existsSync(distPath)) {
   });
 } else {
   const { createServer: createViteServer } = await import('vite');
+  const hmrDisabled = process.env.DISABLE_HMR === 'true';
   const vite = await createViteServer({
-    server: { middlewareMode: true },
+    server: {
+      middlewareMode: true,
+      allowedHosts: true,
+      hmr: hmrDisabled ? false : { server: httpServer },
+      ws: { server: httpServer },
+    },
     appType: 'spa'
   });
   app.use(vite.middlewares);
 }
 
-app.listen(PORT, '0.0.0.0', () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Wonder World Kids Learning Server running at http://localhost:${PORT}`);
 });

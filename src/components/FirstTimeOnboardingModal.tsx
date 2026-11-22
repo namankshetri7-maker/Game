@@ -30,7 +30,6 @@ import { soundEngine } from '../services/soundEngine';
 import { storageService } from '../services/storageService';
 import { parentSecurityService } from '../services/parentSecurityService';
 import { ChildProfile, AgeGroup } from '../types/game';
-import confetti from 'canvas-confetti';
 
 interface FirstTimeOnboardingModalProps {
   isOpen: boolean;
@@ -119,9 +118,6 @@ export const FirstTimeOnboardingModal: React.FC<FirstTimeOnboardingModalProps> =
     });
 
     if (newProfile) {
-      try {
-        confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
-      } catch {}
       soundEngine.playVictory();
       onComplete(newProfile);
     }
@@ -482,7 +478,7 @@ export const FirstTimeOnboardingModal: React.FC<FirstTimeOnboardingModalProps> =
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <p>
-                      <strong>Offline Freedom:</strong> Install to your home screen or download our portable offline bundle to play anywhere without internet.
+                      <strong>Offline Freedom:</strong> Install directly to your device home screen as a 100% offline app to play anywhere without internet.
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">

@@ -16,7 +16,6 @@ import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 interface DinoAdditionGameProps {
   ageGroup: AgeGroup;
@@ -197,6 +196,10 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   );
 
   useEffect(() => {
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
     isTransitioningRef.current = false;
     setProblems(getProblemsForLevelAndDifficulty(currentLevel, difficulty));
     setProblemIndex(0);
@@ -241,10 +244,6 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setGameState('LEVEL_COMPLETE');
           soundEngine.playVictory();
           isTransitioningRef.current = false;
-
-          try {
-            confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-          } catch {}
 
           const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
           storageService.recordGameResult(
@@ -547,6 +546,10 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
         gameTitle="Dino Addition 🦖"
         worldName="Math Valley"
         onRestart={() => {
+          if (transitionTimerRef.current) {
+            clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+          }
           isTransitioningRef.current = false;
           setGameState('PLAYING');
           setProblemIndex(0);
@@ -586,6 +589,11 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setGameState('PLAYING');
         }}
         onRestart={() => {
+          if (transitionTimerRef.current) {
+            clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+          }
+          isTransitioningRef.current = false;
           setIsPaused(false);
           setGameState('PLAYING');
           setProblemIndex(0);

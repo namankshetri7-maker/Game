@@ -13,7 +13,6 @@ import {
   Check
 } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
-import confetti from 'canvas-confetti';
 
 interface AbcLetterTraceGameProps {
   currentLevel: 1 | 2 | 3 | 4 | 5;
@@ -279,6 +278,10 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
 
   // Reset drawing state when letter changes
   useEffect(() => {
+    if (winTimerRef.current) {
+      clearTimeout(winTimerRef.current);
+      winTimerRef.current = null;
+    }
     tracedCheckpointsRef.current = [];
     setTracedCheckpoints([]);
     setHasCompleted(false);
@@ -469,15 +472,9 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
     if (covered >= Math.ceil(total * 0.7)) {
       setHasCompleted(true);
       soundEngine.playVictory();
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      } catch {}
 
       winTimerRef.current = setTimeout(() => {
+        winTimerRef.current = null;
         onCorrect(120);
         setLetterIndex(prev => prev + 1);
       }, 1200);
@@ -492,10 +489,8 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
     if (covered >= Math.ceil(total * 0.6)) {
       setHasCompleted(true);
       soundEngine.playVictory();
-      try {
-        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-      } catch {}
       winTimerRef.current = setTimeout(() => {
+        winTimerRef.current = null;
         onCorrect(120);
         setLetterIndex(prev => prev + 1);
       }, 1000);

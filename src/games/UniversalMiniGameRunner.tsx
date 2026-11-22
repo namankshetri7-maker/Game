@@ -51,7 +51,6 @@ import { PixelArtColoringGame } from './PixelArtColoringGame';
 import { AbcLetterTraceGame } from './AbcLetterTraceGame';
 import { GreaterDragonScalesGame } from './GreaterDragonScalesGame';
 import { MemoryCardFlipGame } from './MemoryCardFlipGame';
-import confetti from 'canvas-confetti';
 
 interface UniversalMiniGameRunnerProps {
   gameId: string;
@@ -195,16 +194,6 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   };
 
   const triggerWin = (overrideScore?: number) => {
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    } catch {
-      // Confetti fallback
-    }
-
     soundEngine.playCelebration();
     const finalStars = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
     setStars(finalStars);

@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+android-full-app/
+android-full.html
+vite.android.config.ts
+src/AndroidFullApp.tsx
+src/android-full-main.tsx
+scripts/test-android-full.js
+stats.json

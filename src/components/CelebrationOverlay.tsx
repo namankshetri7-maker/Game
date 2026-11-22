@@ -9,7 +9,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star, RotateCcw, ArrowRight, Home, CheckCircle2, Award } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 
@@ -58,20 +57,8 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
     // Play celebratory audio chime
     soundEngine.playLevelUpFanfare();
 
-    // Trigger one crisp, tasteful confetti burst
-    try {
-      confetti({
-        particleCount: 45,
-        spread: 60,
-        origin: { y: 0.55 },
-        colors: ['#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#EC4899']
-      });
-    } catch {
-      // Confetti fallback
-    }
-
     // Sequential star reveal
-    const starTimers: NodeJS.Timeout[] = [];
+    const starTimers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 0; i < stars; i++) {
       starTimers.push(
         setTimeout(() => {
@@ -83,13 +70,14 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
 
     // Score tally roll-up animation
     const scoreStartTime = 350 + stars * 280 + 100;
+    let tallyInterval: ReturnType<typeof setInterval> | null = null;
     const scoreTimer = setTimeout(() => {
       const duration = 600; // ms
       const steps = 15;
       const stepDuration = duration / steps;
       let currentStep = 0;
 
-      const tallyInterval = setInterval(() => {
+      tallyInterval = setInterval(() => {
         currentStep++;
         const progress = currentStep / steps;
         const currentVal = Math.round(score * (1 - Math.pow(1 - progress, 2)));
@@ -97,7 +85,10 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
         soundEngine.playCountTick();
 
         if (currentStep >= steps) {
-          clearInterval(tallyInterval);
+          if (tallyInterval) {
+            clearInterval(tallyInterval);
+            tallyInterval = null;
+          }
           setAnimatedScore(score);
           soundEngine.playCoin();
         }
@@ -107,6 +98,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
     return () => {
       starTimers.forEach(clearTimeout);
       clearTimeout(scoreTimer);
+      if (tallyInterval) clearInterval(tallyInterval);
     };
   }, [isOpen, stars, score]);
 

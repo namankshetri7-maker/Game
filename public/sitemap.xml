@@ -190,4 +190,36 @@
     <priority>0.85</priority>
   </url>
 
+  <!-- 17. Wonder World Kids Storefront & Digital Catalog -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/store</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/store/wonder-world-kids-learning-app</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/store/dinosaur-world-colouring-book</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/store/abc-alphabet-activity-book</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/store/christmas-wonderland-colouring-book</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
 </urlset>

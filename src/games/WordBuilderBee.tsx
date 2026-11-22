@@ -16,7 +16,6 @@ import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 interface WordBuilderBeeProps {
   ageGroup: AgeGroup;
@@ -179,6 +178,11 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   );
 
   useEffect(() => {
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+    isTransitioningRef.current = false;
     setWordList(getWordsForLevelAndDifficulty(currentLevel, difficulty));
     setWordIndex(0);
   }, [currentLevel, difficulty]);
@@ -268,17 +272,13 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
             soundEngine.playVictory();
             isTransitioningRef.current = false;
 
-            try {
-              confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
-            } catch {}
-
             const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
             storageService.recordGameResult(
               activeProfileId,
               'game_word_builder_bee',
               'world_phonics',
               calculatedStars,
-              score + 150,
+              completedScore + 150,
               timeSec,
               true
             );
@@ -529,6 +529,10 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
         gameTitle="Word Builder Bee 🐝"
         worldName="Language Jungle"
         onRestart={() => {
+          if (transitionTimerRef.current) {
+            clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+          }
           isTransitioningRef.current = false;
           setGameState('PLAYING');
           setWordIndex(0);
@@ -568,6 +572,11 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           setGameState('PLAYING');
         }}
         onRestart={() => {
+          if (transitionTimerRef.current) {
+            clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+          }
+          isTransitioningRef.current = false;
           setIsPaused(false);
           setGameState('PLAYING');
           setWordIndex(0);

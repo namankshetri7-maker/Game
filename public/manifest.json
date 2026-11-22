@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "WonderWorld: Super Quest! Kids Learning Adventures",
+  "name": "Wonder World Kids Learning",
   "short_name": "WonderWorld",
-  "description": "WonderWorld: Super Quest! 100% offline educational game suite for kids aged 3–10 across Android, iOS, iPad, Mac, and Windows with 45 mini-games.",
+  "description": "100% offline educational game suite for kids aged 3–10 across Android, iOS, iPad, Mac, and Windows with 45 mini-games.",
   "theme_color": "#4f46e5",
   "background_color": "#0f172a",
   "display": "standalone",
@@ -28,12 +28,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/assets/aistudio/Wonder_World_Kids_Adventure_Badge_ba215e1b.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
     }
   ]
 }

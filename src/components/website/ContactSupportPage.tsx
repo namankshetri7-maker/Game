@@ -12,12 +12,20 @@ interface ContactSupportPageProps {
 
 export const ContactSupportPage: React.FC<ContactSupportPageProps> = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [mailtoUrl, setMailtoUrl] = useState('mailto:wonderworldkidslearning@gmail.com');
   const [form, setForm] = useState({ name: '', email: '', message: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const subject = encodeURIComponent(`Wonder World Kids Support Request from ${form.name.trim() || 'Parent'}`);
+    const body = encodeURIComponent(
+      `Parent Name: ${form.name.trim()}\nReply Email: ${form.email.trim()}\n\nMessage:\n${form.message.trim()}`
+    );
+    const nextMailto = `mailto:wonderworldkidslearning@gmail.com?subject=${subject}&body=${body}`;
+    setMailtoUrl(nextMailto);
     soundEngine.playVictory();
     setSubmitted(true);
+    window.location.href = nextMailto;
   };
 
   return (
@@ -37,14 +45,25 @@ export const ContactSupportPage: React.FC<ContactSupportPageProps> = () => {
         {submitted ? (
           <div className="bg-slate-800 rounded-3xl border-2 border-emerald-400 p-8 text-center shadow-xl">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold font-fun text-white mb-2">Message Sent Successfully!</h2>
-            <p className="text-xs text-slate-300 mb-6">Our parent support team will get back to you within 24 hours.</p>
-            <button
-              onClick={() => { setSubmitted(false); setForm({ name: '', email: '', message: '' }); }}
-              className="px-6 py-2.5 rounded-xl bg-amber-400 text-amber-950 font-fun font-bold text-xs"
-            >
-              Send Another Message
-            </button>
+            <h2 className="text-xl font-bold font-fun text-white mb-2">Email Draft Ready!</h2>
+            <p className="text-xs text-slate-300 mb-6">
+              Your mail app should open with your message pre-filled for{' '}
+              <span className="text-amber-300 font-bold">wonderworldkidslearning@gmail.com</span>. If it did not open automatically, tap below:
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href={mailtoUrl}
+                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-fun font-bold text-xs shadow-md transition"
+              >
+                Open Email Draft
+              </a>
+              <button
+                onClick={() => { setSubmitted(false); setForm({ name: '', email: '', message: '' }); }}
+                className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs cursor-pointer transition"
+              >
+                Send Another Message
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-slate-800 rounded-3xl border border-slate-700 p-8 shadow-xl space-y-4">

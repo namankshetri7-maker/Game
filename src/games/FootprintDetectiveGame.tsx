@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Volume2, Sparkles, AlertCircle, CheckCircle2, ShieldAlert, Compass, Eye } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
@@ -267,8 +267,27 @@ export const FootprintDetectiveGame: React.FC<FootprintDetectiveGameProps> = ({
   const [isInspecting, setIsInspecting] = useState(false);
   const [activeTab, setActiveTab] = useState<'anatomy' | 'habitat' | 'diet'>('anatomy');
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const isTransitioningRef = useRef(false);
+  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    return () => {
+      if (nextTimerRef.current) clearTimeout(nextTimerRef.current);
+      if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (nextTimerRef.current) {
+      clearTimeout(nextTimerRef.current);
+      nextTimerRef.current = null;
+    }
+    if (audioTimerRef.current) {
+      clearTimeout(audioTimerRef.current);
+      audioTimerRef.current = null;
+    }
+    isTransitioningRef.current = false;
     setCaseIndex(0);
     setSelectedOption(null);
     setIsInspecting(false);
@@ -279,15 +298,24 @@ export const FootprintDetectiveGame: React.FC<FootprintDetectiveGameProps> = ({
 
   const handlePlaySoundClue = () => {
     soundEngine.playLetterTone('F');
-    setTimeout(() => soundEngine.playPop(), 120);
+    if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
+    audioTimerRef.current = setTimeout(() => {
+      audioTimerRef.current = null;
+      soundEngine.playPop();
+    }, 120);
   };
 
   const handleSelectOption = (name: string) => {
+    if (isTransitioningRef.current) return;
     setSelectedOption(name);
     if (name === currentCase.animalName) {
+      isTransitioningRef.current = true;
       soundEngine.playCorrect();
       onCorrect(120);
-      setTimeout(() => {
+      if (nextTimerRef.current) clearTimeout(nextTimerRef.current);
+      nextTimerRef.current = setTimeout(() => {
+        nextTimerRef.current = null;
+        isTransitioningRef.current = false;
         setSelectedOption(null);
         setCaseIndex(prev => prev + 1);
       }, 1000);

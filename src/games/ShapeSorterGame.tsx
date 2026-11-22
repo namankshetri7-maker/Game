@@ -22,7 +22,6 @@ import { soundEngine } from '../services/soundEngine';
 import { WinModal } from '../components/WinModal';
 import { PauseModal } from '../components/PauseModal';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 interface ShapeSorterGameProps {
   ageGroup: AgeGroup;
@@ -115,6 +114,10 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
 
   // Cleanly reset level state whenever currentLevel changes (Level 1 -> Level 2 -> Level 3, etc.)
   useEffect(() => {
+    if (winTimerRef.current) {
+      clearTimeout(winTimerRef.current);
+      winTimerRef.current = null;
+    }
     setPlacedShapeIds([]);
     setSelectedShapeId(null);
     setIsDeparting(false);
@@ -153,7 +156,8 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
     const updated = [...placedShapeIds, shape.id];
     setPlacedShapeIds(updated);
     setSelectedShapeId(null);
-    setScore(prev => prev + 100);
+    const nextScore = score + 100;
+    setScore(nextScore);
     setStatusMessage(`Loaded ${shape.name}! ${shape.hint}`);
 
     // Check if all train cars are fully loaded!
@@ -163,6 +167,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
       soundEngine.playCelebration();
 
       winTimerRef.current = setTimeout(() => {
+        winTimerRef.current = null;
         let calculatedStars = 3;
         if (mistakes === 1) calculatedStars = 2;
         else if (mistakes > 1) calculatedStars = 1;
@@ -171,20 +176,21 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
         setGameState('LEVEL_COMPLETE');
         soundEngine.playVictory();
 
-        try {
-          confetti({ particleCount: 85, spread: 70, origin: { y: 0.6 } });
-        } catch {}
-
         const timeSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
         storageService.recordGameResult(
           activeProfileId,
           'game_shape_sorter_express',
           'world_math',
           calculatedStars,
-          score + 150,
+          nextScore + 150,
           timeSec,
           true
         );
+
+        const stickers = storageService.getUnlockedStickers(activeProfileId);
+        if (stickers.length > 0) {
+          setEarnedSticker(stickers[stickers.length - 1]);
+        }
       }, 1600);
     }
   };
@@ -537,6 +543,10 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
         gameTitle="Shape Sorter Express 🚂"
         worldName="Math Valley"
         onRestart={() => {
+          if (winTimerRef.current) {
+            clearTimeout(winTimerRef.current);
+            winTimerRef.current = null;
+          }
           setGameState('PLAYING');
           setPlacedShapeIds([]);
           setSelectedShapeId(null);
@@ -578,6 +588,10 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           setGameState('PLAYING');
         }}
         onRestart={() => {
+          if (winTimerRef.current) {
+            clearTimeout(winTimerRef.current);
+            winTimerRef.current = null;
+          }
           setIsPaused(false);
           setGameState('PLAYING');
           setPlacedShapeIds([]);

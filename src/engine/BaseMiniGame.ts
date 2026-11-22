@@ -13,7 +13,6 @@
 import { AgeGroup, DifficultyLevel, GameProgress, GameState, Sticker } from '../types/game';
 import { soundEngine } from '../services/soundEngine';
 import { storageService } from '../services/storageService';
-import confetti from 'canvas-confetti';
 
 export interface GameConfig {
   gameId: string;
@@ -232,7 +231,7 @@ export abstract class BaseMiniGame<TGameData = unknown> {
   }
 
   /**
-   * Complete the level, award stars, save offline progress, trigger confetti & fanfare
+   * Complete the level, award stars, save offline progress, and trigger victory fanfare
    */
   public completeLevel(activeProfileId: string): void {
     this.state = 'LEVEL_COMPLETE';
@@ -242,17 +241,6 @@ export abstract class BaseMiniGame<TGameData = unknown> {
     // Trigger celebratory Web Audio fanfare and star chime
     soundEngine.playVictory();
     soundEngine.playStar(this.starsEarned - 1);
-
-    // Particle confetti burst
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    } catch {
-      // Safe fallback if canvas is unavailable
-    }
 
     // Save offline progress to LocalStorage / SQLite repository
     const result = storageService.recordGameResult(

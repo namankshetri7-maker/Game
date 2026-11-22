@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Scale, CheckCircle2, RotateCcw, Volume2, HelpCircle } from 'lucide-react';
 import { soundEngine } from '../services/soundEngine';
-import confetti from 'canvas-confetti';
 
 interface GreaterDragonScalesGameProps {
   currentLevel: 1 | 2 | 3 | 4 | 5;
@@ -75,6 +74,13 @@ export const GreaterDragonScalesGame: React.FC<GreaterDragonScalesGameProps> = (
   const [selectedOp, setSelectedOp] = useState<'<' | '=' | '>' | null>(null);
   const [feedbackState, setFeedbackState] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [dragonMouth, setDragonMouth] = useState<'neutral' | 'left' | 'right' | 'equal'>('neutral');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setQuestionIndex(0);
@@ -82,6 +88,10 @@ export const GreaterDragonScalesGame: React.FC<GreaterDragonScalesGameProps> = (
 
   // Reset when level or question changes
   useEffect(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     setSelectedOp(null);
     setFeedbackState('idle');
     setDragonMouth('neutral');
@@ -98,6 +108,7 @@ export const GreaterDragonScalesGame: React.FC<GreaterDragonScalesGameProps> = (
   }
 
   const handleSelectOp = (op: '<' | '=' | '>') => {
+    if (feedbackState !== 'idle') return;
     soundEngine.playPop();
     setSelectedOp(op);
 
@@ -108,11 +119,10 @@ export const GreaterDragonScalesGame: React.FC<GreaterDragonScalesGameProps> = (
     if (op === q.correctOp) {
       setFeedbackState('correct');
       soundEngine.playVictory();
-      try {
-        confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
-      } catch {}
 
-      setTimeout(() => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
         onCorrect(120);
         setQuestionIndex(prev => prev + 1);
       }, 1400);
@@ -120,7 +130,9 @@ export const GreaterDragonScalesGame: React.FC<GreaterDragonScalesGameProps> = (
       setFeedbackState('wrong');
       soundEngine.playError();
       onIncorrect(q.hint);
-      setTimeout(() => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
         setSelectedOp(null);
         setFeedbackState('idle');
         setDragonMouth('neutral');
