@@ -754,19 +754,29 @@ test('Suite 19: Storefront products, marketplaces, verified pricing, bag drawer 
   assert.ok(storeMeta.includes('Christmas Wonderland Colouring Book'), 'Must include Christmas Wonderland Colouring Book');
   assert.ok(storeMeta.includes('https://www.etsy.com/listing/4623136130/christmas-wonderland-printable-colouring'), 'Must include Christmas Etsy URL');
 
+  assert.ok(storeMeta.includes('My First Maths Adventure Printable Book'), 'Must include My First Maths Adventure Printable Book');
+  assert.ok(storeMeta.includes('https://www.etsy.com/listing/4623674119/my-first-maths-adventure-printable'), 'Must include Maths Etsy URL');
+  assert.ok(fs.existsSync(path.resolve('public/assets/maths_adventure_cover.jpg')), 'Maths book cover asset must exist in public/assets');
+
   assert.ok(storeMeta.includes('Buy on Etsy'), 'Etsy products must use Buy on Etsy CTA');
 
-  // 3. Verify generated product cover images exist and are bundled in storeCatalog.ts
-  for (const coverRel of [
-    'src/assets/images/store_dinosaur_colouring_1795363036486.jpg',
-    'src/assets/images/store_abc_alphabet_book_1795363036462.jpg',
-    'src/assets/images/store_christmas_colouring_1795363037005.jpg',
-    'src/assets/images/store_learning_app_featured_1795363037165.jpg',
+  // 3. Verify original product covers, gameplay screenshots, and logo exist in public/assets/aistudio and are wired into catalog & brand logo
+  const brandLogo = fs.readFileSync(path.resolve('src/components/BrandLogo.tsx'), 'utf8');
+  const combinedAssetRefs = `${storeMeta}\n${storeCatalog}\n${brandLogo}`;
+  for (const assetRel of [
+    'public/assets/aistudio/pwa-512x512_ba215e1b.png',
+    'public/assets/aistudio/Dinosaur_World_Front_Cover__1__d7e7601e.png',
+    'public/assets/aistudio/Wonder_World_ABC_Adventure__2__de9ce0c1.png',
+    'public/assets/aistudio/christmas-wonderland-my-christmas-colouring-book_front_Cover_f4007897.png',
+    'public/assets/aistudio/Screenshot_20261111-220142_2_ee4c78de.jpg',
+    'public/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
+    'public/assets/aistudio/Screenshot_20261111-220204_2_627c41af.jpg',
+    'public/assets/aistudio/Screenshot_20261111-220250_2_d2ea05cd.jpg',
   ]) {
-    const full = path.resolve(coverRel);
-    assert.ok(fs.existsSync(full), `Missing generated cover asset ${coverRel}`);
-    assert.ok(fs.statSync(full).size > 5000, `Generated cover asset ${coverRel} appears empty`);
-    assert.ok(storeCatalog.includes(path.basename(coverRel)), `storeCatalog.ts must import ${path.basename(coverRel)}`);
+    const full = path.resolve(assetRel);
+    assert.ok(fs.existsSync(full), `Missing original uploaded asset ${assetRel}`);
+    assert.ok(fs.statSync(full).size > 5000, `Original uploaded asset ${assetRel} appears empty`);
+    assert.ok(combinedAssetRefs.includes(path.basename(assetRel)), `Catalog/brand components must reference ${path.basename(assetRel)}`);
   }
 
   // 4. Verify multi-marketplace Shopping Bag drawer & non-simulated checkout
@@ -792,8 +802,295 @@ test('Suite 19: Storefront products, marketplaces, verified pricing, bag drawer 
   assert.ok(footer.includes("route: 'store'"), 'Footer must link to Wonder World Store');
   assert.ok(homePage.includes('<StoreSection'), 'HomePage must embed StoreSection');
   assert.ok(storePage.includes('<StoreSection') && pdpPage.includes("getRoutePath('store')"), 'StorePage and ProductDetailPage must link properly');
-  assert.ok(sitemap.includes('/store') && sitemap.includes('dinosaur-world-colouring-book'), 'sitemap.xml must list /store and product pages');
+  assert.ok(sitemap.includes('/store') && sitemap.includes('dinosaur-world-colouring-book') && sitemap.includes('my-first-maths-adventure-printable'), 'sitemap.xml must list /store and product pages');
 });
+
+// =========================================================================
+// SUITE 20: GUMROAD ACTIVATION + CLOUDFLARE FALLBACK & MAIN GAME BUG-FIXES
+// =========================================================================
+test('Suite 20a: Gumroad licenseService runtime verification (Master keys, Express JSON, & Cloudflare SPA fallback)', async () => {
+  const esbuild = await import('esbuild');
+  const source = fs.readFileSync(path.resolve('src/services/licenseService.ts'), 'utf8');
+  const transformed = esbuild.transformSync(source, { loader: 'ts', format: 'esm' });
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(transformed.code).toString('base64')}`;
+
+  // Setup isolated global localStorage mock
+  const store = new Map();
+  const prevLocalStorage = globalThis.localStorage;
+  const prevFetch = globalThis.fetch;
+
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+    clear: () => store.clear(),
+  };
+
+  try {
+    const { licenseService } = await import(moduleUrl);
+
+    // 1. Offline Master Lifetime Key check (case-insensitive)
+    store.clear();
+    const masterRes = await licenseService.verifyGumroadLicense('wwk-test-pass');
+    assert.equal(masterRes.success, true, 'Master key must unlock offline');
+    assert.equal(licenseService.isUnlocked(), true, 'isUnlocked() must be true after master key activation');
+    assert.equal(store.get('wwk_view_preference'), 'app_only');
+
+    store.clear();
+    const etsyCustomRes = await licenseService.verifyGumroadLicense('WWK-ETSY-XCZJDBDJSJHSH-ACCESS');
+    assert.equal(etsyCustomRes.success, true, 'Custom Etsy access key must unlock offline');
+    assert.equal(licenseService.isUnlocked(), true, 'isUnlocked() must be true after custom Etsy key activation');
+
+    // 2. Express backend JSON success (must NOT call api.gumroad.com from browser)
+    store.clear();
+    let calls = [];
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ url, opts });
+      return {
+        status: 200,
+        headers: { get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json; charset=utf-8' : null) },
+        json: async () => ({
+          success: true,
+          purchase: {
+            email: 'parent@example.com',
+            buyer_name: 'Parent Tester',
+            created_at: '2026-10-01T12:00:00Z',
+          },
+        }),
+      };
+    };
+    const expressRes = await licenseService.verifyGumroadLicense('GUMROAD-VALID-123');
+    assert.equal(expressRes.success, true, 'Express proxy JSON must activate license');
+    assert.equal(calls.length, 1, 'Should not hit direct Gumroad URL when Express proxy returns valid JSON');
+    assert.equal(calls[0].url, '/api/verify-license');
+
+    // 3. Express backend structured failure JSON (must NOT fall back to double-calling Gumroad)
+    store.clear();
+    calls = [];
+    globalThis.fetch = async (url) => {
+      calls.push(url);
+      return {
+        status: 404,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ success: false, message: 'License key does not exist.' }),
+      };
+    };
+    const invalidRes = await licenseService.verifyGumroadLicense('INVALID-KEY');
+    assert.equal(invalidRes.success, false, 'Invalid Gumroad key must fail verification');
+    assert.equal(calls.length, 1, 'Structured JSON 404 from /api/verify-license should not retry Gumroad');
+
+    // 4. Refunded / disputed purchase rejection
+    store.clear();
+    globalThis.fetch = async () => ({
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({
+        success: true,
+        purchase: { email: 'refund@example.com', refunded: true },
+      }),
+    });
+    const refundedRes = await licenseService.verifyGumroadLicense('REFUNDED-KEY');
+    assert.equal(refundedRes.success, false, 'Refunded license must be rejected');
+    assert.equal(licenseService.isUnlocked(), false, 'Refunded key must not unlock storage');
+
+    // 5. Cloudflare Pages SPA fallback (200 text/html on /api/verify-license -> direct Gumroad product_id + wvpisb fallback)
+    store.clear();
+    calls = [];
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ url, opts });
+      if (url === '/api/verify-license') {
+        return {
+          status: 200,
+          headers: { get: (h) => (h.toLowerCase() === 'content-type' ? 'text/html; charset=utf-8' : null) },
+          json: async () => {
+            throw new SyntaxError('Unexpected token < in JSON');
+          },
+        };
+      }
+      const bodyStr = String(opts.body || '');
+      if (bodyStr.includes('product_id=')) {
+        return {
+          status: 404,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ success: false, message: 'Trying permalink fallback' }),
+        };
+      }
+      return {
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
+          success: true,
+          purchase: {
+            email: 'cloudflare@example.com',
+            buyer_name: 'Cloudflare Parent',
+            created_at: '2026-11-01T10:00:00Z',
+          },
+        }),
+      };
+    };
+    const cfRes = await licenseService.verifyGumroadLicense('CF-DIRECT-999');
+    assert.equal(cfRes.success, true, 'Cloudflare Pages HTML fallback must transparently verify via api.gumroad.com');
+    assert.equal(calls.length, 3, 'Must try /api/verify-license, then direct product_id, then wvpisb permalink fallback');
+    assert.equal(calls[1].url, 'https://api.gumroad.com/v2/licenses/verify');
+    assert.ok(String(calls[1].opts.body).includes('product_id=3AhcEFEj3-aHkZ0hQA0drA%3D%3D'), 'Must verify against Gumroad product_id first');
+    assert.ok(String(calls[2].opts.body).includes('product_permalink=wvpisb'), 'Must fall back to wvpisb permalink');
+    assert.ok(String(calls[2].opts.body).includes('increment_uses_count=false'), 'Must set increment_uses_count=false');
+    assert.equal(licenseService.isUnlocked(), true, 'Cloudflare direct Gumroad verification must persist unlock');
+  } finally {
+    globalThis.localStorage = prevLocalStorage;
+    globalThis.fetch = prevFetch;
+  }
+});
+
+test('Suite 20b: Gumroad URLs/endpoints, ?page=activate flow, and Main Game bug-fix invariants', () => {
+  const serverTs = fs.readFileSync(path.resolve('server.ts'), 'utf8');
+  const licenseModal = fs.readFileSync(path.resolve('src/components/LicenseVerificationModal.tsx'), 'utf8');
+  const pricingPage = fs.readFileSync(path.resolve('src/components/website/PricingPage.tsx'), 'utf8');
+  const purchasedPage = fs.readFileSync(path.resolve('src/components/website/MyPurchasedGamesPage.tsx'), 'utf8');
+  const appTsx = fs.readFileSync(path.resolve('src/App.tsx'), 'utf8');
+  const wordBee = fs.readFileSync(path.resolve('src/games/WordBuilderBee.tsx'), 'utf8');
+  const dinoGame = fs.readFileSync(path.resolve('src/games/DinoAdditionGame.tsx'), 'utf8');
+  const continentGame = fs.readFileSync(path.resolve('src/games/ContinentJigsaw.tsx'), 'utf8');
+  const soundMemory = fs.readFileSync(path.resolve('src/games/AnimalSoundMemory.tsx'), 'utf8');
+  const colorMatch = fs.readFileSync(path.resolve('src/games/ColorShadowMatch.tsx'), 'utf8');
+  const shapeSorter = fs.readFileSync(path.resolve('src/games/ShapeSorterGame.tsx'), 'utf8');
+  const abcTrace = fs.readFileSync(path.resolve('src/games/AbcLetterTraceGame.tsx'), 'utf8');
+  const runner = fs.readFileSync(path.resolve('src/games/UniversalMiniGameRunner.tsx'), 'utf8');
+
+  // Preserve Gumroad server route & purchase links + product_id 3AhcEFEj3-aHkZ0hQA0drA==
+  assert.ok(serverTs.includes("app.post('/api/verify-license'") && serverTs.includes('wvpisb') && serverTs.includes('3AhcEFEj3-aHkZ0hQA0drA=='), 'server.ts must expose /api/verify-license for both Gumroad product_id and wvpisb');
+  assert.ok(licenseModal.includes('licenseService.verifyGumroadLicense'), 'LicenseVerificationModal must verify via licenseService');
+  assert.ok(licenseModal.includes('Launch All 45 Games Now'), 'LicenseVerificationModal must offer 1-click launch when already unlocked');
+  assert.ok(pricingPage.includes('https://namank3.gumroad.com/l/wvpisb'), 'PricingPage must keep Gumroad checkout link');
+  assert.ok(purchasedPage.includes('licenseService.verifyGumroadLicense'), 'MyPurchasedGamesPage must verify via licenseService');
+
+  // App.tsx SSR safety, ?page=activate routing & shared demo/mute wiring
+  assert.ok(appTsx.includes("if (typeof window === 'undefined')"), 'App.tsx parseInitialLocation must guard SSR');
+  assert.ok(appTsx.includes("pageParam === 'activate'"), 'App.tsx must handle ?page=activate in initial location & effect');
+  assert.ok(!appTsx.includes("localStorage.getItem('wwk_purchased')"), 'App.tsx must use licenseService.isUnlocked() safely');
+  const demoLimitPassCount = (appTsx.match(/onShowDemoLimit=\{\(\) => setIsDemoLimitOpen\(true\)\}/g) || []).length;
+  assert.ok(demoLimitPassCount >= 7, `Expected onShowDemoLimit wired to all 7 game mounts, found ${demoLimitPassCount}`);
+  const mutePassCount = (appTsx.match(/isMuted=\{isMuted\}/g) || []).length;
+  assert.ok(mutePassCount >= 7, `Expected isMuted synced to all 7 game mounts, found ${mutePassCount}`);
+
+  // WordBuilderBee restart fix
+  assert.ok(wordBee.includes('restartSeed') && wordBee.includes('currentLevel, restartSeed]'), 'WordBuilderBee must reinitialize tiles via restartSeed');
+
+  // DinoAdditionGame timer race fix & all dedicated games wired for demo limit + mute
+  assert.ok((dinoGame.match(/clearTimeout\(transitionTimerRef\.current\)/g) || []).length >= 2, 'DinoAdditionGame must clear pending timers before transition');
+  for (const [name, content] of [
+    ['WordBuilderBee', wordBee],
+    ['DinoAdditionGame', dinoGame],
+    ['ContinentJigsaw', continentGame],
+    ['AnimalSoundMemory', soundMemory],
+    ['ColorShadowMatch', colorMatch],
+    ['ShapeSorterGame', shapeSorter],
+    ['UniversalMiniGameRunner', runner],
+  ]) {
+    assert.ok(content.includes('onShowDemoLimit'), `${name} must accept/wire onShowDemoLimit`);
+    assert.ok(content.includes('onToggleMute'), `${name} must accept/wire onToggleMute`);
+  }
+
+  // UniversalMiniGameRunner label parsing fix (zero truncated second-word splits)
+  assert.ok(runner.includes('function splitLabelAndIcon'), 'UniversalMiniGameRunner must define splitLabelAndIcon');
+  assert.ok(!runner.includes(".split(' ')[1]"), 'UniversalMiniGameRunner must not truncate multi-word labels with .split(" ")[1]');
+
+  // SSR speechSynthesis guards
+  for (const [name, content] of [
+    ['ContinentJigsaw', continentGame],
+    ['ShapeSorterGame', shapeSorter],
+    ['AbcLetterTraceGame', abcTrace],
+    ['UniversalMiniGameRunner', runner],
+  ]) {
+    assert.ok(!content.includes("if ('speechSynthesis' in window)") || content.includes("typeof window !== 'undefined'"), `${name} must guard speechSynthesis against SSR`);
+  }
+});
+
+// =========================================================================
+// SUITE 21: SEPARATE MARKETPLACE PAGES, INTL SEO/GEO TAGS & AI SITEMAPS
+// =========================================================================
+test('Suite 21: Standalone pages unified UI, Geo/Intl SEO tags, sitemap.xml & AI crawling sitemaps', () => {
+  const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf8');
+  const robotsTxt = fs.readFileSync(path.resolve('public/robots.txt'), 'utf8');
+  const sitemapXml = fs.readFileSync(path.resolve('public/sitemap.xml'), 'utf8');
+  const llmsTxt = fs.readFileSync(path.resolve('public/llms.txt'), 'utf8');
+  const llmsFullTxt = fs.readFileSync(path.resolve('public/llms-full.txt'), 'utf8');
+  const cfHeaders = fs.readFileSync(path.resolve('public/_headers'), 'utf8');
+  const serverTs = fs.readFileSync(path.resolve('server.ts'), 'utf8');
+  const seoManager = fs.readFileSync(path.resolve('src/services/seoManager.ts'), 'utf8');
+  const appTsx = fs.readFileSync(path.resolve('src/App.tsx'), 'utf8');
+
+  // 1. Standalone AboutPage mounted cleanly on /about + unified bright marketplace UI across all separate pages
+  assert.ok(fs.existsSync(path.resolve('src/components/website/AboutPage.tsx')), 'AboutPage.tsx must exist as standalone page');
+  assert.ok(appTsx.includes('<AboutPage'), 'App.tsx must render standalone AboutPage on /about');
+
+  const websitePages = [
+    'AboutPage.tsx',
+    'PricingPage.tsx',
+    'DownloadInstructionsPage.tsx',
+    'ParentInfoPage.tsx',
+    'FAQPage.tsx',
+    'ContactSupportPage.tsx',
+    'PrivacyPolicyPage.tsx',
+    'MyPurchasedGamesPage.tsx',
+    'PurchaseSuccessPage.tsx',
+    'StorePage.tsx',
+    'ExploreWorldsPage.tsx',
+    'FreeDemoPage.tsx',
+  ];
+  for (const pageFile of websitePages) {
+    const content = fs.readFileSync(path.resolve(`src/components/website/${pageFile}`), 'utf8');
+    assert.ok(!content.includes('bg-slate-900'), `${pageFile} must use the unified bright storybook marketplace palette instead of bg-slate-900`);
+  }
+
+  // 2. Geo tags, international targeting & AI sitemap discovery in index.html + seoManager.ts
+  for (const tag of [
+    'name="geo.region"',
+    'name="geo.placename"',
+    'name="ICBM"',
+    'property="og:locale"',
+    'property="og:locale:alternate"',
+    'href="/llms.txt"',
+    'href="/llms-full.txt"',
+    'rel="sitemap"',
+  ]) {
+    assert.ok(indexHtml.includes(tag), `index.html must include ${tag}`);
+  }
+  assert.ok(seoManager.includes('INTERNATIONAL_HREFLANGS'), 'seoManager must sync per-route hreflang tags');
+  assert.ok(seoManager.includes("setMetaTag('name', 'keywords'"), 'seoManager must dynamically sync per-route keywords');
+  assert.ok(seoManager.includes("setMetaTag('name', 'geo.region'"), 'seoManager must preserve geo.region metadata');
+
+  // 3. AI crawling sitemaps, robots.txt & Cloudflare/Express headers
+  for (const bot of ['Googlebot', 'Bingbot', 'GPTBot', 'OAI-SearchBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended']) {
+    assert.ok(robotsTxt.includes(`User-agent: ${bot}`), `robots.txt must welcome ${bot}`);
+  }
+  assert.ok(llmsTxt.includes('https://wonderworldkidslearning.space/llms-full.txt'), 'llms.txt must link llms-full.txt');
+  assert.ok(llmsTxt.includes('My First Maths Adventure Printable Book'), 'llms.txt must include all printable books');
+  assert.ok(llmsFullTxt.includes('Memory Card Flip') && llmsFullTxt.includes('Dino Addition'), 'llms-full.txt must document all 45 games');
+  assert.ok(cfHeaders.includes('/llms.txt') && cfHeaders.includes('/llms-full.txt'), 'public/_headers must configure headers for AI sitemaps');
+  assert.ok(serverTs.includes("app.get('/llms.txt'") && serverTs.includes("app.get('/llms-full.txt'"), 'server.ts must serve /llms.txt and /llms-full.txt');
+
+  // 4. Complete sitemap.xml coverage for all standalone routes
+  for (const route of [
+    '/store',
+    '/store/wonder-world-kids-learning-app',
+    '/store/my-first-maths-adventure-printable',
+    '/worlds',
+    '/demo',
+    '/pricing',
+    '/downloads',
+    '/parents',
+    '/about',
+    '/faq',
+    '/privacy',
+    '/contact',
+    '/activate',
+    '/my-games',
+  ]) {
+    assert.ok(sitemapXml.includes(`https://wonderworldkidslearning.space${route}`), `sitemap.xml must include ${route}`);
+  }
+});
+
 
 
 

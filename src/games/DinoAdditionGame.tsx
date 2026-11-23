@@ -24,6 +24,9 @@ interface DinoAdditionGameProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -43,6 +46,9 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   isDemoMode = false
 }) => {
   // Game & Level state
@@ -57,10 +63,22 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
   const [dinoEmotion, setDinoEmotion] = useState<'happy' | 'cheering' | 'thinking' | 'oops'>('thinking');
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   // Interactive Drag & Drop state
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -218,6 +236,10 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
       : currentProblem.answer);
 
     if (isCorrect) {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
       isTransitioningRef.current = true;
       soundEngine.playSnap();
       setDinoEmotion('cheering');
@@ -263,6 +285,10 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
         }, 700);
       }
     } else {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
       soundEngine.playOops();
       setDinoEmotion('oops');
       setMistakes(prev => prev + 1);
@@ -416,7 +442,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
             </svg>
 
             {/* Speech bubble */}
-            <div className="absolute -top-4 -right-16 bg-white px-3 py-1.5 rounded-2xl shadow-lg border-2 border-emerald-300 text-xs font-extrabold text-emerald-950 font-fun">
+            <div className="absolute -top-3 -right-10 sm:-top-4 sm:-right-16 max-w-[145px] sm:max-w-none bg-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl shadow-lg border-2 border-emerald-300 text-[11px] sm:text-xs font-extrabold text-emerald-950 font-fun whitespace-nowrap">
               {dinoEmotion === 'cheering' ? 'Yummy! Nom nom! 😋' : dinoEmotion === 'oops' ? 'Try again, friend!' : 'Feed me the sum! 🥚'}
             </div>
           </motion.div>
@@ -514,7 +540,7 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
       </div>
 
       {/* Bottom Hint & Info Bar */}
-      <div className="flex items-center justify-between text-white/90 text-xs font-bold z-10 px-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-white/90 text-xs font-bold z-10 px-2 pr-16 sm:pr-2">
         <button
           onClick={() => {
             soundEngine.playPop();
@@ -556,10 +582,13 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setScore(0);
           setMistakes(0);
           setSelectedAnswer(null);
+          setDinoEmotion('thinking');
+          setStartTime(Date.now());
         }}
         onNextLevel={() => {
           if (isDemoMode && currentLevel >= 2) {
-            onNextGame();
+            if (onShowDemoLimit) onShowDemoLimit();
+            else onNextGame();
             return;
           }
           if (currentLevel < 5) {
@@ -568,7 +597,9 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
             setGameState('PLAYING');
             setProblemIndex(0);
             setSelectedAnswer(null);
+            setDinoEmotion('thinking');
             setMistakes(0);
+            setStartTime(Date.now());
           } else {
             onNextGame();
           }
@@ -580,10 +611,8 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPaused}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => {
-          soundEngine.setMuted(!soundEngine.getMuted());
-        }}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => {
           setIsPaused(false);
           setGameState('PLAYING');
@@ -600,6 +629,8 @@ export const DinoAdditionGame: React.FC<DinoAdditionGameProps> = ({
           setScore(0);
           setMistakes(0);
           setSelectedAnswer(null);
+          setDinoEmotion('thinking');
+          setStartTime(Date.now());
         }}
         onHome={onHome}
         onBackToWorld={onBackToWorld ? () => {

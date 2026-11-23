@@ -84,6 +84,26 @@ app.get('/robots.txt', (req, res) => {
   }
 });
 
+app.get('/llms.txt', (req, res) => {
+  const llmsPath = path.join(__dirname, 'public', 'llms.txt');
+  if (fs.existsSync(llmsPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.sendFile(llmsPath);
+  } else {
+    res.status(404).send('llms.txt not found');
+  }
+});
+
+app.get('/llms-full.txt', (req, res) => {
+  const llmsFullPath = path.join(__dirname, 'public', 'llms-full.txt');
+  if (fs.existsSync(llmsFullPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.sendFile(llmsFullPath);
+  } else {
+    res.status(404).send('llms-full.txt not found');
+  }
+});
+
 // 2. Track PWA Installation Event
 app.post('/api/track-pwa-install', (req, res) => {
   const stats = loadStats();
@@ -109,26 +129,54 @@ app.post('/api/record-purchase', (req, res) => {
 });
 
 // 4. Gumroad License Verification Proxy
+const GUMROAD_PRODUCT_ID = '3AhcEFEj3-aHkZ0hQA0drA==';
+const GUMROAD_PERMALINK = 'wvpisb';
+
+async function verifyKeyWithGumroad(
+  licenseKey: string,
+  target: { productId?: string; productPermalink?: string }
+) {
+  const formData = new URLSearchParams();
+  if (target.productId) {
+    formData.append('product_id', target.productId);
+  } else if (target.productPermalink) {
+    formData.append('product_permalink', target.productPermalink);
+  }
+  formData.append('license_key', licenseKey);
+  formData.append('increment_uses_count', 'false');
+
+  const gumroadRes = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData.toString()
+  });
+
+  const data = await gumroadRes.json();
+  return { status: gumroadRes.status, data };
+}
+
 app.post('/api/verify-license', async (req, res) => {
-  const { license_key, product_permalink = 'wvpisb' } = req.body;
-  if (!license_key) {
+  const {
+    license_key,
+    product_id = GUMROAD_PRODUCT_ID,
+    product_permalink = GUMROAD_PERMALINK
+  } = req.body || {};
+
+  if (!license_key || typeof license_key !== 'string' || !license_key.trim()) {
     return res.status(400).json({ success: false, message: 'License key is required.' });
   }
 
+  const trimmedKey = license_key.trim();
+
   try {
-    const formData = new URLSearchParams();
-    formData.append('product_permalink', product_permalink);
-    formData.append('license_key', license_key);
-    formData.append('increment_uses_count', 'false');
-
-    const gumroadRes = await fetch('https://api.gumroad.com/v2/licenses/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData.toString()
-    });
-
-    const data = await gumroadRes.json();
-    res.status(gumroadRes.status).json(data);
+    let result = await verifyKeyWithGumroad(trimmedKey, { productId: product_id });
+    if (!result.data?.success && product_permalink) {
+      const fallback = await verifyKeyWithGumroad(trimmedKey, { productPermalink: product_permalink });
+      if (fallback.data?.success) {
+        result = fallback;
+      }
+    }
+    res.status(result.status).json(result.data);
   } catch (err: any) {
     console.error('Error verifying Gumroad license on server:', err);
     res.status(500).json({ success: false, message: 'Failed to contact Gumroad license server.' });
@@ -162,7 +210,6 @@ if (isProduction && fs.existsSync(distPath)) {
       middlewareMode: true,
       allowedHosts: true,
       hmr: hmrDisabled ? false : { server: httpServer },
-      ws: { server: httpServer },
     },
     appType: 'spa'
   });

@@ -13,3 +13,6 @@ src/AndroidFullApp.tsx
 src/android-full-main.tsx
 scripts/test-android-full.js
 stats.json
+dev-dist/
+etsy_orders.json
+

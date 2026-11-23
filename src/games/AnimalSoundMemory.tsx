@@ -24,6 +24,9 @@ interface AnimalSoundMemoryProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -51,6 +54,9 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
@@ -58,10 +64,22 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
   const [deckSeed, setDeckSeed] = useState(0);
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   // Progressive pair count based on level
   const pairCount = Math.min(6, Math.max(2, currentLevel + (ageGroup === '8-10' ? 1 : 0)));
@@ -298,7 +316,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
       </div>
 
       {/* Bottom Status */}
-      <div className="flex items-center justify-between text-white text-xs font-bold z-10 px-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-white text-xs font-bold z-10 px-2 pr-16 sm:pr-2">
         <span className="bg-black/20 px-3 py-1 rounded-full">
           Mistakes: {mistakes}
         </span>
@@ -318,16 +336,23 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
         gameTitle="Animal Sound Memory 🐾"
         worldName="Animals & Science"
         onRestart={() => {
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+          }
+          setIsProcessing(false);
           setGameState('PLAYING');
           setMatchedAnimalIds([]);
           setFlippedIndices([]);
           setScore(0);
           setMistakes(0);
+          setStartTime(Date.now());
           setDeckSeed(prev => prev + 1);
         }}
         onNextLevel={() => {
           if (isDemoMode && currentLevel >= 2) {
-            onNextGame();
+            if (onShowDemoLimit) onShowDemoLimit();
+            else onNextGame();
             return;
           }
           if (currentLevel < 5) {
@@ -336,6 +361,7 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
             setMatchedAnimalIds([]);
             setFlippedIndices([]);
             setMistakes(0);
+            setStartTime(Date.now());
           } else {
             onNextGame();
           }
@@ -347,21 +373,25 @@ export const AnimalSoundMemory: React.FC<AnimalSoundMemoryProps> = ({
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPaused}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => {
-          soundEngine.setMuted(!soundEngine.getMuted());
-        }}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => {
           setIsPaused(false);
           setGameState('PLAYING');
         }}
         onRestart={() => {
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+          }
+          setIsProcessing(false);
           setIsPaused(false);
           setGameState('PLAYING');
           setMatchedAnimalIds([]);
           setFlippedIndices([]);
           setScore(0);
           setMistakes(0);
+          setStartTime(Date.now());
           setDeckSeed(prev => prev + 1);
         }}
         onHome={onHome}

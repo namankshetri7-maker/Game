@@ -24,6 +24,9 @@ interface ContinentJigsawProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -140,6 +143,9 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
@@ -152,9 +158,21 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   // Currently placed continents
   const [placedContinents, setPlacedContinents] = useState<string[]>([]);
@@ -220,7 +238,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
     setLatestFact(`🌟 ${continent.name} ${continent.icon}: ${continent.funFact}`);
 
     // Try speech pronunciation of continent and fact
-    if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
       try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(`${continent.name}! ${continent.funFact}`);
@@ -265,7 +283,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
       // Re-read fun fact
       setLatestFact(`🌟 ${continent.name} ${continent.icon}: ${continent.funFact}`);
       soundEngine.playPop();
-      if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(`${continent.name}! ${continent.funFact}`);
@@ -508,7 +526,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
             <button
               onClick={() => {
                 soundEngine.playPop();
-                if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+                if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
                   try {
                     window.speechSynthesis.cancel();
                     const cleanText = latestFact.replace(/[🌟🦅🦜🏰🦁🐼🦘🐧🐋⛵🐬🐻‍❄️🧊🔺🗼🕌🗽❄️🦎🧱:]/g, '');
@@ -596,10 +614,12 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           setScore(0);
           setMistakes(0);
           setLatestFact(null);
+          setStartTime(Date.now());
         }}
         onNextLevel={() => {
           if (isDemoMode && currentLevel >= 2) {
-            onNextGame();
+            if (onShowDemoLimit) onShowDemoLimit();
+            else onNextGame();
             return;
           }
           if (currentLevel < 5) {
@@ -609,6 +629,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
             setSelectedPieceId(null);
             setLatestFact(null);
             setMistakes(0);
+            setStartTime(Date.now());
           } else {
             onNextGame();
           }
@@ -620,10 +641,8 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPaused}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => {
-          soundEngine.setMuted(!soundEngine.getMuted());
-        }}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => {
           setIsPaused(false);
           setGameState('PLAYING');
@@ -640,6 +659,7 @@ export const ContinentJigsaw: React.FC<ContinentJigsawProps> = ({
           setScore(0);
           setMistakes(0);
           setLatestFact(null);
+          setStartTime(Date.now());
         }}
         onHome={onHome}
         onBackToWorld={onBackToWorld ? () => {

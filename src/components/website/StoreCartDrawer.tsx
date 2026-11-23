@@ -108,13 +108,13 @@ export const StoreCartDrawer: React.FC<StoreCartDrawerProps> = ({
                       onClose();
                       onViewProduct(item.slug);
                     }}
-                    className="w-20 h-24 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 cursor-pointer"
+                    className="w-20 h-24 rounded-xl overflow-hidden bg-gradient-to-b from-sky-50 via-white to-amber-50/40 border border-sky-200 p-1 shrink-0 cursor-pointer flex items-center justify-center"
                   >
                     <img
                       src={item.coverImage}
                       alt={item.coverAlt}
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain rounded-lg"
                     />
                   </button>
 

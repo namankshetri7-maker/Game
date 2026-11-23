@@ -12,7 +12,9 @@ interface BeforeInstallPromptEvent extends Event {
 export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [isOnline, setIsOnline] = useState<boolean>(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState<boolean>(false);
 

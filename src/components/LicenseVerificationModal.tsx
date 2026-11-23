@@ -3,9 +3,9 @@
  * Authenticates lifetime family activation keys to unlock all 45 offline games.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { KeyRound, CheckCircle2, AlertCircle, Loader2, X, ExternalLink, Sparkles, ShieldCheck } from 'lucide-react';
+import { KeyRound, CheckCircle2, AlertCircle, Loader2, X, Sparkles, ShieldCheck, Play } from 'lucide-react';
 import { licenseService, LicenseVerificationResult } from '../services/licenseService';
 import { soundEngine } from '../services/soundEngine';
 
@@ -13,22 +13,50 @@ interface LicenseVerificationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialKey?: string;
+  initialError?: string | null;
 }
 
 export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  initialKey = '',
+  initialError = null
 }) => {
-  const [licenseKeyInput, setLicenseKeyInput] = useState('');
+  const [licenseKeyInput, setLicenseKeyInput] = useState(initialKey);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<LicenseVerificationResult | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stored = licenseService.getStoredLicense();
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialKey) {
+        setLicenseKeyInput(initialKey);
+      }
+      setResult(initialError ? { success: false, message: initialError } : null);
+    } else if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+    };
+  }, [isOpen, initialKey, initialError]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!licenseKeyInput.trim() || isLoading) return;
+
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
 
     soundEngine.playPop();
     setIsLoading(true);
@@ -39,9 +67,9 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
       setResult(res);
       if (res.success) {
         soundEngine.playVictory();
-        setTimeout(() => {
+        redirectTimerRef.current = setTimeout(() => {
           onSuccess();
-        }, 1200);
+        }, 900);
       } else {
         soundEngine.playPop();
       }
@@ -94,19 +122,30 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
           </div>
 
           {stored.isUnlocked && !result ? (
-            <div className="mb-6 p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200">
-              <div className="flex items-center gap-2 mb-1">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <div className="mb-6 p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                 <span className="font-fun font-bold text-sm text-emerald-300">License Already Active</span>
               </div>
-              <p className="text-xs text-slate-300 mb-2">
+              <p className="text-xs text-slate-300">
                 This device is already fully unlocked! All 45 games and 5 worlds are active offline.
               </p>
               {stored.licenseKey && (
-                <div className="text-[11px] font-mono text-emerald-300 bg-emerald-900/40 px-2 py-1 rounded-lg">
+                <div className="text-[11px] font-mono text-emerald-300 bg-emerald-900/40 px-2.5 py-1.5 rounded-lg break-all">
                   Key: {stored.licenseKey}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playVictory();
+                  onSuccess();
+                }}
+                className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-fun font-black text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition active:scale-95"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Launch All 45 Games Now</span>
+              </button>
             </div>
           ) : (
             <p className="text-xs text-slate-300 mb-5 leading-relaxed">
@@ -128,7 +167,7 @@ export const LicenseVerificationModal: React.FC<LicenseVerificationModalProps> =
                 value={licenseKeyInput}
                 onChange={(e) => setLicenseKeyInput(e.target.value)}
                 disabled={isLoading}
-                className="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none transition uppercase tracking-wider"
+                className="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none transition tracking-wider"
               />
             </div>
 

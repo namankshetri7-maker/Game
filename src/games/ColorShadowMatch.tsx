@@ -24,6 +24,9 @@ interface ColorShadowMatchProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -78,6 +81,9 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<1 | 2 | 3 | 4 | 5>(initialLevel);
@@ -85,9 +91,21 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   const targetItems = LEVEL_SHADOW_ITEMS[currentLevel] || LEVEL_SHADOW_ITEMS[1];
 
@@ -310,7 +328,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
       </div>
 
       {/* Bottom Bar */}
-      <div className="flex items-center justify-between text-white text-xs font-bold z-10 px-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-white text-xs font-bold z-10 px-2 pr-16 sm:pr-2">
         <span className="bg-black/20 px-3 py-1 rounded-full">
           Mistakes: {mistakes}
         </span>
@@ -339,10 +357,12 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           setSelectedItemId(null);
           setScore(0);
           setMistakes(0);
+          setStartTime(Date.now());
         }}
         onNextLevel={() => {
           if (isDemoMode && currentLevel >= 2) {
-            onNextGame();
+            if (onShowDemoLimit) onShowDemoLimit();
+            else onNextGame();
             return;
           }
           if (currentLevel < 5) {
@@ -351,6 +371,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
             setPlacedItemIds([]);
             setSelectedItemId(null);
             setMistakes(0);
+            setStartTime(Date.now());
           } else {
             onNextGame();
           }
@@ -362,10 +383,8 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPaused}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => {
-          soundEngine.setMuted(!soundEngine.getMuted());
-        }}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => {
           setIsPaused(false);
           setGameState('PLAYING');
@@ -381,6 +400,7 @@ export const ColorShadowMatch: React.FC<ColorShadowMatchProps> = ({
           setSelectedItemId(null);
           setScore(0);
           setMistakes(0);
+          setStartTime(Date.now());
         }}
         onHome={onHome}
         onBackToWorld={onBackToWorld ? () => {

@@ -48,7 +48,7 @@ const ProductCoverImage: React.FC<{
   if (hasError || !src) {
     return (
       <div
-        className={`w-full ${aspectClass} bg-slate-100 flex flex-col items-center justify-center p-6 text-center text-slate-500`}
+        className={`w-full ${aspectClass} bg-sky-50 flex flex-col items-center justify-center p-6 text-center text-slate-500`}
       >
         <BookOpen className="w-10 h-10 text-amber-500 mb-2" />
         <span className="text-xs font-bold font-fun text-slate-700 line-clamp-2">
@@ -59,13 +59,13 @@ const ProductCoverImage: React.FC<{
   }
 
   return (
-    <div className={`w-full ${aspectClass} overflow-hidden bg-slate-100`}>
+    <div className={`w-full ${aspectClass} overflow-hidden bg-gradient-to-b from-sky-50 via-white to-amber-50/50 p-2.5 flex items-center justify-center`}>
       <img
         src={src}
         alt={alt}
         referrerPolicy="no-referrer"
         onError={() => setHasError(true)}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        className="w-full h-full object-contain rounded-2xl transition-transform duration-300 group-hover:scale-[1.03]"
       />
     </div>
   );
@@ -113,32 +113,32 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
     <section
       id="store"
       aria-labelledby="store-section-heading"
-      className="relative z-10 bg-slate-50 text-slate-900 py-14 sm:py-20 px-4 sm:px-8 border-y border-slate-200 font-body"
+      className="relative z-10 bg-[#FFFDF7] text-[#0F294A] py-14 sm:py-20 px-4 sm:px-8 border-y border-sky-200 font-body"
     >
       <div className="max-w-7xl mx-auto">
         {/* Top Store Header & Bag / Catalog Actions */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-slate-200">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-amber-200/80">
           <div className="max-w-2xl">
-            <p className="text-xs font-bold tracking-wider uppercase text-indigo-700 font-fun mb-2">
-              Official Collection · Games &amp; Printable Books
+            <p className="text-xs font-bold tracking-wider uppercase text-sky-700 font-fun mb-2">
+              Official Store · Learning Games &amp; Printable Books
             </p>
             {compactHeader ? (
               <h2
                 id="store-section-heading"
-                className="text-3xl sm:text-4xl font-black font-fun text-slate-900 tracking-tight text-balance"
+                className="text-3xl sm:text-4xl font-black font-fun text-[#0F294A] tracking-tight text-balance"
               >
                 Wonder World Kids Store – Learn, Play &amp; Create
               </h2>
             ) : (
               <h1
                 id="store-section-heading"
-                className="text-3xl sm:text-5xl font-black font-fun text-slate-900 tracking-tight text-balance"
+                className="text-3xl sm:text-5xl font-black font-fun text-[#0F294A] tracking-tight text-balance"
               >
                 Wonder World Kids Store – Learn, Play &amp; Create
               </h1>
             )}
             <p className="text-sm sm:text-base text-slate-600 mt-3 leading-relaxed">
-              Explore our offline children's learning app and printable colouring and activity books. Each item links directly to its official Gumroad or Etsy listing for safe, instant digital access.
+              Explore our offline children&apos;s learning app and printable colouring and activity books. Each item links directly to its official Gumroad or Etsy listing for safe, instant digital access.
             </p>
           </div>
 
@@ -149,9 +149,9 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
                 soundEngine.playPop();
                 onOpenManager();
               }}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-fun font-bold text-xs flex items-center gap-2 transition cursor-pointer whitespace-nowrap shrink-0"
+              className="px-4 py-2.5 rounded-2xl border border-sky-200 bg-white hover:bg-sky-50 text-[#0F294A] font-fun font-bold text-xs flex items-center gap-2 transition cursor-pointer whitespace-nowrap shrink-0"
             >
-              <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+              <SlidersHorizontal className="w-4 h-4 text-sky-600" />
               <span>Manage Products</span>
             </button>
 
@@ -161,7 +161,7 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
                 soundEngine.playPop();
                 onOpenBag();
               }}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-fun font-bold text-xs shadow-sm flex items-center gap-2 transition cursor-pointer whitespace-nowrap shrink-0"
+              className="px-4 py-2.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-fun font-bold text-xs shadow-xs flex items-center gap-2 transition cursor-pointer whitespace-nowrap shrink-0"
             >
               <ShoppingBag className="w-4 h-4" />
               <span>Saved Bag</span>
@@ -187,10 +187,10 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
                 soundEngine.playPop();
                 setSelectedCategory('All');
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-fun font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`px-4 py-2 rounded-2xl text-xs font-fun font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 selectedCategory === 'All'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-sky-200 hover:border-sky-300 hover:bg-sky-50'
               }`}
             >
               All Products
@@ -207,10 +207,10 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
                     soundEngine.playPop();
                     setSelectedCategory(category);
                   }}
-                  className={`px-4 py-2 rounded-xl text-xs font-fun font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                  className={`px-4 py-2 rounded-2xl text-xs font-fun font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                     isSelected
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-sky-200 hover:border-sky-300 hover:bg-sky-50'
                   }`}
                 >
                   {category}
@@ -222,7 +222,7 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
           <a
             href={getRoutePath('store')}
             onClick={(e) => handleLinkClick(e, 'store')}
-            className="inline-flex items-center gap-1.5 text-xs font-bold font-fun text-indigo-700 hover:text-indigo-900 whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 text-xs font-bold font-fun text-sky-700 hover:text-sky-900 whitespace-nowrap shrink-0"
           >
             <span>Open Full Storefront</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -231,19 +231,37 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
 
         {/* Featured Product Spotlight: Wonder World Kids Learning App */}
         {showFeaturedBanner && featuredApp && (
-          <article className="mb-10 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 items-stretch group">
-            <div className="lg:col-span-6 bg-slate-100 overflow-hidden">
+          <article className="mb-10 bg-white rounded-3xl border-2 border-amber-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 items-stretch group">
+            <div className="lg:col-span-6 bg-gradient-to-br from-sky-100 via-[#F8FCFF] to-emerald-50 p-5 sm:p-6 flex items-center justify-center">
               <a
                 href={getRoutePath('store_product', featuredApp.slug)}
                 onClick={(e) => handleLinkClick(e, 'store_product', featuredApp.slug)}
-                className="block w-full h-full"
+                className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3 items-center"
               >
-                <img
-                  src={featuredApp.coverImage}
-                  alt={featuredApp.coverAlt}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full min-h-[260px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
+                {featuredApp.galleryImages && featuredApp.galleryImages.length > 0 ? (
+                  featuredApp.galleryImages.map((shot) => (
+                    <div
+                      key={shot.src}
+                      className="aspect-[9/16] rounded-2xl overflow-hidden bg-white border-2 border-white shadow-md transition-transform duration-200 group-hover:scale-[1.02]"
+                    >
+                      <img
+                        src={shot.src}
+                        alt={shot.alt}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover object-top"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-4 aspect-[4/3] rounded-2xl overflow-hidden bg-white border border-sky-200">
+                    <img
+                      src={featuredApp.coverImage}
+                      alt={featuredApp.coverAlt}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
               </a>
             </div>
 
@@ -415,7 +433,7 @@ export const StoreSection: React.FC<StoreSectionProps> = ({
               .map((product) => {
                 const isSaved = bagIds.includes(product.id);
                 const cardAspect =
-                  product.category === 'Learning Games' ? 'aspect-[4/3]' : 'aspect-[3/4]';
+                  product.category === 'Learning Games' ? 'aspect-[4/3]' : 'aspect-[4/5]';
 
                 return (
                   <article

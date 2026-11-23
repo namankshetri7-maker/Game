@@ -1,17 +1,14 @@
 /**
- * Wonder World Kids Store - Data-Driven Catalog, Image Asset Binding & Shopping Bag Storage
+ * Wonder World Kids Store - Data-Driven Catalog, Original Image Asset Binding & Bag Storage
  */
-
-import dinoCoverImg from '../assets/images/store_dinosaur_colouring_1795363036486.jpg';
-import abcCoverImg from '../assets/images/store_abc_alphabet_book_1795363036462.jpg';
-import christmasCoverImg from '../assets/images/store_christmas_colouring_1795363037005.jpg';
-import learningAppCoverImg from '../assets/images/store_learning_app_featured_1795363037165.jpg';
 
 import {
   StoreProductRecord,
   StoreCategory,
   StoreMarketplace,
   ProductStatus,
+  OFFICIAL_LOGO_IMAGE,
+  ORIGINAL_GAME_SCREENSHOTS,
   STORE_CATEGORIES,
   STORE_MARKETPLACES,
   STORE_CATALOG_STORAGE_KEY,
@@ -26,6 +23,8 @@ import {
 
 export type { StoreProductRecord as StoreProduct, StoreCategory, StoreMarketplace, ProductStatus };
 export {
+  OFFICIAL_LOGO_IMAGE,
+  ORIGINAL_GAME_SCREENSHOTS,
   STORE_CATEGORIES,
   STORE_MARKETPLACES,
   isSafeExternalHttpUrl,
@@ -34,37 +33,39 @@ export {
   getDefaultMarketplaceButtonLabel,
 };
 
-const BUNDLED_COVERS_BY_ID: Record<string, string> = {
-  prod_learning_app: learningAppCoverImg,
-  prod_dinosaur_colouring: dinoCoverImg,
-  prod_abc_alphabet_book: abcCoverImg,
-  prod_christmas_colouring: christmasCoverImg,
-};
-
 export const STORE_COVER_PRESETS: Array<{ label: string; image: string }> = [
-  { label: 'Learning App Showcase', image: learningAppCoverImg },
-  { label: 'Dinosaur Colouring Artwork', image: dinoCoverImg },
-  { label: 'ABC Alphabet Artwork', image: abcCoverImg },
-  { label: 'Christmas Wonderland Artwork', image: christmasCoverImg },
+  {
+    label: 'Dino Addition (Learning App)',
+    image: '/assets/aistudio/Screenshot_20261111-220142_2_ee4c78de.jpg',
+  },
+  {
+    label: 'Dinosaur World Colouring Cover',
+    image: '/assets/aistudio/Dinosaur_World_Front_Cover__1__d7e7601e.png',
+  },
+  {
+    label: 'ABC Alphabet Adventure Cover',
+    image: '/assets/aistudio/Wonder_World_ABC_Adventure__2__de9ce0c1.png',
+  },
+  {
+    label: 'Christmas Wonderland Cover',
+    image: '/assets/aistudio/christmas-wonderland-my-christmas-colouring-book_front_Cover_f4007897.png',
+  },
+  {
+    label: 'My First Maths Adventure Cover',
+    image: '/assets/maths_adventure_cover.jpg',
+  },
+  {
+    label: 'Word Builder Bee Screenshot',
+    image: '/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
+  },
+  {
+    label: 'Food Chain Sorting Screenshot',
+    image: '/assets/aistudio/Screenshot_20261111-220250_2_d2ea05cd.jpg',
+  },
 ];
 
-function hydrateProductImages(products: StoreProductRecord[]): StoreProductRecord[] {
-  return products.map((product) => {
-    const bundled = BUNDLED_COVERS_BY_ID[product.id];
-    const shouldUseBundled =
-      bundled &&
-      (!product.coverImage ||
-        product.coverImage === '/pwa-512x512.png' ||
-        product.coverImage.startsWith('/src/assets/images/'));
-    return {
-      ...product,
-      coverImage: shouldUseBundled ? bundled : product.coverImage || bundled || '/pwa-512x512.png',
-    };
-  });
-}
-
 export function getStoreProducts(includeInactive: boolean = false): StoreProductRecord[] {
-  const all = hydrateProductImages(readStoredProductRecords());
+  const all = readStoredProductRecords();
   return includeInactive ? all : all.filter((p) => p.status === 'active');
 }
 
@@ -76,16 +77,7 @@ export function getStoreProductBySlug(slug: string): StoreProductRecord | undefi
 export function saveStoreCatalog(products: StoreProductRecord[]): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
   try {
-    // Store portable cover references for built-in defaults so image paths never break across rebuilds
-    const serializable = products.map((item) => {
-      const def = INITIAL_STORE_PRODUCT_RECORDS.find((d) => d.id === item.id);
-      const isUsingBundled = def && BUNDLED_COVERS_BY_ID[def.id] === item.coverImage;
-      return {
-        ...item,
-        coverImage: isUsingBundled ? '/pwa-512x512.png' : item.coverImage,
-      };
-    });
-    localStorage.setItem(STORE_CATALOG_STORAGE_KEY, JSON.stringify(serializable));
+    localStorage.setItem(STORE_CATALOG_STORAGE_KEY, JSON.stringify(products));
   } catch {
     // Ignore storage quota errors cleanly
   }

@@ -1,12 +1,12 @@
 /**
  * Wonder World Kids Learning Website Header / Navigation Bar
- * Clean, responsive, translucent glass design for parents and kids.
+ * Cross-device aligned (Mac, iPhone with notch safe-area, Android narrow viewports).
+ * Clean 3-zone top bar: Circular Home emblem | Centered Nav Links | Uniform Action Cluster.
  */
 import React, { useState } from 'react';
 import { BrandLogo } from '../BrandLogo';
 import { soundEngine } from '../../services/soundEngine';
-import { Play, Menu, X, Sparkles, Youtube, Instagram, Facebook, KeyRound, ShoppingBag } from 'lucide-react';
-import { SOCIAL_LINKS } from '../../data/socialLinks';
+import { Play, Menu, X, KeyRound, ShoppingBag, ChevronRight } from 'lucide-react';
 import { getRoutePath } from '../../services/seoManager';
 
 interface NavbarProps {
@@ -17,16 +17,20 @@ interface NavbarProps {
   onOpenBag?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, bagCount = 0, onOpenBag }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  currentRoute,
+  onNavigate,
+  bagCount = 0,
+  onOpenBag,
+}) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
     { label: 'Home', route: 'home' },
+    { label: '5 Worlds', route: 'worlds' },
     { label: 'Store', route: 'store' },
-    { label: 'Explore Worlds', route: 'worlds' },
-    { label: 'Demo Simulator', route: 'demo' },
-    { label: 'Install PWA', route: 'downloads' },
-    { label: 'Parents & Safety', route: 'parents' }
+    { label: 'Download', route: 'downloads' },
+    { label: 'Parents', route: 'parents' },
   ];
 
   const handleLinkClick = (e: React.MouseEvent, route: string) => {
@@ -39,34 +43,38 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, bagCou
   };
 
   return (
-    <header className="sticky top-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 z-[100] px-3 sm:px-6 py-2.5 sm:py-3 font-body shadow-xl transition-all relative">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 relative">
-        
-        {/* Brand Logo */}
+    <header className="sticky top-0 z-[100] bg-white/95 backdrop-blur-xl border-b-2 border-sky-200 font-body shadow-xs pt-[env(safe-area-inset-top)]">
+      <div className="max-w-7xl mx-auto h-16 pl-[max(0.875rem,env(safe-area-inset-left))] pr-[max(0.875rem,env(safe-area-inset-right))] sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
+        {/* Zone 1: Circular Explorer Home Emblem (text removed cleanly from header) */}
         <a
           href={getRoutePath('home')}
           onClick={(e) => handleLinkClick(e, 'home')}
-          className="flex items-center cursor-pointer group text-left shrink min-w-0 active:scale-95 transition"
-          title="Wonder World Kids Learning Home"
+          className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] shrink-0 active:scale-95 transition cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+          aria-label="Home"
+          title="Back to Home"
         >
-          <BrandLogo size="header" showText={true} />
+          <BrandLogo size="header" showText={false} themeSurface="light" />
         </a>
 
-        {/* Desktop Navigation Links */}
-        <nav aria-label="Primary Navigation" className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-slate-300 font-fun">
+        {/* Zone 2: Centered Navigation Links (visible on Mac, iPad landscape & Desktop) */}
+        <nav
+          aria-label="Primary Navigation"
+          className="hidden md:flex items-center justify-center gap-5 lg:gap-7 text-sm font-bold font-fun flex-1"
+        >
           {navItems.map((item) => {
             const isActive =
               currentRoute === item.route ||
-              (item.route === 'store' && currentRoute === 'store_product');
+              (item.route === 'store' && currentRoute === 'store_product') ||
+              (item.route === 'worlds' && currentRoute === 'world_detail');
             return (
               <a
                 key={item.route}
                 href={getRoutePath(item.route)}
                 onClick={(e) => handleLinkClick(e, item.route)}
-                className={`px-3.5 py-2.5 rounded-2xl transition cursor-pointer active:scale-95 whitespace-nowrap shrink-0 ${
+                className={`py-1.5 transition cursor-pointer whitespace-nowrap shrink-0 border-b-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600 ${
                   isActive
-                    ? 'bg-amber-400/15 text-amber-300 border border-amber-400/40'
-                    : 'hover:text-white hover:bg-slate-800/60 text-slate-300'
+                    ? 'text-sky-700 border-amber-400'
+                    : 'text-[#0F294A] border-transparent hover:text-sky-700 hover:border-sky-300'
                 }`}
               >
                 {item.label}
@@ -75,36 +83,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, bagCou
           })}
         </nav>
 
-        {/* Action Buttons & Hamburger Menu Container */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 relative z-10">
-          
-          {/* Desktop Social Quick Links */}
-          <div className="hidden xl:flex items-center gap-1.5 pr-2 border-r border-slate-800">
-            {SOCIAL_LINKS.map((s) => {
-              const Icon = s.id === 'youtube' ? Youtube : s.id === 'instagram' ? Instagram : Facebook;
-              const hoverStyle = 
-                s.id === 'youtube' 
-                  ? 'hover:text-red-500 hover:bg-red-500/10' 
-                  : s.id === 'instagram' 
-                  ? 'hover:text-pink-400 hover:bg-pink-500/10' 
-                  : 'hover:text-blue-400 hover:bg-blue-500/10';
-              return (
-                <a
-                  key={s.id}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => soundEngine.playPop()}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 border border-slate-800 transition active:scale-95 ${hoverStyle}`}
-                  title={`${s.label}: ${s.handle}`}
-                  aria-label={s.label}
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              );
-            })}
-          </div>
-
+        {/* Zone 3: Cross-Device Action Cluster */}
+        <div className="flex items-center justify-end gap-2 sm:gap-2.5 shrink-0">
           {onOpenBag && (
             <button
               type="button"
@@ -112,102 +92,89 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, bagCou
                 soundEngine.playPop();
                 onOpenBag();
               }}
-              className="px-2.5 sm:px-3.5 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-fun font-bold text-xs border border-slate-700 transition active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+              className="h-10 min-w-[40px] px-2.5 sm:px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#0F294A] font-fun font-bold text-xs border border-sky-200 transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-sky-600"
               aria-label={`Open Saved Bag (${bagCount} items)`}
-              title="Open Saved Collection Bag"
+              title="Saved Collection Bag"
             >
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-              <span className="tabular-nums text-[11px] sm:text-xs">{bagCount}</span>
+              <ShoppingBag className="w-4 h-4 text-sky-600 shrink-0" />
+              <span className="tabular-nums text-xs">{bagCount}</span>
             </button>
           )}
 
+          {/* Primary Play Action: Meadow-Green Try Free Demo */}
           <a
             href={getRoutePath('demo')}
             onClick={(e) => handleLinkClick(e, 'demo')}
-            className="px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-fun font-black text-xs shadow-lg border sm:border-2 border-emerald-400/40 transition active:scale-95 cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 whitespace-nowrap"
+            className="h-10 px-3 sm:px-4 rounded-xl bg-gradient-to-b from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-fun font-black text-xs shadow-[0_2px_0_#15803d] active:translate-y-0.5 active:shadow-none transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap border border-emerald-400/50 focus-visible:outline-2 focus-visible:outline-emerald-700"
           >
-            <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 fill-current shrink-0" />
             <span className="hidden sm:inline">Try Free Demo</span>
-            <span className="sm:hidden text-[11px]">Demo</span>
+            <span className="sm:hidden">Demo</span>
           </a>
 
+          {/* Primary Family Unlock CTA */}
           <a
             href={getRoutePath('pricing')}
             onClick={(e) => handleLinkClick(e, 'pricing')}
-            className="px-2.5 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-black text-xs shadow-lg transition active:scale-95 cursor-pointer border sm:border-2 border-white flex items-center gap-1 sm:gap-1.5 shrink-0 whitespace-nowrap"
+            className="h-10 px-3 sm:px-4 rounded-xl bg-gradient-to-b from-amber-300 to-amber-400 hover:from-amber-200 hover:to-amber-300 text-amber-950 font-fun font-black text-xs shadow-[0_2px_0_#d97706] active:translate-y-0.5 active:shadow-none transition cursor-pointer border border-amber-300 flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-amber-700"
           >
-            <KeyRound className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <KeyRound className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Unlock Game</span>
-            <span className="sm:hidden text-[11px]">Unlock</span>
+            <span className="sm:hidden">Unlock</span>
           </a>
 
-          {/* Mobile Hamburger Menu Button */}
+          {/* Mobile Menu Toggle (iPhone & Android) */}
           <button
+            type="button"
             onClick={() => {
               soundEngine.playPop();
               setIsMobileMenuOpen(!isMobileMenuOpen);
             }}
-            className="lg:hidden p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95 cursor-pointer shrink-0 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-400/50"
-            aria-label="Toggle Menu"
+            className="md:hidden w-10 h-10 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#0F294A] border border-sky-200 transition active:scale-95 cursor-pointer shrink-0 flex items-center justify-center focus-visible:outline-2 focus-visible:outline-sky-600"
+            aria-label="Toggle Navigation Menu"
             aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
-              <X className="w-5 h-5 text-amber-400" />
+              <X className="w-5 h-5 text-sky-700" />
             ) : (
-              <Menu className="w-5 h-5 text-slate-200" />
+              <Menu className="w-5 h-5 text-[#0F294A]" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Accordion Menu with High Z-Index, clear background and overflow protection */}
+      {/* Responsive Mobile Navigation Drawer (iPhone & Android) */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-slate-950/98 backdrop-blur-2xl border-b border-slate-800 shadow-2xl px-4 py-3 z-[110] flex flex-col gap-1.5 font-fun animate-fadeIn">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b-2 border-sky-200 shadow-lg px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] z-[110] flex flex-col gap-1.5 font-fun">
           {navItems.map((item) => {
-            const isActive = currentRoute === item.route;
+            const isActive =
+              currentRoute === item.route ||
+              (item.route === 'store' && currentRoute === 'store_product') ||
+              (item.route === 'worlds' && currentRoute === 'world_detail');
             return (
               <a
                 key={item.route}
                 href={getRoutePath(item.route)}
                 onClick={(e) => handleLinkClick(e, item.route)}
-                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition flex items-center justify-between cursor-pointer ${
                   isActive
-                    ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
-                    : 'text-slate-300 hover:bg-slate-900 active:bg-slate-800'
+                    ? 'bg-sky-50 text-sky-800 border border-sky-200'
+                    : 'text-[#0F294A] hover:bg-sky-50/70'
                 }`}
               >
                 <span>{item.label}</span>
-                {isActive && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                <ChevronRight className="w-4 h-4 text-sky-600" />
               </a>
             );
           })}
-
-          {/* Mobile Social Links Bar in Menu */}
-          <div className="pt-3 mt-2 border-t border-slate-800/80 flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-fun">
-              Follow Us:
-            </span>
-            <div className="flex items-center gap-2">
-              {SOCIAL_LINKS.map((s) => {
-                const Icon = s.id === 'youtube' ? Youtube : s.id === 'instagram' ? Instagram : Facebook;
-                const activeColor = 
-                  s.id === 'youtube' ? 'text-red-400 bg-red-500/10 hover:bg-red-500 hover:text-white' : s.id === 'instagram' ? 'text-pink-400 bg-pink-500/10 hover:bg-pink-500 hover:text-white' : 'text-blue-400 bg-blue-500/10 hover:bg-blue-500 hover:text-white';
-                return (
-                  <a
-                    key={s.id}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => soundEngine.playPop()}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs font-bold active:scale-95 transition ${activeColor}`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="text-[11px]">{s.label}</span>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
+          <a
+            href={getRoutePath('demo')}
+            onClick={(e) => handleLinkClick(e, 'demo')}
+            className="w-full text-left px-4 py-3 rounded-xl text-sm font-black bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between cursor-pointer mt-1"
+          >
+            <span>Try Free Interactive Demo</span>
+            <Play className="w-4 h-4 fill-current text-emerald-600" />
+          </a>
         </div>
       )}
     </header>

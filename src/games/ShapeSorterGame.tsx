@@ -30,6 +30,9 @@ interface ShapeSorterGameProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -85,6 +88,9 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<1 | 2 | 3 | 4 | 5>(initialLevel);
@@ -92,9 +98,21 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   const targetShapes = LEVEL_SHAPES[currentLevel] || LEVEL_SHAPES[1];
   const [placedShapeIds, setPlacedShapeIds] = useState<string[]>([]);
@@ -136,7 +154,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
   };
 
   const speakShapeName = (name: string) => {
-    if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
       try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(name);
@@ -554,10 +572,12 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           setStatusMessage(null);
           setScore(0);
           setMistakes(0);
+          setStartTime(Date.now());
         }}
         onNextLevel={() => {
           if (isDemoMode && currentLevel >= 2) {
-            onNextGame();
+            if (onShowDemoLimit) onShowDemoLimit();
+            else onNextGame();
             return;
           }
           if (currentLevel < 5) {
@@ -568,6 +588,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
             setIsDeparting(false);
             setStatusMessage(null);
             setMistakes(0);
+            setStartTime(Date.now());
           } else {
             onNextGame();
           }
@@ -579,10 +600,8 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPaused}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => {
-          soundEngine.setMuted(!soundEngine.getMuted());
-        }}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => {
           setIsPaused(false);
           setGameState('PLAYING');
@@ -600,6 +619,7 @@ export const ShapeSorterGame: React.FC<ShapeSorterGameProps> = ({
           setStatusMessage(null);
           setScore(0);
           setMistakes(0);
+          setStartTime(Date.now());
         }}
         onHome={onHome}
         onBackToWorld={onBackToWorld ? () => {

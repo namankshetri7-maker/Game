@@ -60,9 +60,19 @@ interface UniversalMiniGameRunnerProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   onGetFullVersion?: () => void;
   onOpenKeyModal?: () => void;
   isDemoMode?: boolean;
+}
+
+// Safely split multi-word "Name Icon" labels without truncating multi-word names
+function splitLabelAndIcon(text: string): { label: string; icon: string } {
+  const idx = text.lastIndexOf(' ');
+  if (idx === -1) return { label: text, icon: '' };
+  return { label: text.slice(0, idx), icon: text.slice(idx + 1) };
 }
 
 // Stable deterministic shuffle helper to prevent option jumping during gameplay
@@ -83,6 +93,9 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   onGetFullVersion,
   onOpenKeyModal,
   isDemoMode = false
@@ -97,10 +110,22 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime, setStartTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
   const [isPauseOpen, setIsPauseOpen] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; positive: boolean } | null>(null);
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   // Sub-game specific state variables
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -219,7 +244,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
   const handleNextLevel = () => {
     if (isDemoMode && currentLevel >= 2) {
-      onNextGame();
+      if (onShowDemoLimit) onShowDemoLimit();
+      else onNextGame();
       return;
     }
     if (currentLevel < 5) {
@@ -1048,7 +1074,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
       const speakSentence = () => {
         soundEngine.playPop();
-        if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
           try {
             window.speechSynthesis.cancel();
             const text = `${curStory.sentenceBefore} ${curStory.targetWord} ${curStory.sentenceAfter}`;
@@ -1229,7 +1255,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
       const speakSentence = () => {
         soundEngine.playPop();
-        if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
           try {
             window.speechSynthesis.cancel();
             const utt = new SpeechSynthesisUtterance(currentSentence.correctSequence.join(' '));
@@ -1382,7 +1408,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
 
       const speakTargetWord = () => {
         soundEngine.playLetterTone(target.word[0]);
-        if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
           try {
             window.speechSynthesis.cancel();
             const utt = new SpeechSynthesisUtterance(`${target.word}! ${target.hint}`);
@@ -1662,12 +1688,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { animal: 'African Lion 🦁', home: 'Africa', options: ['Africa', 'North America', 'Antarctica'] }
       ];
       const cur = habitats[(currentLevel - 1) % habitats.length];
+      const animalParts = splitLabelAndIcon(cur.animal);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">{cur.animal.split(' ')[1]}</span>
+          <span className="text-5xl mb-1">{animalParts.icon}</span>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Where is the natural home of the {cur.animal.split(' ')[0]}?
+            Where is the natural home of the {animalParts.label}?
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Match creature to its home continent:</p>
 
@@ -1704,12 +1731,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { name: 'Giant Squid 🦑', zone: 'Midnight Abyss (>1000m deep)' }
       ];
       const cur = creatures[(currentLevel - 1) % creatures.length];
+      const creatureParts = splitLabelAndIcon(cur.name);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <span className="text-5xl mb-1">{creatureParts.icon}</span>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Ocean Depth: {cur.name.split(' ')[0]}
+            Ocean Depth: {creatureParts.label}
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Which ocean layer does this creature swim in?</p>
 
@@ -1830,12 +1858,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { name: 'Maracas 🪇', region: 'Latin America', options: ['Latin America', 'Asia', 'Africa'] }
       ];
       const cur = instruments[(currentLevel - 1) % instruments.length];
+      const instrumentParts = splitLabelAndIcon(cur.name);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <span className="text-5xl mb-1">{instrumentParts.icon}</span>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            {cur.name.split(' ')[0]}
+            {instrumentParts.label}
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Where in the world was this traditional instrument born?</p>
 
@@ -1930,12 +1959,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { name: 'Shark 🦈', diet: 'Carnivore (Meat)' }
       ];
       const critter = creatures[(currentLevel - 1) % creatures.length];
+      const critterParts = splitLabelAndIcon(critter.name);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <div className="text-5xl mb-2">{critter.name.split(' ')[1]}</div>
+          <div className="text-5xl mb-2">{critterParts.icon}</div>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            What kind of eater is the {critter.name.split(' ')[0]}?
+            What kind of eater is the {critterParts.label}?
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Sort into the correct diet category:</p>
 
@@ -1985,12 +2015,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { mama: 'Dog 🐕', baby: 'Puppy', options: ['Puppy', 'Cub', 'Foal'] }
       ];
       const pair = pairs[(currentLevel - 1) % pairs.length];
+      const mamaParts = splitLabelAndIcon(pair.mama);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">{pair.mama.split(' ')[1]}</span>
+          <span className="text-5xl mb-1">{mamaParts.icon}</span>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            What is a baby {pair.mama.split(' ')[0]} called?
+            What is a baby {mamaParts.label} called?
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Match the mama to her little one!</p>
 
@@ -2237,9 +2268,10 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
           </h3>
           <p className="text-xs text-slate-500 mb-3 font-semibold">Tap the steps in life cycle sequence (1 to 4):</p>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
             {cur.steps.map((st, idx) => {
               const isSelected = selectedItems.includes(st);
+              const stepParts = splitLabelAndIcon(st);
               return (
                 <div
                   key={idx}
@@ -2247,8 +2279,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                     isSelected ? 'bg-emerald-100 border-emerald-400 text-emerald-900' : 'bg-slate-100 border-slate-300 text-slate-400'
                   }`}
                 >
-                  <span className="text-lg">{st.split(' ')[1]}</span>
-                  <span>{st.split(' ')[0]}</span>
+                  <span className="text-lg">{stepParts.icon}</span>
+                  <span>{stepParts.label}</span>
                 </div>
               );
             })}
@@ -2339,9 +2371,9 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         <div className="flex flex-col items-center justify-center p-3 sm:p-5 h-full text-center max-w-lg mx-auto">
           {/* Bird Header & Avatar */}
           <div className="bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50 p-4 rounded-3xl border-2 border-indigo-200 shadow-sm w-full mb-3 flex flex-col items-center">
-            <span className="text-5xl mb-1 animate-pulse">{cur.bird.split(' ')[1]}</span>
+            <span className="text-5xl mb-1 animate-pulse">{splitLabelAndIcon(cur.bird).icon}</span>
             <h3 className="text-base sm:text-lg font-black font-fun text-slate-800">
-              Adaptation: {cur.bird.split(' ')[0]}
+              Adaptation: {splitLabelAndIcon(cur.bird).label}
             </h3>
             <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mt-1">
               Beak Type: {cur.beakType}
@@ -2393,32 +2425,36 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { name: 'Sea Turtle 🐢', domain: 'Water 🌊' }
       ];
       const cur = animals[(currentLevel - 1) % animals.length];
+      const domainAnimal = splitLabelAndIcon(cur.name);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <span className="text-5xl mb-1">{domainAnimal.icon}</span>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            Domain of {cur.name.split(' ')[0]}
+            Domain of {domainAnimal.label}
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Does this creature primarily belong to Land, Air, or Water?</p>
 
           <div className="flex gap-3">
-            {['Land 🌳', 'Air ☁️', 'Water 🌊'].map((d, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (d === cur.domain) {
-                    handleCorrect();
-                  } else {
-                    handleIncorrect('Think where this animal moves best!');
-                  }
-                }}
-                className="p-3 w-24 rounded-2xl bg-white border-2 border-emerald-200 hover:border-emerald-500 font-fun font-bold text-slate-800 text-sm shadow-sm active:scale-95 transition flex flex-col items-center"
-              >
-                <span className="text-2xl mb-1">{d.split(' ')[1]}</span>
-                <span>{d.split(' ')[0]}</span>
-              </button>
-            ))}
+            {['Land 🌳', 'Air ☁️', 'Water 🌊'].map((d, idx) => {
+              const domainParts = splitLabelAndIcon(d);
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (d === cur.domain) {
+                      handleCorrect();
+                    } else {
+                      handleIncorrect('Think where this animal moves best!');
+                    }
+                  }}
+                  className="p-3 w-24 rounded-2xl bg-white border-2 border-emerald-200 hover:border-emerald-500 font-fun font-bold text-slate-800 text-sm shadow-sm active:scale-95 transition flex flex-col items-center"
+                >
+                  <span className="text-2xl mb-1">{domainParts.icon}</span>
+                  <span>{domainParts.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       );
@@ -2436,12 +2472,13 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
         { name: 'Firefly ✨', isNight: true }
       ];
       const cur = creatures[(currentLevel - 1) % creatures.length];
+      const nocturnalParts = splitLabelAndIcon(cur.name);
 
       return (
         <div className="flex flex-col items-center justify-center p-4 h-full text-center">
-          <span className="text-5xl mb-1">{cur.name.split(' ')[1]}</span>
+          <span className="text-5xl mb-1">{nocturnalParts.icon}</span>
           <h3 className="text-base sm:text-lg font-black font-fun text-slate-800 mb-1">
-            {cur.name.split(' ')[0]}
+            {nocturnalParts.label}
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-semibold">Is this animal active during the Day (Diurnal) or Night (Nocturnal)?</p>
 
@@ -2559,7 +2596,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
             handleCorrect(150);
           }
         } else {
-          handleIncorrect(`Try using the ${targetTask.name.split(' ')[0]} to ${targetTask.prompt.toLowerCase()}!`);
+          handleIncorrect(`Try using the ${splitLabelAndIcon(targetTask.name).label} to ${targetTask.prompt.toLowerCase()}!`);
         }
       };
 
@@ -2625,7 +2662,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                   >
                     <span className="text-2xl sm:text-3xl mb-0.5">{t.icon}</span>
                     <span className="text-[9px] font-fun font-black text-slate-800 leading-tight">
-                      {t.name.split(' ')[0]}
+                      {t.name}
                     </span>
                   </button>
                 );
@@ -2952,7 +2989,7 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       </div>
 
       {/* Bottom Level Indicator Bar */}
-      <div className="relative z-10 flex items-center justify-between text-xs text-white font-fun font-bold">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 text-xs text-white font-fun font-bold pr-16 sm:pr-0">
         <div className="flex items-center gap-1">
           <span>Levels:</span>
           {[1, 2, 3, 4, 5].map((lvl) => {
@@ -2962,7 +2999,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
                 key={lvl}
                 onClick={() => {
                   if (isLockedInDemo) {
-                    onNextGame();
+                    if (onShowDemoLimit) onShowDemoLimit();
+                    else onNextGame();
                     return;
                   }
                   soundEngine.playPop();
@@ -3039,8 +3077,8 @@ export const UniversalMiniGameRunner: React.FC<UniversalMiniGameRunnerProps> = (
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPauseOpen}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => soundEngine.setMuted(!soundEngine.getMuted())}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => setIsPauseOpen(false)}
         onRestart={() => {
           setIsPauseOpen(false);

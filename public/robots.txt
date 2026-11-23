@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-# Google Search Crawlers
+# Major Search Engine Crawlers
 User-agent: Googlebot
 Allow: /
 
@@ -11,7 +11,6 @@ Allow: /
 User-agent: Googlebot-Mobile
 Allow: /
 
-# Bing & Other Major Search Engines
 User-agent: Bingbot
 Allow: /
 
@@ -27,11 +26,23 @@ Allow: /
 User-agent: Baiduspider
 Allow: /
 
-# AI Assistants & Knowledge Crawlers
+# AI Search, Assistant & LLM Knowledge Crawlers
 User-agent: GPTBot
 Allow: /
 
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
 User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
 Allow: /
 
 User-agent: PerplexityBot
@@ -40,9 +51,18 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
 User-agent: ByteSpider
 Allow: /
 
-# Canonical Sitemap and Host for Worldwide Indexing
+# Canonical XML Sitemap & AI Crawling Sitemaps (/llms.txt & /llms-full.txt)
 Sitemap: https://wonderworldkidslearning.space/sitemap.xml
 Host: https://wonderworldkidslearning.space

@@ -1,23 +1,52 @@
 # Wonder World Kids Learning
-> Official Web & PWA Educational Gaming Suite for Children Aged 3–8.
-Website: https://wonderworldkidslearning.space
 
-## Overview
-Wonder World Kids Learning is a 100% offline-compatible, browser-installable PWA educational gaming suite designed for young children (ages 3–8). It features 45 interactive mini-games across 5 learning worlds: Math & Numbers, Reading & Words, Science & Discovery, Logic & Puzzles, and Creative Arts.
+> Interactive Early Childhood Learning Marketplace: 45 Offline Educational Games Across 5 Worlds + Printable Colouring & Activity Workbooks (Ages 3–8)
 
-## Key Features & Safety Principles
-- 100% Ad-Free & Offline Capable: Runs locally in any modern browser via Service Worker and Progressive Web App technology. No active internet connection needed after installation.
-- COPPA & GDPR-K Conscious Design: Zero tracking analytics, zero external user data collection, zero third-party ads or hidden microtransactions.
-- Parent Control Gate: Math-challenge parental PIN protection before accessing billing, settings, or external web links.
-- Single One-Time Payment: $9.00 USD lifetime access with no recurring subscriptions or micro-purchases.
-- Interactive Free Demo: Sample games playable directly on the website without registration.
+Canonical URL: https://wonderworldkidslearning.space
+Support Email: wonderworldkidslearning@gmail.com
+Extended Knowledge Sitemap: https://wonderworldkidslearning.space/llms-full.txt
+XML Sitemap: https://wonderworldkidslearning.space/sitemap.xml
 
-## Target Audience & Geographic Support
-- Target Age: 3 to 8 years old.
-- Supported Regions: United States, United Kingdom, Germany, France, Australia, Singapore, United Arab Emirates (Dubai/Middle East), Europe, and Africa.
-- Supported Platforms: Android (PWA), iOS / iPadOS (Add to Home Screen), Desktop Chrome/Edge/Safari/Firefox (PWA & Offline Launcher).
+## Core Offerings
+- **Wonder World Kids Learning App**: 45 ad-free, 100% offline educational mini-games across 5 interactive worlds (225 progressive levels, up to 4 local child profiles, COPPA & GDPR-K safe). One-time lifetime family license ($9.00 USD on Gumroad, zero subscriptions).
+- **Printable Colouring & Early Learning Workbooks (Digital PDF)**:
+  - Dinosaur World Colouring Book (30 printable pages, ages 3–5)
+  - ABC Alphabet Activity Book (phonics, tracing & vocabulary, ages 3–8)
+  - Christmas Wonderland Colouring Book (30 seasonal pages, ages 3–8)
+  - My First Maths Adventure Printable Book (counting, shapes & addition, ages 3–8)
 
-## Legal & Operational Transparency
-- All game progress is stored locally in the user's browser (localStorage / IndexedDB).
-- Payment processing is handled via secure client-side PayPal Checkout verification.
-- Offline desktop launchers and zip packages provide offline web server execution for home or classroom desktop environments.
+## Supported Offline Devices & Platforms
+- Apple Mac (macOS Safari / Chrome PWA)
+- Apple iPhone & iPad (iOS / iPadOS Safari Add to Home Screen)
+- Android Phones & Tablets (Chrome / Edge PWA)
+- Windows PC & Chromebook (Chrome / Edge PWA)
+
+## Standalone Website Sitemap
+- [Home & Interactive Playground](https://wonderworldkidslearning.space/)
+- [Wonder World Kids Store & Printables](https://wonderworldkidslearning.space/store)
+- [Explore All 5 Learning Worlds (45 Games)](https://wonderworldkidslearning.space/worlds)
+- [Try Free Interactive Demo (No Sign-Up)](https://wonderworldkidslearning.space/demo)
+- [Lifetime Family License & Pricing ($9 USD)](https://wonderworldkidslearning.space/pricing)
+- [Offline App Installation Guide (Mac, iPhone, iPad, Windows, Android)](https://wonderworldkidslearning.space/downloads)
+- [Parents & Safety Guide](https://wonderworldkidslearning.space/parents)
+- [About Wonder World Kids Learning](https://wonderworldkidslearning.space/about)
+- [Frequently Asked Questions (FAQ)](https://wonderworldkidslearning.space/faq)
+- [Activate License Key](https://wonderworldkidslearning.space/activate)
+- [My Purchased Games](https://wonderworldkidslearning.space/my-games)
+- [Privacy Policy (COPPA / GDPR-K)](https://wonderworldkidslearning.space/privacy)
+- [Contact Parent Support](https://wonderworldkidslearning.space/contact)
+
+## Learning Worlds & Store Product Pages
+- [Math Magic Valley (10 Math Games)](https://wonderworldkidslearning.space/worlds/world_math)
+- [English & Phonics Jungle (10 Reading Games)](https://wonderworldkidslearning.space/worlds/world_phonics)
+- [World Geography & Cultures (10 Geography Games)](https://wonderworldkidslearning.space/worlds/world_geography)
+- [Animal Kingdom & Science (10 STEM Games)](https://wonderworldkidslearning.space/worlds/world_science)
+- [Logic, Brain & Creativity (5 Puzzle Games)](https://wonderworldkidslearning.space/worlds/world_logic)
+- [Product: Wonder World Kids Learning App](https://wonderworldkidslearning.space/store/wonder-world-kids-learning-app)
+- [Product: Dinosaur World Colouring Book](https://wonderworldkidslearning.space/store/dinosaur-world-colouring-book)
+- [Product: ABC Alphabet Activity Book](https://wonderworldkidslearning.space/store/abc-alphabet-activity-book)
+- [Product: Christmas Wonderland Colouring Book](https://wonderworldkidslearning.space/store/christmas-wonderland-colouring-book)
+- [Product: My First Maths Adventure Printable Book](https://wonderworldkidslearning.space/store/my-first-maths-adventure-printable)
+
+## International Availability
+Designed for families, preschools, kindergarten classrooms, and homeschoolers across the United States, United Kingdom, India, Canada, Australia, Singapore, Dubai (UAE), Saudi Arabia, Qatar, Germany, France, Spain, New Zealand, and South Africa.

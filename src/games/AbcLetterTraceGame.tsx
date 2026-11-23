@@ -299,7 +299,7 @@ export const AbcLetterTraceGame: React.FC<AbcLetterTraceGameProps> = ({
   // Audio pronunciation
   const playLetterSound = useCallback(() => {
     soundEngine.playLetterTone(currentLetter.char);
-    if ('speechSynthesis' in window && !soundEngine.getMuted()) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && !soundEngine.getMuted()) {
       try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(

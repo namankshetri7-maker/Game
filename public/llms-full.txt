@@ -1,0 +1,107 @@
+# Wonder World Kids Learning – Full Knowledge & AI Crawling Sitemap
+
+Canonical Website: https://wonderworldkidslearning.space
+Summary Index: https://wonderworldkidslearning.space/llms.txt
+XML Sitemap: https://wonderworldkidslearning.space/sitemap.xml
+Parent Support Email: wonderworldkidslearning@gmail.com
+Target Audience: Children aged 3–8 (Preschool, Kindergarten, Early Elementary Grades 1–2), Parents, Homeschooling Families, Kindergarten Educators.
+International Availability: Worldwide — United States (en-US), United Kingdom (en-GB), India (en-IN), Canada (en-CA), Australia (en-AU), Singapore (en-SG), Dubai / United Arab Emirates (en-AE / ar-AE), Germany (de-DE), France (fr-FR), Spain (es-ES), New Zealand (en-NZ), South Africa (en-ZA).
+
+---
+
+## 1. Safety, Privacy & Offline Architecture
+- **100% Offline Progressive Web App (PWA)**: Installs directly on Apple Mac (macOS Safari/Chrome), iPhone & iPad (iOS/iPadOS Safari Add to Home Screen), Android phones & tablets (Chrome/Edge), Windows PC, and ChromeOS. Runs completely without Wi-Fi or cellular data once cached.
+- **Zero Ads & Zero Behavioral Tracking**: Contains zero third-party ad networks, zero analytics trackers, and zero in-app microtransactions during child sessions.
+- **COPPA, UK Children's Code & GDPR-K Conscious Design**: Child profiles (up to 4 local profiles), star progress, and sticker reward albums live strictly inside local device storage (`localStorage`).
+- **Parental Math Gate**: Protects parent dashboard controls, playtime limits, and external billing/marketplace links behind adult verification.
+- **Free Interactive Demo**: Visitors can try 10 games (2 games per world across Levels 1 and 2) at `https://wonderworldkidslearning.space/demo` without creating an account.
+
+---
+
+## 2. Storefront & Marketplace Catalog (`https://wonderworldkidslearning.space/store`)
+
+1. **Wonder World Kids Learning App** (`https://wonderworldkidslearning.space/store/wonder-world-kids-learning-app`)
+   - Category: Learning Games
+   - Format: Offline Interactive App (PWA for Mac, Windows, Android, iPhone, iPad)
+   - Price: $9.00 USD (One-time lifetime family license, no subscriptions)
+   - Checkout: Gumroad (`https://namank3.gumroad.com/l/wvpisb`) or instant key activation at `https://wonderworldkidslearning.space/activate`
+   - Includes: All 45 mini-games across 5 worlds, 225 progressive difficulty levels, sticker albums, up to 4 child profiles.
+
+2. **Dinosaur World Colouring Book** (`https://wonderworldkidslearning.space/store/dinosaur-world-colouring-book`)
+   - Category: Colouring Books · Ages 3–5 · 30 Pages · Digital PDF
+   - Description: 30 printable dinosaur colouring pages with clean bold outlines for T-Rex, Triceratops, and Stegosaurus.
+   - Official Listing: `https://www.etsy.com/listing/4615484511/dinosaur-world-coloring-book-30`
+
+3. **ABC Alphabet Activity Book** (`https://wonderworldkidslearning.space/store/abc-alphabet-activity-book`)
+   - Category: Educational Activity Books · Ages 3–8 · Digital Printable
+   - Description: Screen-free alphabet tracing, phonics recognition, letter matching, and early vocabulary workbook.
+   - Official Listing: `https://www.etsy.com/listing/4618473268/abc-alphabet-activity-book-for-kids`
+
+4. **Christmas Wonderland Colouring Book** (`https://wonderworldkidslearning.space/store/christmas-wonderland-colouring-book`)
+   - Category: Seasonal Collections · Ages 3–8 · 30 Pages · Digital PDF
+   - Description: 30 festive winter holiday printable colouring pages featuring Santa, snowmen, reindeer, and Christmas scenes.
+   - Official Listing: `https://www.etsy.com/listing/4623136130/christmas-wonderland-printable-colouring`
+
+5. **My First Maths Adventure Printable Book** (`https://wonderworldkidslearning.space/store/my-first-maths-adventure-printable`)
+   - Category: Educational Activity Books · Ages 3–8 · Digital Printable
+   - Description: Printable early numeracy activity workbook covering counting, number recognition, simple addition, fruit counting, shapes, and visual patterns.
+   - Official Listing: `https://www.etsy.com/listing/4623674119/my-first-maths-adventure-printable`
+
+---
+
+## 3. Complete 5 Worlds & 45 Mini-Games Curriculum Directory
+
+### World 1: Math Magic Valley (`https://wonderworldkidslearning.space/worlds/world_math`)
+1. Dino Addition — Addition, Number Sense, Draggable Counters (Ages 3–10)
+2. Number Safari — Counting 1–20, Visual Quantity, Animal Spotting (Ages 3–6)
+3. Subtraction Bakery — Subtraction, Cupcake Equations, Visual Removal (Ages 4–8)
+4. Shape Sorter Express — 2D/3D Geometry, Shape Matching, Spatial Reasoning (Ages 3–7)
+5. Multiplication Blitz — Times Tables, Mental Math (Ages 7–10)
+6. Fraction Pizza Party — Fractions, Halves/Thirds/Quarters, Visual Slicing (Ages 5–10)
+7. Clockwork Owl — Analog & Digital Time Reading, Daily Schedules (Ages 5–9)
+8. Pattern Train — Sequencing (AB/ABC/AABB), Color & Shape Logic (Ages 3–8)
+9. Coin Counter Market — Money Counting, Currency Values, Making Change (Ages 6–10)
+10. Greater Dragon Scales — Comparisons (>, <, =), Quantity Balancing (Ages 4–9)
+
+### World 2: English & Phonics Jungle (`https://wonderworldkidslearning.space/worlds/world_phonics`)
+11. Word Builder Bee — CVC Words, Spelling, Phonics Honeycombs (Ages 3–10)
+12. Phonics Popsicle — Letter Sounds, Bubble Popping, Initial Phonemes (Ages 3–6)
+13. ABC Letter Trace — Fine Motor Skills, Letter Formation, Tracing (Ages 3–5)
+14. Rhyme Time Rocket — Rhyming Pairs, Phonological Awareness (Ages 4–7)
+15. Sight Word Treasure Hunt — High-Frequency Sight Words, Reading Clues (Ages 4–8)
+16. Vowel Voyage — Short vs Long Vowels Sorting (Ages 5–9)
+17. Grammar Safari — Nouns, Verbs, Adjectives, Parts of Speech (Ages 6–10)
+18. Opposite Animals — Antonyms, Big/Small & Fast/Slow Matching (Ages 3–6)
+19. Sentence Builder Express — Syntax, Punctuation & Sentence Assembly (Ages 6–10)
+20. Spelling Bee Match — Unscrambling & Vocabulary Expansion (Ages 6–10)
+
+### World 3: World Geography & Cultures (`https://wonderworldkidslearning.space/worlds/world_geography`)
+21. Continent Jigsaw — 7 Continents, Spatial Map Jigsaw (Ages 3–10)
+22. Flag Runner — Country Flags & Pattern Recognition (Ages 5–10)
+23. Landmark Builder — World Heritage Wonders: Pyramids, Eiffel Tower, Taj Mahal (Ages 5–10)
+24. Capital City Quiz — Capital Cities & Interactive Tap Map (Ages 7–10)
+25. Animal Habitat Map — Continental Fauna Origins (Ages 4–9)
+26. Ocean Depth Explorer — 5 Oceans & Marine Zones (Ages 5–10)
+27. Globe Spinner — 3D Hemispheres, Equator & Poles (Ages 4–10)
+28. Climate & Dress-Up — Tropical, Polar & Desert Weather Logic (Ages 3–7)
+29. World Music Tap — Traditional Global Instruments & Rhythm (Ages 4–9)
+30. Compass Navigator — Cardinal Directions (N, S, E, W) (Ages 6–10)
+
+### World 4: Animal Kingdom & Science (`https://wonderworldkidslearning.space/worlds/world_science`)
+31. Animal Sound Memory — Auditory Memory & Animal Calls (Ages 3–8)
+32. Food Chain Sorting — Herbivore, Carnivore & Omnivore Webs (Ages 5–10)
+33. Footprint Detective — Paw & Hoof Tracking Mysteries (Ages 4–8)
+34. Mama & Baby Match — Animal Offspring Names & Parent Pairing (Ages 3–6)
+35. Camouflage Seek — Visual Acuity & Nature Camouflage (Ages 4–9)
+36. Life Cycle Wheel — Butterfly, Frog & Plant Metamorphosis (Ages 5–10)
+37. Bird Beak & Food Match — Biological Adaptation (Ages 6–10)
+38. Domain Classifier — Land, Air & Water Animal Sorting (Ages 3–7)
+39. Nocturnal vs Diurnal — Day vs Night Animal Habits (Ages 4–8)
+40. Pet Care Clinic — Animal Empathy & Basic Care (Ages 4–8)
+
+### World 5: Logic, Brain & Creativity (`https://wonderworldkidslearning.space/worlds/world_logic`)
+41. Color & Shadow Match — Silhouette Matching & Visual Discrimination (Ages 3–6)
+42. Connect the Dots — Numerical & Alphabetical Order + Fine Motor Control (Ages 4–8)
+43. Pixel Art Coloring — Color by Number & Creative Digital Canvas (Ages 4–10)
+44. Kids Maze Runner — Spatial Navigation & Pathfinding (Ages 4–9)
+45. Memory Card Flip — Working Memory & Pair Matching (Ages 3–10)

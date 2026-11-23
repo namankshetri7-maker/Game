@@ -17,6 +17,7 @@ export interface LicenseVerificationResult {
   isRefunded?: boolean;
 }
 
+const GUMROAD_PRODUCT_ID = '3AhcEFEj3-aHkZ0hQA0drA==';
 const GUMROAD_PERMALINK = 'wvpisb';
 const STORAGE_KEY_PURCHASED = 'wwk_purchased';
 const STORAGE_KEY_LICENSE = 'wwk_license';
@@ -26,11 +27,35 @@ const STORAGE_KEY_DATE = 'wwk_license_date';
 // Authorized offline master passes
 export const MASTER_LIFETIME_KEYS = [
   'WWK-ETSY-FAMILY-ACCESS',
+  'WWK-ETSY-XCZJDBDJSJHSH-ACCESS',
   'WWK-ETSY-2026',
   'WWK-TEST-PASS',
   'WWK-DEV-PASS',
   'WWK-LIFETIME-PASS'
 ];
+
+async function verifyDirectWithGumroad(
+  rawKey: string,
+  target: { productId?: string; productPermalink?: string }
+): Promise<any> {
+  const formData = new URLSearchParams();
+  if (target.productId) {
+    formData.append('product_id', target.productId);
+  } else if (target.productPermalink) {
+    formData.append('product_permalink', target.productPermalink);
+  }
+  formData.append('license_key', rawKey);
+  formData.append('increment_uses_count', 'false');
+
+  const directResponse = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: formData.toString()
+  });
+  return directResponse.json();
+}
 
 export const licenseService = {
   /**
@@ -64,8 +89,12 @@ export const licenseService = {
    */
   saveLicense(licenseKey: string, buyerEmail: string = '', purchaseDate: string = ''): void {
     try {
+      const trimmed = licenseKey.trim();
+      const normalized = MASTER_LIFETIME_KEYS.includes(trimmed.toUpperCase())
+        ? trimmed.toUpperCase()
+        : trimmed;
       localStorage.setItem(STORAGE_KEY_PURCHASED, 'true');
-      localStorage.setItem(STORAGE_KEY_LICENSE, licenseKey.trim().toUpperCase());
+      localStorage.setItem(STORAGE_KEY_LICENSE, normalized);
       localStorage.setItem('wwk_view_preference', 'app_only');
       if (buyerEmail) localStorage.setItem(STORAGE_KEY_EMAIL, buyerEmail);
       if (purchaseDate) localStorage.setItem(STORAGE_KEY_DATE, purchaseDate);
@@ -114,36 +143,40 @@ export const licenseService = {
 
     // 2. Call Gumroad Verification API via backend proxy or directly
     try {
-      // First try local server-side proxy endpoint if running
-      let response: Response | null = null;
+      // First try local Express proxy endpoint if running (returns application/json).
+      // On static hosts (e.g. Cloudflare Pages with SPA _redirects), /api/* returns 200 text/html.
+      let data: any = null;
       try {
-        response = await fetch('/api/verify-license', {
+        const proxyResponse = await fetch('/api/verify-license', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ license_key: rawKey, product_permalink: GUMROAD_PERMALINK })
+          body: JSON.stringify({
+            license_key: rawKey,
+            product_id: GUMROAD_PRODUCT_ID,
+            product_permalink: GUMROAD_PERMALINK
+          })
         });
+        const contentType = proxyResponse.headers?.get('content-type') || '';
+        if (contentType.toLowerCase().includes('application/json')) {
+          const parsed = await proxyResponse.json();
+          if (parsed && typeof parsed.success === 'boolean' && (proxyResponse.status < 500 || parsed.purchase)) {
+            data = parsed;
+          }
+        }
       } catch {
-        // Fallback to direct Gumroad API call from browser
-        response = null;
+        data = null;
       }
 
-      if (!response || !response.ok) {
-        // Direct call to Gumroad's CORS-enabled API
-        const formData = new URLSearchParams();
-        formData.append('product_permalink', GUMROAD_PERMALINK);
-        formData.append('license_key', rawKey);
-        formData.append('increment_uses_count', 'false');
-
-        response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: formData.toString()
-        });
+      if (!data) {
+        // Direct call to Gumroad's CORS-enabled API (try product_id first, then permalink fallback)
+        data = await verifyDirectWithGumroad(rawKey, { productId: GUMROAD_PRODUCT_ID });
+        if (!data?.success) {
+          const fallbackData = await verifyDirectWithGumroad(rawKey, { productPermalink: GUMROAD_PERMALINK });
+          if (fallbackData?.success) {
+            data = fallbackData;
+          }
+        }
       }
-
-      const data = await response.json();
 
       if (data && data.success === true) {
         const purchase = data.purchase || {};
@@ -172,7 +205,7 @@ export const licenseService = {
       } else {
         return {
           success: false,
-          message: data.message || 'License key not recognized for Wonder World Kids. Please check your key from your PDF.'
+          message: data?.message || 'License key not recognized for Wonder World Kids. Please check your key from your PDF.'
         };
       }
     } catch (err) {

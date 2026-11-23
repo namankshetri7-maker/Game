@@ -37,6 +37,7 @@ import { ParentInfoPage } from './components/website/ParentInfoPage';
 import { PrivacyPolicyPage } from './components/website/PrivacyPolicyPage';
 import { ContactSupportPage } from './components/website/ContactSupportPage';
 import { StorePage } from './components/website/StorePage';
+import { AboutPage } from './components/website/AboutPage';
 import { ProductDetailPage } from './components/website/ProductDetailPage';
 import { StoreCartDrawer } from './components/website/StoreCartDrawer';
 import { StoreProductManagerModal } from './components/website/StoreProductManagerModal';
@@ -100,6 +101,14 @@ function parseInitialLocation(): {
   productSlug: string;
   openUnlockModal: boolean;
 } {
+  if (typeof window === 'undefined') {
+    return {
+      route: 'home',
+      worldId: 'world_math',
+      productSlug: 'wonder-world-kids-learning-app',
+      openUnlockModal: false,
+    };
+  }
   const pathname = window.location.pathname.replace(/\/+$/, '').toLowerCase() || '/';
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash.toLowerCase();
@@ -133,9 +142,12 @@ function parseInitialLocation(): {
   if (pathname === '/contact') return { route: 'contact', worldId, productSlug, openUnlockModal: false };
   if (pathname === '/my-games') return { route: 'my_games', worldId, productSlug, openUnlockModal: false };
   if (pathname === '/success') return { route: 'success', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/activate') return { route: 'pricing', worldId, productSlug, openUnlockModal: true };
+  if (pathname === '/activate') return { route: 'pricing', worldId, productSlug, openUnlockModal: !params.get('license') };
 
   // Legacy query-param / hash fallbacks
+  if (pageParam === 'activate' || params.get('unlock') === 'true') {
+    return { route: 'pricing', worldId, productSlug, openUnlockModal: !params.get('license') };
+  }
   if (pageParam === 'store') return { route: 'store', worldId, productSlug, openUnlockModal: false };
   if (pageParam === 'store_product') return { route: 'store_product', worldId, productSlug, openUnlockModal: false };
   if (pageParam === 'worlds' || hash.includes('worlds')) return { route: 'worlds', worldId, productSlug, openUnlockModal: false };
@@ -192,6 +204,8 @@ export default function App() {
   const [isStickerBookOpen, setIsStickerBookOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState<boolean>(initialLocation.openUnlockModal);
+  const [initialLicenseKey, setInitialLicenseKey] = useState<string>('');
+  const [initialLicenseError, setInitialLicenseError] = useState<string | null>(null);
 
   // PWA Offline and Install Hook
   const {
@@ -259,11 +273,32 @@ export default function App() {
     const directGameMode = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
     const pageParam = (params.get('page') || params.get('mode') || '').toLowerCase();
 
+    // Auto-verify License Key from URL if provided (?license=XXXXX or ?page=activate&license=XXXXX)
+    if (licenseParam) {
+      setInitialLicenseKey(licenseParam);
+      licenseService.verifyGumroadLicense(licenseParam).then((res) => {
+        if (res.success) {
+          setIsDemoMode(false);
+          setIsLicenseModalOpen(false);
+          setInitialLicenseError(null);
+          setRoute('world_map');
+          if (typeof window !== 'undefined') {
+            window.history.replaceState({ route: 'world_map' }, '', '/?mode=game');
+          }
+          soundEngine.playVictory();
+        } else {
+          setInitialLicenseError(res.message || 'License key not recognized for Wonder World Kids.');
+          setIsLicenseModalOpen(true);
+        }
+      });
+      return;
+    }
+
     const wantsUnlockModal =
       pathname === '/activate' ||
       pageParam === 'activate' ||
       params.get('unlock') === 'true' ||
-      (params.has('license') && !licenseParam) ||
+      params.has('license') ||
       hash.includes('activate') ||
       hash.includes('unlock');
 
@@ -277,22 +312,12 @@ export default function App() {
       return;
     }
 
-    // Auto-verify License Key from URL if provided (?license=XXXXX)
-    if (licenseParam) {
-      licenseService.verifyGumroadLicense(licenseParam).then((res) => {
-        if (res.success) {
-          setIsDemoMode(false);
-          setRoute('world_map');
-          soundEngine.playVictory();
-        } else {
-          setIsLicenseModalOpen(true);
-        }
-      });
-      return;
-    }
-
     if (directGameMode) {
-      localStorage.setItem('wwk_view_preference', 'app_only');
+      try {
+        localStorage.setItem('wwk_view_preference', 'app_only');
+      } catch {
+        // Ignore storage errors
+      }
       setRoute('world_map');
     }
   }, []);
@@ -300,11 +325,6 @@ export default function App() {
   // Dynamic Page Title, Meta Description, OpenGraph & JSON-LD Sync
   useEffect(() => {
     applyRouteSEO(route, route === 'store_product' ? selectedProductSlug : selectedWorldId);
-    if (route === 'about') {
-      requestAnimationFrame(() => {
-        document.getElementById('about')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
   }, [route, selectedWorldId, selectedProductSlug]);
 
   // Store & Shopping Bag Helpers
@@ -377,7 +397,7 @@ export default function App() {
 
   // Helper to launch game app (evaluates purchase status)
   const handleEnterGameApp = (targetRoute: AppRoute = 'world_map', worldId?: string) => {
-    const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
+    const hasPaid = licenseService.isUnlocked();
     setIsDemoMode(!hasPaid);
     
     // Always allow entry to maps/games, but the Demo Mode state handles the gating.
@@ -404,7 +424,7 @@ export default function App() {
   };
 
   const handleLaunchDemoMode = (gameId: string = 'game_dino_addition') => {
-    const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
+    const hasPaid = licenseService.isUnlocked();
     setIsDemoMode(!hasPaid);
     if (!hasPaid && !isGameAllowedInDemo(gameId)) {
       setIsDemoLimitOpen(true);
@@ -417,9 +437,10 @@ export default function App() {
     setRoute('game');
   };
 
-  const handleNextGameSequence = () => {
+  const handleNextGameSequence = (fromLevel?: number) => {
     if (isDemoMode) {
-      if (selectedGameLevel === 1) {
+      const effectiveLevel = fromLevel ?? selectedGameLevel;
+      if (effectiveLevel === 1) {
         setSelectedGameLevel(2);
       } else {
         setIsDemoLimitOpen(true);
@@ -455,7 +476,12 @@ export default function App() {
   };
 
   const handleBackAction = (isHomeAction: boolean = false) => {
-    const isAppOnly = localStorage.getItem('wwk_view_preference') === 'app_only';
+    let isAppOnly = false;
+    try {
+      isAppOnly = typeof localStorage !== 'undefined' && localStorage.getItem('wwk_view_preference') === 'app_only';
+    } catch {
+      isAppOnly = false;
+    }
 
     // In demo mode (unless standalone/app-only), home action returns to website; otherwise navigate inside the game hub
     if (isDemoMode && !isAppOnly && isHomeAction) {
@@ -470,7 +496,7 @@ export default function App() {
 
   // Centralized Navigation Guard for Demo State Separation
   useEffect(() => {
-    const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
+    const hasPaid = licenseService.isUnlocked();
     
     // Strictly keep isDemoMode state in sync with license status
     if (isDemoMode === hasPaid) {
@@ -525,16 +551,14 @@ export default function App() {
                 setRoute('world_detail_game');
               }}
               onOpenDirectory={() => {
-                const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
-                if (!hasPaid) {
+                if (!licenseService.isUnlocked()) {
                   setIsDemoLimitOpen(true);
                 } else {
                   setIsDirectoryOpen(true);
                 }
               }}
               onOpenStickerBook={() => {
-                const hasPaid = localStorage.getItem('wwk_purchased') === 'true';
-                if (!hasPaid) {
+                if (!licenseService.isUnlocked()) {
                   setIsDemoLimitOpen(true);
                 } else {
                   setIsStickerBookOpen(true);
@@ -565,6 +589,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -578,6 +605,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -591,6 +621,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -604,6 +637,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -617,6 +653,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -630,6 +669,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -643,6 +685,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   isDemoMode={isDemoMode}
                 />
               )}
@@ -665,6 +710,9 @@ export default function App() {
                   onHome={() => handleBackAction(true)}
                   onBackToWorld={() => handleBackAction(false)}
                   onNextGame={handleNextGameSequence}
+                  onShowDemoLimit={() => setIsDemoLimitOpen(true)}
+                  isMuted={isMuted}
+                  onToggleMute={toggleMute}
                   onGetFullVersion={() => navigateTo('pricing')}
                   onOpenKeyModal={() => setIsLicenseModalOpen(true)}
                   isDemoMode={isDemoMode}
@@ -674,7 +722,7 @@ export default function App() {
           )}
         </DeviceFrameWrapper>
       ) : (
-        <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100">
+        <div className="min-h-screen flex flex-col bg-[#F8FCFF] text-slate-900">
           <Navbar
             currentRoute={route}
             onNavigate={(newRoute) => navigateTo(newRoute as AppRoute)}
@@ -795,20 +843,12 @@ export default function App() {
               />
             )}
             {route === 'about' && (
-              <HomePage
+              <AboutPage
                 onNavigate={(r, wId) => {
                   resetAppPlayState();
                   navigateTo(r as AppRoute, wId);
                 }}
                 onEnterGame={() => handleEnterGameApp('world_map')}
-                onOpenLicenseModal={() => setIsLicenseModalOpen(true)}
-                storeProducts={activeStoreProducts}
-                allStoreProducts={storeProducts}
-                bagIds={bagIds}
-                onToggleBagItem={handleToggleBagItem}
-                onOpenBag={() => setIsBagOpen(true)}
-                onViewProduct={handleViewStoreProduct}
-                onOpenStoreManager={() => setIsStoreManagerOpen(true)}
               />
             )}
             {route === 'faq' && (
@@ -909,11 +949,30 @@ export default function App() {
 
       <LicenseVerificationModal
         isOpen={isLicenseModalOpen}
-        onClose={() => setIsLicenseModalOpen(false)}
+        initialKey={initialLicenseKey}
+        initialError={initialLicenseError}
+        onClose={() => {
+          setIsLicenseModalOpen(false);
+          setInitialLicenseError(null);
+          if (typeof window !== 'undefined') {
+            const searchParams = new URLSearchParams(window.location.search);
+            if (
+              window.location.pathname.replace(/\/+$/, '').toLowerCase() === '/activate' ||
+              searchParams.get('page')?.toLowerCase() === 'activate' ||
+              searchParams.get('unlock') === 'true'
+            ) {
+              window.history.replaceState({ route }, '', getRoutePath(route, selectedWorldId));
+            }
+          }
+        }}
         onSuccess={() => {
           setIsLicenseModalOpen(false);
+          setInitialLicenseError(null);
           setIsDemoMode(false);
           setRoute('world_map');
+          if (typeof window !== 'undefined') {
+            window.history.replaceState({ route: 'world_map' }, '', '/?mode=game');
+          }
         }}
       />
 

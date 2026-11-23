@@ -24,6 +24,9 @@ interface WordBuilderBeeProps {
   onHome: () => void;
   onBackToWorld?: () => void;
   onNextGame: () => void;
+  onShowDemoLimit?: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
   isDemoMode?: boolean;
 }
 
@@ -40,6 +43,9 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   onHome,
   onBackToWorld,
   onNextGame,
+  onShowDemoLimit,
+  isMuted: isMutedProp,
+  onToggleMute: onToggleMuteProp,
   isDemoMode = false
 }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(initialLevel);
@@ -50,15 +56,28 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
   });
   const [gameState, setGameState] = useState<GameState>('PLAYING');
   const [wordIndex, setWordIndex] = useState(0);
+  const [restartSeed, setRestartSeed] = useState(0);
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [stars, setStars] = useState(3);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [localMuted, setLocalMuted] = useState(() => soundEngine.getMuted());
   const [isPaused, setIsPaused] = useState(false);
   const [earnedSticker, setEarnedSticker] = useState<Sticker | null>(null);
   const [showHint, setShowHint] = useState(ageGroup === '3-4' || difficulty === 'EASY');
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTransitioningRef = useRef(false);
+
+  const effectiveMuted = isMutedProp ?? localMuted;
+  const handleToggleMute = () => {
+    if (onToggleMuteProp) {
+      onToggleMuteProp();
+    } else {
+      const next = !localMuted;
+      soundEngine.setMuted(next);
+      setLocalMuted(next);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -222,7 +241,7 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
     // Shuffle tiles
     const shuffled = [...tiles].sort(() => Math.random() - 0.5);
     setAvailableTiles(shuffled);
-  }, [wordIndex, targetWord, difficulty, currentLevel]);
+  }, [wordIndex, targetWord, difficulty, currentLevel, restartSeed]);
 
   // Handle letter slot drop or tap
   const handleSelectLetter = (tileId: string, letter: string) => {
@@ -495,7 +514,7 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
       </div>
 
       {/* Bottom Hint Bar */}
-      <div className="flex items-center justify-between text-amber-950 font-bold text-xs z-10 px-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-amber-950 font-bold text-xs z-10 px-2 pr-16 sm:pr-2">
         <button
           onClick={() => {
             soundEngine.playPop();
@@ -538,11 +557,13 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           setWordIndex(0);
           setScore(0);
           setMistakes(0);
-          setPlacedLetters([]);
+          setStartTime(Date.now());
+          setRestartSeed(prev => prev + 1);
         }}
         onNextLevel={() => {
           if (isDemoMode && currentLevel >= 2) {
-            onNextGame();
+            if (onShowDemoLimit) onShowDemoLimit();
+            else onNextGame();
             return;
           }
           if (currentLevel < 5) {
@@ -550,8 +571,9 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
             setCurrentLevel(prev => prev + 1);
             setGameState('PLAYING');
             setWordIndex(0);
-            setPlacedLetters([]);
             setMistakes(0);
+            setStartTime(Date.now());
+            setRestartSeed(prev => prev + 1);
           } else {
             onNextGame();
           }
@@ -563,10 +585,8 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
       {/* Pause Modal */}
       <PauseModal
         isOpen={isPaused}
-        isMuted={soundEngine.getMuted()}
-        onToggleMute={() => {
-          soundEngine.setMuted(!soundEngine.getMuted());
-        }}
+        isMuted={effectiveMuted}
+        onToggleMute={handleToggleMute}
         onResume={() => {
           setIsPaused(false);
           setGameState('PLAYING');
@@ -582,7 +602,8 @@ export const WordBuilderBee: React.FC<WordBuilderBeeProps> = ({
           setWordIndex(0);
           setScore(0);
           setMistakes(0);
-          setPlacedLetters([]);
+          setStartTime(Date.now());
+          setRestartSeed(prev => prev + 1);
         }}
         onHome={onHome}
         onBackToWorld={onBackToWorld ? () => {

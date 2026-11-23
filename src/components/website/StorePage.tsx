@@ -39,20 +39,20 @@ export const StorePage: React.FC<StorePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-body">
+    <div className="min-h-screen bg-[#F6FBFF] text-[#0F294A] font-body">
       {/* Clean Breadcrumb Bar */}
-      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3.5">
+      <div className="bg-white border-b border-sky-200 px-4 sm:px-8 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 font-medium">
             <a
               href={getRoutePath('home')}
               onClick={handleHomeNav}
-              className="hover:text-slate-900 transition-colors"
+              className="hover:text-[#0F294A] transition-colors"
             >
               Home
             </a>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-900 font-bold">Store</span>
+            <span className="text-[#0F294A] font-bold">Store</span>
           </nav>
 
           <div className="flex items-center gap-1.5 text-slate-600">

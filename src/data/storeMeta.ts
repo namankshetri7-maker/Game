@@ -22,6 +22,7 @@ export interface StoreProductRecord {
   longDescription: string;
   coverImage: string;
   coverAlt: string;
+  galleryImages?: Array<{ src: string; alt: string; label: string }>;
   category: StoreCategory;
   pages?: number;
   format?: string;
@@ -37,6 +38,31 @@ export interface StoreProductRecord {
   ageRange?: string;
   isCustom?: boolean;
 }
+
+export const OFFICIAL_LOGO_IMAGE = '/assets/aistudio/pwa-512x512_ba215e1b.png';
+
+export const ORIGINAL_GAME_SCREENSHOTS: Array<{ src: string; alt: string; label: string }> = [
+  {
+    src: '/assets/aistudio/Screenshot_20261111-220142_2_ee4c78de.jpg',
+    alt: 'Dino Addition #1 math counting game inside Wonder World Kids Learning',
+    label: 'Dino Addition (Math)',
+  },
+  {
+    src: '/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
+    alt: 'Word Builder Bee phonics spelling game inside Wonder World Kids Learning',
+    label: 'Word Builder Bee (English)',
+  },
+  {
+    src: '/assets/aistudio/Screenshot_20261111-220204_2_627c41af.jpg',
+    alt: 'Multiplication Blitz equation game inside Wonder World Kids Learning',
+    label: 'Multiplication Blitz (Math)',
+  },
+  {
+    src: '/assets/aistudio/Screenshot_20261111-220250_2_d2ea05cd.jpg',
+    alt: 'Food Chain Sorting animal science game inside Wonder World Kids Learning',
+    label: 'Food Chain Sorting (Science)',
+  },
+];
 
 export const STORE_CATEGORIES: readonly StoreCategory[] = [
   'Learning Games',
@@ -55,7 +81,7 @@ export const STORE_MARKETPLACES: readonly StoreMarketplace[] = [
 
 export const DEFAULT_GUMROAD_APP_URL = 'https://namank3.gumroad.com/l/wvpisb';
 export const STORE_CANONICAL_BASE = 'https://wonderworldkidslearning.space';
-export const STORE_CATALOG_STORAGE_KEY = 'wwk_store_catalog_v1';
+export const STORE_CATALOG_STORAGE_KEY = 'wwk_store_catalog_v2';
 export const STORE_BAG_STORAGE_KEY = 'wwk_store_bag_v1';
 
 export function isSafeExternalHttpUrl(url: string): boolean {
@@ -105,9 +131,10 @@ export const INITIAL_STORE_PRODUCT_RECORDS: StoreProductRecord[] = [
       'Complete 45-game offline learning adventure across Maths, English, Geography, Science and Animal Kingdom for ages 3–8.',
     longDescription:
       'Unlock the entire Wonder World Kids interactive universe with one lifetime family pass. Children explore 5 vibrant learning islands packed with 40+ educational mini-games across Maths, English Phonics, Geography, Science and the Animal Kingdom — all playable 100% offline with zero ads and zero recurring subscriptions.',
-    coverImage: '/pwa-512x512.png',
+    coverImage: '/assets/aistudio/Screenshot_20261111-220142_2_ee4c78de.jpg',
     coverAlt:
-      'Wonder World Kids Learning App displayed on a child-friendly tablet with puzzle islands, numbers, planets and animals',
+      'Wonder World Kids Learning App featuring Dino Addition, Word Builder Bee, Multiplication Blitz, and Food Chain Sorting games',
+    galleryImages: ORIGINAL_GAME_SCREENSHOTS,
     category: 'Learning Games',
     format: 'Offline Interactive App',
     price: '9.00',
@@ -134,9 +161,9 @@ export const INITIAL_STORE_PRODUCT_RECORDS: StoreProductRecord[] = [
     description: 'Printable dinosaur colouring book for children.',
     longDescription:
       'Step back into a joyful prehistoric valley with 30 printable colouring pages starring friendly T-Rex, Triceratops, Stegosaurus and gentle dinosaurs. Clean bold outlines make every page inviting for crayons, coloured pencils and markers at home or on family trips.',
-    coverImage: '/pwa-512x512.png',
+    coverImage: '/assets/aistudio/Dinosaur_World_Front_Cover__1__d7e7601e.png',
     coverAlt:
-      'Dinosaur World Colouring Book cover showing friendly T-Rex and Triceratops in a sunlit jungle valley',
+      'Dinosaur World Colouring Book cover showing friendly dinosaurs, volcano, and tropical jungle for ages 3-5',
     category: 'Colouring Books',
     pages: 30,
     format: 'Digital PDF',
@@ -144,7 +171,7 @@ export const INITIAL_STORE_PRODUCT_RECORDS: StoreProductRecord[] = [
     externalUrl: 'https://www.etsy.com/listing/4615484511/dinosaur-world-coloring-book-30',
     buttonLabel: 'Buy on Etsy',
     status: 'active',
-    ageRange: 'Ages 3–8',
+    ageRange: 'Ages 3–5',
     highlights: [
       '30 printable dinosaur illustration pages',
       'Digital PDF for instant printing at home',
@@ -158,19 +185,19 @@ export const INITIAL_STORE_PRODUCT_RECORDS: StoreProductRecord[] = [
     description: 'Educational alphabet activity book for young learners.',
     longDescription:
       'Help early readers build letter recognition, phonics confidence and pencil control through playful ABC tracing, matching and vocabulary activities crafted for preschool and kindergarten learners.',
-    coverImage: '/pwa-512x512.png',
+    coverImage: '/assets/aistudio/Wonder_World_ABC_Adventure__2__de9ce0c1.png',
     coverAlt:
-      'ABC Alphabet Activity Book cover illustration with wooden letter blocks, smiling bee and storybook stars',
+      'Wonder World Kids Learning ABC World — My First Alphabet Adventure cover showing ABC letters, kids, bear, and early learning highlights',
     category: 'Educational Activity Books',
     format: 'Digital Printable',
     marketplace: 'Etsy',
     externalUrl: 'https://www.etsy.com/listing/4618473268/abc-alphabet-activity-book-for-kids',
     buttonLabel: 'Buy on Etsy',
     status: 'active',
-    ageRange: 'Ages 3–6',
+    ageRange: 'Ages 3–8',
     highlights: [
       'Screen-free alphabet practice and early phonics fun',
-      'Designed for preschool and kindergarten skill building',
+      'Designed to boost memory, confidence, and early skills',
       'Printable pages for home learning or classroom corners',
     ],
   },
@@ -180,10 +207,10 @@ export const INITIAL_STORE_PRODUCT_RECORDS: StoreProductRecord[] = [
     name: 'Christmas Wonderland Colouring Book',
     description: 'Christmas-themed printable colouring book for children.',
     longDescription:
-      'Celebrate the festive season with 30 printable Christmas Wonderland colouring pages featuring cheerful snowmen, woodland reindeer, holiday cottages and sparkling winter trees ready to print whenever creativity strikes.',
-    coverImage: '/pwa-512x512.png',
+      'Celebrate the festive season with 30 printable Christmas Wonderland colouring pages featuring Santa, cheerful snowman, woodland reindeer, and decorated Christmas trees ready to print whenever creativity strikes.',
+    coverImage: '/assets/aistudio/christmas-wonderland-my-christmas-colouring-book_front_Cover_f4007897.png',
     coverAlt:
-      'Christmas Wonderland Colouring Book cover featuring a cheerful snowman and reindeer in a snowy holiday village',
+      'Christmas Wonderland My Christmas Colouring Book front cover featuring Santa, snowman, reindeer and Christmas tree for ages 3-8',
     category: 'Seasonal Collections',
     pages: 30,
     format: 'Digital PDF',
@@ -196,6 +223,29 @@ export const INITIAL_STORE_PRODUCT_RECORDS: StoreProductRecord[] = [
       '30 festive winter and holiday colouring scenes',
       'Instant Digital PDF printable anytime',
       'Cozy, child-friendly seasonal illustrations',
+    ],
+  },
+  {
+    id: 'prod_maths_adventure_book',
+    slug: 'my-first-maths-adventure-printable',
+    name: 'My First Maths Adventure Printable Book',
+    description: 'Printable early maths activity book for young learners covering counting, addition and shapes.',
+    longDescription:
+      'Make early numeracy exciting with My First Maths Adventure Printable Book! Crafted for young learners aged 3–8, this printable activity workbook builds number recognition, counting confidence, simple addition, pattern spotting and early shape skills at home or in the classroom.',
+    coverImage: '/assets/maths_adventure_cover.jpg',
+    coverAlt:
+      'My First Maths Adventure Printable Book cover featuring children, baby dinosaur, colorful numbers 1 to 5, apples, and geometric shapes',
+    category: 'Educational Activity Books',
+    format: 'Digital Printable',
+    marketplace: 'Etsy',
+    externalUrl: 'https://www.etsy.com/listing/4623674119/my-first-maths-adventure-printable',
+    buttonLabel: 'Buy on Etsy',
+    status: 'active',
+    ageRange: 'Ages 3–8',
+    highlights: [
+      'Early counting, numbers and playful addition activities',
+      'Visual puzzles with shapes, fruit counting and patterns',
+      'Instant Digital Printable for screen-free home or classroom practice',
     ],
   },
 ];
@@ -223,10 +273,19 @@ export function readStoredProductRecords(): StoreProductRecord[] {
     const mergedDefaults = INITIAL_STORE_PRODUCT_RECORDS.map((def) => {
       const override = byId.get(def.id);
       if (!override) return def;
+      const overrideCover =
+        typeof override.coverImage === 'string' &&
+        override.coverImage.trim() &&
+        override.coverImage !== '/pwa-512x512.png' &&
+        !override.coverImage.includes('store_')
+          ? override.coverImage
+          : def.coverImage;
       return {
         ...def,
         ...override,
         id: def.id,
+        coverImage: overrideCover,
+        galleryImages: def.galleryImages,
         slug: typeof override.slug === 'string' && override.slug.trim() ? override.slug : def.slug,
         status: override.status === 'inactive' ? ('inactive' as const) : ('active' as const),
       };

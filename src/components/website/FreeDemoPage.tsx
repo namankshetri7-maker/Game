@@ -6,7 +6,8 @@
 
 import React, { useMemo, useState } from 'react';
 import { soundEngine } from '../../services/soundEngine';
-import { Play, Sparkles, RefreshCw, Check, ShoppingBag, KeyRound } from 'lucide-react';
+import { getRoutePath } from '../../services/seoManager';
+import { Play, RefreshCw, Check, ShoppingBag, KeyRound, ChevronRight } from 'lucide-react';
 
 interface FreeDemoPageProps {
   onEnterGame: () => void;
@@ -146,27 +147,52 @@ export const FreeDemoPage: React.FC<FreeDemoPageProps> = ({ onEnterGame, onLaunc
     { id: 'logic', label: '🃏 Memory Flip', worldTag: 'Logic' }
   ];
 
+  const handleLink = (e: React.MouseEvent, route: string) => {
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      soundEngine.playPop();
+      onNavigate(route);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-300 to-indigo-600 text-slate-800 font-body py-12 px-4 sm:px-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-[#F8FCFF] to-emerald-50 text-[#0F294A] font-body pb-14">
+      {/* Breadcrumb */}
+      <div className="bg-white border-b border-sky-200 px-4 sm:px-8 py-3.5">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 font-medium">
+            <a
+              href={getRoutePath('home')}
+              onClick={(e) => handleLink(e, 'home')}
+              className="hover:text-[#0F294A] transition-colors"
+            >
+              Home
+            </a>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[#0F294A] font-bold">Free Interactive Demo</span>
+          </nav>
+          <span className="font-semibold text-emerald-700">10 Free Mini-Games · Zero Sign-Up</span>
+        </div>
+      </div>
 
-        <div className="text-center max-w-xl mx-auto mb-10">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white text-indigo-900 text-xs font-black font-fun mb-3 shadow-sm border border-indigo-200">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-            <span>Interactive Demo & Sandbox</span>
-          </span>
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-10">
 
-          <h1 className="text-3xl sm:text-5xl font-black font-fun text-white mb-3 drop-shadow-sm">
-            Wonder World Kids Learning Demo! 🎮
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 font-fun mb-2">
+            Interactive Sandbox · Try Free Demo
+          </p>
+
+          <h1 className="text-3xl sm:text-5xl font-black font-fun text-[#0F294A] mb-3 tracking-tight text-balance">
+            Play Sample Learning Games Across All 5 Worlds!
           </h1>
 
-          <p className="text-sm text-white font-bold drop-shadow-xs">
-            Play our free sample levels across all 5 islands directly inside demo mode, or test the interactive web simulator below!
+          <p className="text-sm sm:text-base text-slate-700 font-medium">
+            Test Levels 1 &amp; 2 inside our free game mode or try instant mini-activities below—no login, no ads, 100% kid-safe.
           </p>
         </div>
 
         {/* 2 Demo Games per World (10 Valid Games Across All 5 Worlds) */}
-        <div className="bg-white/95 rounded-3xl p-6 border-4 border-white shadow-xl mb-8">
+        <div className="bg-white rounded-3xl p-6 border-2 border-sky-200 shadow-sm mb-8">
           <div className="text-center max-w-md mx-auto mb-5">
             <h2 className="text-xl font-black font-fun text-indigo-950 mb-1">
               Play Free Demo Games (2 Games Per World) 🏝️
@@ -290,22 +316,22 @@ export const FreeDemoPage: React.FC<FreeDemoPageProps> = ({ onEnterGame, onLaunc
             <button
               key={tab.id}
               onClick={() => { soundEngine.playPop(); setActiveSimulatorGame(tab.id); }}
-              className={`px-3.5 py-2 rounded-2xl font-fun font-bold text-xs sm:text-sm transition cursor-pointer border-2 flex items-center gap-1.5 ${
+              className={`px-3.5 py-2 rounded-2xl font-fun font-bold text-xs sm:text-sm transition cursor-pointer border-2 flex items-center gap-1.5 whitespace-nowrap ${
                 activeSimulatorGame === tab.id
-                  ? 'bg-amber-400 text-amber-950 border-white shadow-md scale-105'
-                  : 'bg-white/85 text-slate-700 border-transparent hover:bg-white'
+                  ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-sm'
+                  : 'bg-white text-slate-700 border-sky-200 hover:border-sky-300 hover:bg-sky-50'
               }`}
             >
               <span>{tab.label}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/10 font-black uppercase">
-                {tab.worldTag}
+              <span className="text-[10px] opacity-80 font-black uppercase">
+                · {tab.worldTag}
               </span>
             </button>
           ))}
         </div>
 
         {/* Simulator Sandbox Card */}
-        <div className="bg-white rounded-3xl border-4 border-white shadow-2xl p-6 sm:p-8 mb-8 relative overflow-hidden">
+        <div className="bg-white rounded-3xl border-2 border-sky-200 shadow-sm p-6 sm:p-8 mb-8 relative overflow-hidden">
 
           {activeSimulatorGame === 'dino' && (
             <div className="flex flex-col items-center text-center">

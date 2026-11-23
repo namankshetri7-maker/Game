@@ -18,7 +18,7 @@ export default defineConfig(() => {
           'pwa-512x512.png',
           'pwa-maskable-512x512.png',
           'apple-touch-icon.png',
-          'assets/aistudio/Wonder_World_Kids_Adventure_Badge_ba215e1b.png',
+          'assets/aistudio/pwa-512x512_ba215e1b.png',
           'favicon.png',
           'logo.png'
         ],
@@ -26,10 +26,32 @@ export default defineConfig(() => {
         workbox: {
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff,woff2,json}'],
-          globIgnores: ['assets/aistudio/Screenshot_*', 'assets/aistudio/1793523005352_*'],
+          globIgnores: [
+            'assets/aistudio/Screenshot_20261029*',
+            'assets/aistudio/Screenshot_20261105*',
+            'assets/aistudio/Screenshot_20261106*',
+            'assets/aistudio/Screenshot_20261107-070719_4dfe02a2.png',
+            'assets/aistudio/Wonder_World_Kids_Adventure_Badge_*',
+            'assets/aistudio/christmas-wonderland*',
+            'assets/aistudio/1793523005352_*'
+          ],
           navigateFallback: '/index.html',
           cleanupOutdatedCaches: true,
           runtimeCaching: [
+            {
+              urlPattern: /\/assets\/aistudio\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'wonder-world-media-cache',
+                expiration: {
+                  maxEntries: 24,
+                  maxAgeSeconds: 60 * 60 * 24 * 30
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',
@@ -61,8 +83,7 @@ export default defineConfig(() => {
           ]
         },
         devOptions: {
-          enabled: true,
-          type: 'module'
+          enabled: false
         }
       })
     ],
