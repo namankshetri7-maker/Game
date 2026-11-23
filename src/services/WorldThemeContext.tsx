@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export type WorldThemeId = 'world_math' | 'world_phonics' | 'world_geography' | 'world_science' | 'world_logic';
 
@@ -79,12 +79,12 @@ export const WorldThemeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const activeTheme = WORLD_THEMES.find(t => t.id === activeThemeId) || WORLD_THEMES[0];
 
-  const setTheme = (themeId: WorldThemeId) => {
+  const setTheme = useCallback((themeId: WorldThemeId) => {
     setActiveThemeId(themeId);
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', themeId);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
