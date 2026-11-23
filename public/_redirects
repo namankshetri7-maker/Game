@@ -1,1 +1,1 @@
-/* /index.html 200
+# SPA fallback is configured by Wrangler's assets.not_found_handling setting.
