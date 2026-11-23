@@ -97,7 +97,7 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
               className="flex items-center cursor-pointer group text-left shrink transition active:scale-95"
               title="Return to WonderWorld Home Map"
             >
-              <BrandLogo size="header" showText={true} />
+              <BrandLogo size="header" showText={currentView !== 'game'} />
             </button>
 
             {/* Child Profile Explorer Card (Visible on iPad/Tablet/Desktop when space permits) */}
@@ -396,9 +396,11 @@ export const DeviceFrameWrapper: React.FC<DeviceFrameWrapperProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-xl flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>100% Offline</span>
+                    <span className={`text-[11px] font-bold px-2 py-1 rounded-xl flex items-center gap-1 ${
+                      isOnline ? 'text-emerald-700 bg-emerald-100' : 'text-amber-800 bg-amber-100'
+                    }`}>
+                      <CheckCircle2 className={`w-3 h-3 ${isOnline ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      <span>{isOnline ? '🟢 Online (Offline Ready)' : '⚡ Offline Mode'}</span>
                     </span>
                   </div>
                 </div>
