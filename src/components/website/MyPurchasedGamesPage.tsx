@@ -135,7 +135,7 @@ export const MyPurchasedGamesPage: React.FC<MyPurchasedGamesPageProps> = ({
                 className="p-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-fun font-bold text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer transition active:scale-95 border border-amber-500/40"
               >
                 <Download className="w-4 h-4" />
-                <span>Install Offline App</span>
+                <span>Install Offline PWA App</span>
               </button>
             </div>
           </div>
