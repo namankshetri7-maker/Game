@@ -44,23 +44,23 @@ export const OFFICIAL_LOGO_IMAGE = '/assets/aistudio/pwa-512x512_ba215e1b.png';
 export const ORIGINAL_GAME_SCREENSHOTS: Array<{ src: string; alt: string; label: string }> = [
   {
     src: '/assets/aistudio/Screenshot_20261111-220142_2_ee4c78de.jpg',
-    alt: 'Dino Addition #1 math counting game inside Wonder World Kids Learning',
-    label: 'Dino Addition (Math)',
-  },
-  {
-    src: '/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
     alt: 'Word Builder Bee phonics spelling game inside Wonder World Kids Learning',
     label: 'Word Builder Bee (English)',
   },
   {
+    src: '/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
+    alt: 'Food Chain Sorting animal science game inside Wonder World Kids Learning',
+    label: 'Food Chain Sorting (Science)',
+  },
+  {
     src: '/assets/aistudio/Screenshot_20261111-220204_2_627c41af.jpg',
-    alt: 'Multiplication Blitz equation game inside Wonder World Kids Learning',
-    label: 'Multiplication Blitz (Math)',
+    alt: 'Dino Addition #1 math counting game inside Wonder World Kids Learning',
+    label: 'Dino Addition (Math)',
   },
   {
     src: '/assets/aistudio/Screenshot_20261111-220250_2_d2ea05cd.jpg',
-    alt: 'Food Chain Sorting animal science game inside Wonder World Kids Learning',
-    label: 'Food Chain Sorting (Science)',
+    alt: 'Multiplication Blitz equation game inside Wonder World Kids Learning',
+    label: 'Multiplication Blitz (Math)',
   },
 ];
 

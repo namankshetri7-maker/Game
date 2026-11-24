@@ -35,8 +35,20 @@ export {
 
 export const STORE_COVER_PRESETS: Array<{ label: string; image: string }> = [
   {
-    label: 'Dino Addition (Learning App)',
+    label: 'Word Builder Bee (Phonics Game)',
     image: '/assets/aistudio/Screenshot_20261111-220142_2_ee4c78de.jpg',
+  },
+  {
+    label: 'Food Chain Sorting (Science Game)',
+    image: '/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
+  },
+  {
+    label: 'Dino Addition (Math Game)',
+    image: '/assets/aistudio/Screenshot_20261111-220204_2_627c41af.jpg',
+  },
+  {
+    label: 'Multiplication Blitz (Math Game)',
+    image: '/assets/aistudio/Screenshot_20261111-220250_2_d2ea05cd.jpg',
   },
   {
     label: 'Dinosaur World Colouring Cover',
@@ -53,14 +65,6 @@ export const STORE_COVER_PRESETS: Array<{ label: string; image: string }> = [
   {
     label: 'My First Maths Adventure Cover',
     image: '/assets/maths_adventure_cover.jpg',
-  },
-  {
-    label: 'Word Builder Bee Screenshot',
-    image: '/assets/aistudio/Screenshot_20261111-220218_2_0367a967.jpg',
-  },
-  {
-    label: 'Food Chain Sorting Screenshot',
-    image: '/assets/aistudio/Screenshot_20261111-220250_2_d2ea05cd.jpg',
   },
 ];
 

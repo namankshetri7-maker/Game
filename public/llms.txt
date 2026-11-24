@@ -35,6 +35,7 @@ XML Sitemap: https://wonderworldkidslearning.space/sitemap.xml
 - [My Purchased Games](https://wonderworldkidslearning.space/my-games)
 - [Privacy Policy (COPPA / GDPR-K)](https://wonderworldkidslearning.space/privacy)
 - [Contact Parent Support](https://wonderworldkidslearning.space/contact)
+- [Parenting & Learning Journal (Blog)](https://wonderworldkidslearning.space/blog)
 
 ## Learning Worlds & Store Product Pages
 - [Math Magic Valley (10 Math Games)](https://wonderworldkidslearning.space/worlds/world_math)

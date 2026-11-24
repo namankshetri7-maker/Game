@@ -261,9 +261,83 @@
   </url>
   <url>
     <loc>https://wonderworldkidslearning.space/worlds/world_logic</loc>
-    <lastmod>2026-11-23</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
+  </url>
+
+  <!-- 15. The Wonder World Kids Parenting & Learning Journal -->
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en-us" href="https://wonderworldkidslearning.space/blog" />
+    <xhtml:link rel="alternate" hreflang="en-gb" href="https://wonderworldkidslearning.space/blog" />
+    <xhtml:link rel="alternate" hreflang="en-in" href="https://wonderworldkidslearning.space/blog" />
+    <xhtml:link rel="alternate" hreflang="en-ca" href="https://wonderworldkidslearning.space/blog" />
+    <xhtml:link rel="alternate" hreflang="en-au" href="https://wonderworldkidslearning.space/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://wonderworldkidslearning.space/blog" />
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/how-has-parenting-changed-in-the-digital-generation</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/why-are-modern-parents-so-worried-about-children-screen-time</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/how-to-turn-screen-time-into-learning-time</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/25-fun-offline-activities-to-keep-kids-engaged-at-home</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/how-to-help-your-toddler-learn-through-play</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/kindergarten-readiness-skills-every-parent-should-know</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/how-to-teach-numbers-colours-and-shapes-to-preschoolers</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/why-educational-games-can-make-learning-more-engaging</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/how-to-build-a-healthy-daily-learning-routine-for-toddlers</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://wonderworldkidslearning.space/blog/discover-wonder-world-kids-an-offline-learning-experience-for-children</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
 </urlset>
