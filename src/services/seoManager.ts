@@ -176,7 +176,7 @@ export function getRoutePath(route: string, worldOrSlug?: string): string {
     case 'blog':
       return '/blog';
     case 'blog_post':
-      return `/blog/${worldOrSlug || '25-fun-educational-activities-for-preschool-kids-at-home'}`;
+      return `/blog/${worldOrSlug || 'how-has-parenting-changed-in-the-digital-generation'}`;
     case 'worlds':
       return '/worlds';
     case 'world_detail':
@@ -323,13 +323,6 @@ export const SEO_CONFIGS: Record<string, PageSEOConfig> = {
           suggestedMaxAge: '8',
         },
         offers: MERCHANT_OFFER_SCHEMA,
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: '4.9',
-          reviewCount: '128',
-          bestRating: '5',
-          worstRating: '1',
-        },
       },
       {
         '@context': 'https://schema.org',
@@ -701,6 +694,53 @@ export function getBlogPostSEO(slug: string): PageSEOConfig {
   const canonicalUrl = `${BASE_URL}/blog/${post.slug}`;
   const pageTitle = `${post.title} – Wonder World Kids Blog`;
 
+  const jsonLd: object[] = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.title,
+      description: post.description,
+      datePublished: post.publishedDate,
+      author: {
+        '@type': 'Organization',
+        name: post.author,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Wonder World Kids Learning',
+        logo: {
+          '@type': 'ImageObject',
+          url: DEFAULT_IMAGE,
+        },
+      },
+      mainEntityOfPage: canonicalUrl,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${BASE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${BASE_URL}/blog` },
+        { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl },
+      ],
+    },
+  ];
+
+  if (post.faqs && post.faqs.length > 0) {
+    jsonLd.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: post.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    });
+  }
+
   return {
     title: pageTitle,
     description: post.description,
@@ -711,37 +751,7 @@ export function getBlogPostSEO(slug: string): PageSEOConfig {
     ogDescription: post.description,
     ogImage: DEFAULT_IMAGE,
     ogImageAlt: post.coverAlt,
-    jsonLd: [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: post.title,
-        description: post.description,
-        datePublished: post.publishedDate,
-        author: {
-          '@type': 'Organization',
-          name: post.author,
-        },
-        publisher: {
-          '@type': 'Organization',
-          name: 'Wonder World Kids Learning',
-          logo: {
-            '@type': 'ImageObject',
-            url: DEFAULT_IMAGE,
-          },
-        },
-        mainEntityOfPage: canonicalUrl,
-      },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: `${BASE_URL}/` },
-          { '@type': 'ListItem', position: 2, name: 'Blog', item: `${BASE_URL}/blog` },
-          { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl },
-        ],
-      },
-    ],
+    jsonLd,
   };
 }
 

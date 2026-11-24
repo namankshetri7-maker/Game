@@ -344,8 +344,14 @@ export default function App() {
 
   // Dynamic Page Title, Meta Description, OpenGraph & JSON-LD Sync
   useEffect(() => {
-    applyRouteSEO(route, route === 'store_product' ? selectedProductSlug : selectedWorldId);
-  }, [route, selectedWorldId, selectedProductSlug]);
+    const slugOrParam =
+      route === 'store_product'
+        ? selectedProductSlug
+        : route === 'blog_post'
+        ? selectedBlogPostSlug
+        : selectedWorldId;
+    applyRouteSEO(route, slugOrParam);
+  }, [route, selectedWorldId, selectedProductSlug, selectedBlogPostSlug]);
 
   // Store & Shopping Bag Helpers
   const activeStoreProducts = storeProducts.filter((p) => p.status === 'active');

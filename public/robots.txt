@@ -63,6 +63,6 @@ Allow: /
 User-agent: ByteSpider
 Allow: /
 
-# Canonical XML Sitemap & AI Crawling Sitemaps (/llms.txt & /llms-full.txt)
+# Canonical XML Sitemap
 Sitemap: https://wonderworldkidslearning.space/sitemap.xml
 Host: https://wonderworldkidslearning.space
