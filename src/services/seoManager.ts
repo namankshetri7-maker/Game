@@ -14,6 +14,7 @@ import {
   STORE_CANONICAL_BASE,
   StoreProductRecord,
 } from '../data/storeMeta';
+import { findBlogPostBySlug, BlogPostRecord } from '../data/blogData';
 
 export interface PageSEOConfig {
   title: string;
@@ -172,6 +173,10 @@ export function getRoutePath(route: string, worldOrSlug?: string): string {
       return '/store';
     case 'store_product':
       return `/store/${worldOrSlug || 'wonder-world-kids-learning-app'}`;
+    case 'blog':
+      return '/blog';
+    case 'blog_post':
+      return `/blog/${worldOrSlug || '25-fun-educational-activities-for-preschool-kids-at-home'}`;
     case 'worlds':
       return '/worlds';
     case 'world_detail':
@@ -652,7 +657,93 @@ export const SEO_CONFIGS: Record<string, PageSEOConfig> = {
       },
     ],
   },
+
+  blog: {
+    title: 'Early Learning & Parenting Blog – Wonder World Kids',
+    description:
+      'Expert parenting guides, screen-free educational activities, preschool math, phonics tips, and offline learning resources for children ages 3–8.',
+    keywords:
+      'parenting blog kids education, preschool learning tips, screen free activities children, early childhood education articles',
+    canonicalUrl: `${BASE_URL}/blog`,
+    ogType: 'website',
+    ogTitle: 'Parent & Educator Blog – Wonder World Kids Learning',
+    ogDescription:
+      'Expert articles and screen-free learning activities for kids ages 3–8.',
+    ogImage: DEFAULT_IMAGE,
+    ogImageAlt: 'Wonder World Kids Early Learning & Parenting Resource Center',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Wonder World Kids Blog',
+        url: `${BASE_URL}/blog`,
+        description:
+          'Expert articles on early learning, preschool education, and screen-free activities.',
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${BASE_URL}/` },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: `${BASE_URL}/blog` },
+        ],
+      },
+    ],
+  },
 };
+
+export function getBlogPostSEO(slug: string): PageSEOConfig {
+  const post = findBlogPostBySlug(slug);
+  if (!post) {
+    return SEO_CONFIGS.blog;
+  }
+
+  const canonicalUrl = `${BASE_URL}/blog/${post.slug}`;
+  const pageTitle = `${post.title} – Wonder World Kids Blog`;
+
+  return {
+    title: pageTitle,
+    description: post.description,
+    keywords: post.keywords,
+    canonicalUrl,
+    ogType: 'article',
+    ogTitle: pageTitle,
+    ogDescription: post.description,
+    ogImage: DEFAULT_IMAGE,
+    ogImageAlt: post.coverAlt,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description: post.description,
+        datePublished: post.publishedDate,
+        author: {
+          '@type': 'Organization',
+          name: post.author,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Wonder World Kids Learning',
+          logo: {
+            '@type': 'ImageObject',
+            url: DEFAULT_IMAGE,
+          },
+        },
+        mainEntityOfPage: canonicalUrl,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${BASE_URL}/` },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: `${BASE_URL}/blog` },
+          { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl },
+        ],
+      },
+    ],
+  };
+}
 
 export function getWorldSEO(worldId: string): PageSEOConfig {
   const world = WORLD_SEO_MAP[worldId] || WORLD_SEO_MAP.world_math;
@@ -766,6 +857,8 @@ export function applyRouteSEO(route: string, worldOrSlug?: string): void {
       ? getWorldSEO(worldOrSlug)
       : route === 'store_product' && worldOrSlug
       ? getStoreProductSEO(worldOrSlug)
+      : route === 'blog_post' && worldOrSlug
+      ? getBlogPostSEO(worldOrSlug)
       : SEO_CONFIGS[route] || SEO_CONFIGS['home'];
 
   // 1. Update Document Title

@@ -37,6 +37,9 @@ import { ParentInfoPage } from './components/website/ParentInfoPage';
 import { PrivacyPolicyPage } from './components/website/PrivacyPolicyPage';
 import { ContactSupportPage } from './components/website/ContactSupportPage';
 import { StorePage } from './components/website/StorePage';
+import { BlogIndexPage } from './components/website/BlogIndexPage';
+import { BlogPostPage } from './components/website/BlogPostPage';
+import { findBlogPostBySlug, getAllBlogPosts, BlogPostRecord } from './data/blogData';
 import { AboutPage } from './components/website/AboutPage';
 import { ProductDetailPage } from './components/website/ProductDetailPage';
 import { StoreCartDrawer } from './components/website/StoreCartDrawer';
@@ -81,6 +84,8 @@ export type AppRoute =
   | 'world_detail'
   | 'store'
   | 'store_product'
+  | 'blog'
+  | 'blog_post'
   | 'demo'
   | 'pricing'
   | 'success'
@@ -99,6 +104,7 @@ function parseInitialLocation(): {
   route: AppRoute;
   worldId: string;
   productSlug: string;
+  selectedBlogPostSlug: string;
   openUnlockModal: boolean;
 } {
   if (typeof window === 'undefined') {
@@ -106,6 +112,7 @@ function parseInitialLocation(): {
       route: 'home',
       worldId: 'world_math',
       productSlug: 'wonder-world-kids-learning-app',
+      selectedBlogPostSlug: '25-fun-educational-activities-for-preschool-kids-at-home',
       openUnlockModal: false,
     };
   }
@@ -119,7 +126,7 @@ function parseInitialLocation(): {
   // Clean multi-page URL path resolution (for Google indexing & direct links)
   if (pathname.startsWith('/worlds/')) {
     const slug = pathname.split('/')[2] || 'world_math';
-    return { route: 'world_detail', worldId: slug, productSlug, openUnlockModal: false };
+    return { route: 'world_detail', worldId: slug, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
   }
   if (pathname.startsWith('/store/')) {
     const slug = pathname.slice('/store/'.length).replace(/\/+$/, '');
@@ -127,41 +134,53 @@ function parseInitialLocation(): {
       route: 'store_product',
       worldId,
       productSlug: slug || 'wonder-world-kids-learning-app',
+      selectedBlogPostSlug: '',
       openUnlockModal: false,
     };
   }
-  if (pathname === '/store') return { route: 'store', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/worlds') return { route: 'worlds', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/demo') return { route: 'demo', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/pricing') return { route: 'pricing', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/downloads') return { route: 'downloads', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/parents') return { route: 'parents', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/about') return { route: 'about', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/faq') return { route: 'faq', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/privacy') return { route: 'privacy', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/contact') return { route: 'contact', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/my-games') return { route: 'my_games', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/success') return { route: 'success', worldId, productSlug, openUnlockModal: false };
-  if (pathname === '/activate') return { route: 'pricing', worldId, productSlug, openUnlockModal: !params.get('license') };
+  if (pathname.startsWith('/blog/')) {
+    const slug = pathname.slice('/blog/'.length).replace(/\/+$/, '');
+    return {
+      route: 'blog_post',
+      worldId,
+      productSlug,
+      selectedBlogPostSlug: slug || '25-fun-educational-activities-for-preschool-kids-at-home',
+      openUnlockModal: false,
+    };
+  }
+  if (pathname === '/blog') return { route: 'blog', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/store') return { route: 'store', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/worlds') return { route: 'worlds', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/demo') return { route: 'demo', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/pricing') return { route: 'pricing', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/downloads') return { route: 'downloads', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/parents') return { route: 'parents', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/about') return { route: 'about', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/faq') return { route: 'faq', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/privacy') return { route: 'privacy', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/contact') return { route: 'contact', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/my-games') return { route: 'my_games', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/success') return { route: 'success', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pathname === '/activate') return { route: 'pricing', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: !params.get('license') };
 
   // Legacy query-param / hash fallbacks
   if (pageParam === 'activate' || params.get('unlock') === 'true') {
-    return { route: 'pricing', worldId, productSlug, openUnlockModal: !params.get('license') };
+    return { route: 'pricing', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: !params.get('license') };
   }
-  if (pageParam === 'store') return { route: 'store', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'store_product') return { route: 'store_product', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'worlds' || hash.includes('worlds')) return { route: 'worlds', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'world_detail' || hash.includes('world_detail')) return { route: 'world_detail', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'demo' || hash.includes('demo')) return { route: 'demo', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return { route: 'pricing', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return { route: 'downloads', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'parents' || hash.includes('parents')) return { route: 'parents', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'about' || hash.includes('about')) return { route: 'about', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'faq' || hash.includes('faq')) return { route: 'faq', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'privacy' || hash.includes('privacy')) return { route: 'privacy', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'contact' || hash.includes('contact')) return { route: 'contact', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'my_games' || hash.includes('my_games')) return { route: 'my_games', worldId, productSlug, openUnlockModal: false };
-  if (pageParam === 'success' || hash.includes('success')) return { route: 'success', worldId, productSlug, openUnlockModal: false };
+  if (pageParam === 'store') return { route: 'store', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'store_product') return { route: 'store_product', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'worlds' || hash.includes('worlds')) return { route: 'worlds', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'world_detail' || hash.includes('world_detail')) return { route: 'world_detail', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'demo' || hash.includes('demo')) return { route: 'demo', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'pricing' || hash.includes('pricing') || hash.includes('buy')) return { route: 'pricing', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'downloads' || hash.includes('downloads') || hash.includes('install')) return { route: 'downloads', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'parents' || hash.includes('parents')) return { route: 'parents', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'about' || hash.includes('about')) return { route: 'about', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'faq' || hash.includes('faq')) return { route: 'faq', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'privacy' || hash.includes('privacy')) return { route: 'privacy', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'contact' || hash.includes('contact')) return { route: 'contact', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'my_games' || hash.includes('my_games')) return { route: 'my_games', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
+  if (pageParam === 'success' || hash.includes('success')) return { route: 'success', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
 
   const isDirectGame = params.get('mode') === 'game' || params.get('play') === 'true' || hash.includes('game') || hash.includes('play');
   const isStandalonePWA =
@@ -170,10 +189,10 @@ function parseInitialLocation(): {
       (window.navigator as Navigator & { standalone?: boolean })?.standalone === true);
 
   if (isDirectGame || isStandalonePWA) {
-    return { route: 'world_map', worldId, productSlug, openUnlockModal: false };
+    return { route: 'world_map', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
   }
 
-  return { route: 'home', worldId, productSlug, openUnlockModal: false };
+  return { route: 'home', worldId, productSlug, selectedBlogPostSlug: '', openUnlockModal: false };
 }
 
 export default function App() {
@@ -181,6 +200,7 @@ export default function App() {
   const [route, setRoute] = useState<AppRoute>(initialLocation.route);
   const [selectedWorldId, setSelectedWorldId] = useState<string>(initialLocation.worldId);
   const [selectedProductSlug, setSelectedProductSlug] = useState<string>(initialLocation.productSlug);
+  const [selectedBlogPostSlug, setSelectedBlogPostSlug] = useState<string>(initialLocation.selectedBlogPostSlug || '25-fun-educational-activities-for-preschool-kids-at-home');
   const [selectedGameLevel, setSelectedGameLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [activeGameId, setActiveGameId] = useState<string>('game_dino_addition');
 
@@ -226,13 +246,13 @@ export default function App() {
    * Multi-page URL Navigation helper synced with History API
    */
   const navigateTo = (targetRoute: AppRoute, param?: string) => {
-    const resolvedParam =
-      targetRoute === 'store_product'
-        ? param || selectedProductSlug
-        : param || selectedWorldId;
-
-    if (targetRoute === 'store_product' && param) {
-      setSelectedProductSlug(param);
+    let resolvedParam = param || selectedWorldId;
+    if (targetRoute === 'store_product') {
+      resolvedParam = param || selectedProductSlug;
+      if (param) setSelectedProductSlug(param);
+    } else if (targetRoute === 'blog_post') {
+      resolvedParam = param || selectedBlogPostSlug;
+      if (param) setSelectedBlogPostSlug(param);
     } else if (param) {
       setSelectedWorldId(param);
     }
@@ -862,6 +882,23 @@ export default function App() {
                 onNavigate={(r) => {
                   resetAppPlayState();
                   navigateTo(r as AppRoute);
+                }}
+              />
+            )}
+            {route === 'blog' && (
+              <BlogIndexPage
+                onNavigate={(r, slug) => {
+                  resetAppPlayState();
+                  navigateTo(r as AppRoute, slug);
+                }}
+              />
+            )}
+            {route === 'blog_post' && (
+              <BlogPostPage
+                post={getAllBlogPosts().find((p) => p.slug === selectedBlogPostSlug || p.id === selectedBlogPostSlug)}
+                onNavigate={(r, slug) => {
+                  resetAppPlayState();
+                  navigateTo(r as AppRoute, slug);
                 }}
               />
             )}
